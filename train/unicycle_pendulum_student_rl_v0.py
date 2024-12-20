@@ -2,7 +2,7 @@ import gymnasium as gym
 from stable_baselines3 import SAC
 import os
 import argparse
-import Assistive_Unicycle_Coach.envs.mujoco
+import envs
 from stable_baselines3.common.callbacks import EvalCallback
 import datetime
 import numpy as np
