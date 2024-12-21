@@ -3,11 +3,14 @@ from stable_baselines3 import SAC
 import os
 import argparse
 import envs
-from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList, EvalCallback
 import datetime
 import numpy as np
 from scipy.spatial.transform import Rotation
 import time
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 # Create directories to hold models and logs
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Go up one level from current file directory
@@ -32,72 +35,153 @@ os.makedirs(plot_dir, exist_ok=True)
 # Maximum number of steps per episode
 MAX_EPISODE_STEPS = 10000
 
-# Success thresholds for model evaluation and saving: 10 success
-SUCCESS_THRESHOLDS = [10]
+# Success thresholds for model evaluation and saving: 1000 success
+SUCCESS_THRESHOLDS = [1000]
+
+class TrainingMonitor(BaseCallback):
+    """
+    A simplified callback that monitors training progress and creates visualizations.
+    Combines success counting and visualization in a more streamlined way.
+    """
+    def __init__(self, target_success=1000, plot_freq=5000):
+        super().__init__(verbose=1)  # Enable verbose mode for basic logging
+        self.target_success = target_success
+        self.plot_freq = plot_freq
+        
+        # Training progress tracking
+        self.steps = 0
+        self.success_count = 0
+        self.training_start = time.time()
+        
+        # Data collection for plotting
+        self.trajectory_buffer = []  # Store recent positions for trajectory plot
+        self.reward_buffer = []      # Store recent rewards
+        self.buffer_size = plot_freq # Keep only recent data for plotting
+        
+    def _on_step(self):
+        """Called after each step of training"""
+        self.steps += 1
+        
+        # Get current state and metrics
+        current_state = self.training_env.get_obs()[0]  # Get current observation
+        position = current_state[:3] if current_state is not None else np.zeros(3)
+        reward = self.training_env.get_reward()[0]
+        self.success_count = self.training_env.get_attr('success_count')[0]
+        
+        # Update data buffers
+        self.trajectory_buffer.append(position)
+        self.reward_buffer.append(reward)
+        
+        # Keep buffers at fixed size
+        if len(self.trajectory_buffer) > self.buffer_size:
+            self.trajectory_buffer.pop(0)
+            self.reward_buffer.pop(0)
+        
+        # Create visualization at specified intervals
+        if self.steps % self.plot_freq == 0:
+            self._create_training_plots()
+            self._log_progress()
+        
+        # Check if target reached
+        if self.success_count >= self.target_success:
+            elapsed_time = time.time() - self.training_start
+            print(f"\nTarget of {self.target_success} successes achieved!")
+            print(f"Training completed in {elapsed_time:.2f} seconds")
+            self._create_training_plots(final=True)
+            return False
+            
+        return True
+    
+    def _create_training_plots(self, final=False):
+        """Creates and saves visualization of training progress"""
+        fig = plt.figure(figsize=(12, 4))
+        
+        # Trajectory plot
+        ax1 = fig.add_subplot(121, projection='3d')
+        positions = np.array(self.trajectory_buffer)
+        ax1.plot(positions[:, 0], positions[:, 1], positions[:, 2])
+        ax1.set_title('Recent Trajectory')
+        ax1.set_xlabel('X'), ax1.set_ylabel('Y'), ax1.set_zlabel('Z')
+        
+        # Reward plot
+        ax2 = fig.add_subplot(122)
+        ax2.plot(self.reward_buffer)
+        ax2.set_title('Recent Rewards')
+        ax2.set_xlabel('Steps'), ax2.set_ylabel('Reward')
+        
+        plt.tight_layout()
+        
+        # Save plot
+        filename = 'final_training.png' if final else f'training_step_{self.steps}.png'
+        plt.savefig(os.path.join(plot_dir, filename))
+        plt.close()
+    
+    def _log_progress(self):
+        """Logs current training progress"""
+        elapsed_time = time.time() - self.training_start
+        print(f"\nStep {self.steps}:")
+        print(f"Success count: {self.success_count}")
+        print(f"Time elapsed: {elapsed_time:.2f} seconds")
 
 # Main training function for the SAC student agent
 def train(env):
-    # Generate a unique timestamp for this training run
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"Student_Agent_{timestamp}"
-
-    # Create a directory to save the best models
+    
     best_model_path = os.path.join(model_dir, f"best_{run_name}")
     os.makedirs(best_model_path, exist_ok=True)
-
-    # Create an evaluation environment
+    
     eval_env = gym.make('UnicyclePendulumStudent-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
-   
-    # Set up the evaluation callback
+    
     eval_callback = EvalCallback(
-       eval_env, 
-       best_model_save_path=best_model_path,
-       log_path=log_dir, 
-       eval_freq=1000,
-       deterministic=True, 
-       render=False,
+        eval_env,
+        best_model_save_path=best_model_path,
+        log_path=log_dir,
+        eval_freq=5000,
+        deterministic=True,
+        render=False,
     )
-
-    # Initialize the SAC model
+    
+    success_callback = SuccessCallback(target_success=1000)
+    
+    callbacks = CallbackList([eval_callback, success_callback])
+    
     model = SAC(
-    'MlpPolicy',
-    env,
-    learning_rate=3e-4,
-    buffer_size=1000000,
-    batch_size=256,
-    verbose=1,
-    device='cuda',
-    tensorboard_log=log_dir
+        'MlpPolicy',
+        env,
+        learning_rate=3e-4,
+        buffer_size=1000000,
+        batch_size=256,
+        verbose=1,
+        device='cuda',
+        tensorboard_log=log_dir
     )
-
+    
     start_time = time.time()
-    threshold_index = 0
-
-    # Main training loop
-    total_episodes = 0
-    current_success_count = 0
-    while threshold_index < len(SUCCESS_THRESHOLDS):
-        # Train the model for 10000 timesteps
-        model.learn(total_timesteps=10000, reset_num_timesteps=False, tb_log_name=run_name, callback=eval_callback)
+    
+    try:
+        print("Starting training...")
+        model.learn(
+            total_timesteps=int(1e6),
+            callback=callbacks,
+            reset_num_timesteps=False,
+            tb_log_name=run_name
+        )
         
-        # Get the latest info from the environment
-        obs, info = env.reset()
-        current_success_count = info.get('success_count', current_success_count)
-        total_episodes = info.get('total_episodes', total_episodes + 1)
-        
-        print(f"Total episodes: {total_episodes}, Total Successes: {current_success_count}")
-
-        # Check if we've reached threshold (10 successes)
-        if current_success_count >= SUCCESS_THRESHOLDS[-1]:
-            end_time = time.time()
-            training_time = end_time - start_time
-            print(f"\nTraining completed! All success thresholds achieved.")
-            print(f"Total training time: {training_time:.2f} seconds")
-            print(f"Total episodes: {total_episodes}")
-            break
-
-    # Save the trained model
-    model.save(os.path.join(model_dir, f"{run_name}_trained"))
+    except KeyboardInterrupt:
+        print("\nTraining interrupted by user")
+    
+    end_time = time.time()
+    training_time = end_time - start_time
+    
+    final_success_count = env.success_count
+    print(f"\nTraining completed!")
+    print(f"Final success count: {final_success_count}")
+    print(f"Total training time: {training_time:.2f} seconds")
+    
+    final_model_path = os.path.join(model_dir, f"{run_name}_final")
+    model.save(final_model_path)
+    print(f"Final model saved to: {final_model_path}")
 
 def test(env, path_to_model):
     """
