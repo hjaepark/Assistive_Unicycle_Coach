@@ -170,6 +170,21 @@ if __name__ == '__main__':
     if args.test:
         if os.path.isfile(args.test):
             test_env = gym.make('UnicyclePendulumStudent-v0', render_mode='human', max_episode_steps=MAX_EPISODE_STEPS)
+            
+            import glfw
+            if glfw.init():
+                glfw.window_hint(glfw.RESIZABLE, glfw.TRUE)
+                glfw.window_hint(glfw.VISIBLE, glfw.TRUE)
+            
+            obs, info = test_env.reset()
+            
+            test_env.render()
+
+            window = glfw.get_current_context()
+            if window:
+                glfw.set_window_size(window, 1280, 720)
+            
             test(test_env, path_to_model=args.test)
         else:
             print(f'{args.test} not found.')
+
