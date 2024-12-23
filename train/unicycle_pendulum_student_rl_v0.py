@@ -3,14 +3,16 @@ from stable_baselines3 import SAC
 import os
 import argparse
 import envs
-from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList, EvalCallback
 import datetime
 import numpy as np
 from scipy.spatial.transform import Rotation
 import time
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 # Create directories to hold models and logs
-current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Go up one level from current file directory
+current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 data_dir = os.path.join(current_dir, "data")
 model_dir = os.path.join(data_dir, "models")
 log_dir = os.path.join(data_dir, "logs")
@@ -23,81 +25,208 @@ os.makedirs(log_dir, exist_ok=True)
 os.makedirs(csv_dir, exist_ok=True)
 os.makedirs(plot_dir, exist_ok=True)
 
-##########################################################################################################################
-##########################################################################################################################
-############################### Student agent training code for the Unicycle Project #####################################
-##########################################################################################################################
-##########################################################################################################################
-
 # Maximum number of steps per episode
 MAX_EPISODE_STEPS = 10000
 
-# Success thresholds for model evaluation and saving: 10 success
-SUCCESS_THRESHOLDS = [10]
+# Success thresholds for model evaluation and saving
+SUCCESS_THRESHOLDS = [1000]
 
-# Main training function for the SAC student agent
+class TrainingMonitor(BaseCallback):
+    """
+    Training progress monitoring and visualization callback.
+    Tracks success rate, trajectory, rewards, and creates periodic visualizations.
+    """
+    def __init__(self, target_success=1000, plot_freq=5000):
+        super().__init__(verbose=1)
+        self.target_success = target_success
+        self.plot_freq = plot_freq
+        
+        # Training data storage
+        self.all_positions = []          # Store unicycle positions
+        self.unicycle_roll_pitch_yaw = [] # Store unicycle orientation
+        self.pendulum_roll_pitch_yaw = [] # Store pendulum orientation
+        self.all_rewards = []            # Store rewards
+        self.all_success_counts = []     # Store cumulative successes
+        self.all_timestamps = []         # Store timing information
+        self.success_trajectories = []   # Store successful trajectories
+        self.current_trajectory = []     # Store current episode trajectory
+        self.wheel_velocities = []       # Store wheel velocities
+        
+        # Training progress tracking
+        self.steps = 0
+        self.success_count = 0
+        self.training_start = time.time()
+        
+    def _on_step(self):
+        """Process each training step and collect data"""
+        self.steps += 1
+        
+        # Get current state and info from environment
+        obs = self.locals['new_obs'][0]
+        info = self.locals['infos'][0]
+        reward = self.locals['rewards'][0]
+        
+        # Extract position and orientation data
+        position = obs[:3]
+        unicycle_quat = obs[3:7]
+        pendulum_quat = obs[7:11]
+        wheel_velocity = obs[21]
+        
+        # Convert quaternions to Euler angles
+        unicycle_euler = Rotation.from_quat(np.roll(unicycle_quat, -1)).as_euler('xyz')
+        pendulum_euler = Rotation.from_quat(np.roll(pendulum_quat, -1)).as_euler('xyz')
+        
+        # Store all training data
+        self.all_positions.append(position)
+        self.current_trajectory.append(position)
+        self.unicycle_roll_pitch_yaw.append(unicycle_euler)
+        self.pendulum_roll_pitch_yaw.append(pendulum_euler)
+        self.wheel_velocities.append(wheel_velocity)
+        self.all_rewards.append(reward)
+        self.success_count = info['success_count']
+        self.all_success_counts.append(self.success_count)
+        self.all_timestamps.append(time.time() - self.training_start)
+        
+        # Store successful trajectories
+        if info.get('goal_reached', False):
+            self.success_trajectories.append(np.array(self.current_trajectory))
+            self.current_trajectory = []
+        
+        # Create visualization at specified intervals
+        if self.steps % self.plot_freq == 0:
+            self._create_training_plots()
+            self._log_progress()
+        
+        # Check if target reached
+        if self.success_count >= self.target_success:
+            elapsed_time = time.time() - self.training_start
+            print(f"\nTarget of {self.target_success} successes achieved!")
+            print(f"Training completed in {elapsed_time:.2f} seconds")
+            self._create_training_plots(final=True)
+            self._save_final_data()
+            return False
+            
+        return True
+    
+    def _create_training_plots(self, final=False):
+        """Create and save comprehensive training visualization"""
+        fig = plt.figure(figsize=(20, 15))
+        
+        # Trajectory plot (3D)
+        ax1 = fig.add_subplot(221, projection='3d')
+        positions = np.array(self.all_positions[-self.plot_freq:])
+        ax1.plot(positions[:, 0], positions[:, 1], positions[:, 2])
+        ax1.set_title('Recent Trajectory (3D)')
+        ax1.set_xlabel('X Position')
+        ax1.set_ylabel('Y Position')
+        ax1.set_zlabel('Z Position')
+        
+        # Roll, Pitch, Yaw plot
+        ax2 = fig.add_subplot(222)
+        unicycle_rpy = np.array(self.unicycle_roll_pitch_yaw[-self.plot_freq:])
+        pendulum_rpy = np.array(self.pendulum_roll_pitch_yaw[-self.plot_freq:])
+        steps = range(len(unicycle_rpy))
+        ax2.plot(steps, unicycle_rpy, linestyle='-', label=['Roll', 'Pitch', 'Yaw'])
+        ax2.plot(steps, pendulum_rpy, linestyle='--')
+        ax2.set_title('Orientation (Roll, Pitch, Yaw)')
+        ax2.set_xlabel('Steps')
+        ax2.set_ylabel('Angle (rad)')
+        ax2.legend()
+        
+        # Reward plot
+        ax3 = fig.add_subplot(223)
+        rewards = self.all_rewards[-self.plot_freq:]
+        ax3.plot(range(len(rewards)), rewards)
+        ax3.set_title('Recent Rewards')
+        ax3.set_xlabel('Steps')
+        ax3.set_ylabel('Reward')
+        
+        # Success count plot
+        ax4 = fig.add_subplot(224)
+        ax4.plot(self.all_timestamps, self.all_success_counts)
+        ax4.set_title('Cumulative Success Count')
+        ax4.set_xlabel('Time (s)')
+        ax4.set_ylabel('Number of Successes')
+        
+        plt.tight_layout()
+        
+        # Save plot
+        filename = 'final_training.png' if final else f'training_step_{self.steps}.png'
+        plt.savefig(os.path.join(plot_dir, filename))
+        plt.close()
+    
+    def _log_progress(self):
+        """Log current training progress"""
+        elapsed_time = time.time() - self.training_start
+        print(f"\nTraining Progress - Step {self.steps}:")
+        print(f"Success count: {self.success_count}")
+        print(f"Time elapsed: {elapsed_time:.2f} seconds")
+        print(f"Success rate: {self.success_count/self.steps:.4f}")
+    
+    def _save_final_data(self):
+        """Save all training data to CSV files for later analysis"""
+        import pandas as pd
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Save position and orientation data
+        position_orientation_df = pd.DataFrame({
+            'step': range(len(self.all_positions)),
+            'x': [p[0] for p in self.all_positions],
+            'y': [p[1] for p in self.all_positions],
+            'z': [p[2] for p in self.all_positions],
+            'unicycle_roll': [rpy[0] for rpy in self.unicycle_roll_pitch_yaw],
+            'unicycle_pitch': [rpy[1] for rpy in self.unicycle_roll_pitch_yaw],
+            'unicycle_yaw': [rpy[2] for rpy in self.unicycle_roll_pitch_yaw],
+            'pendulum_roll': [rpy[0] for rpy in self.pendulum_roll_pitch_yaw],
+            'pendulum_pitch': [rpy[1] for rpy in self.pendulum_roll_pitch_yaw],
+            'pendulum_yaw': [rpy[2] for rpy in self.pendulum_roll_pitch_yaw],
+            'wheel_velocity': self.wheel_velocities
+        })
+        position_orientation_df.to_csv(os.path.join(csv_dir, f'motion_data_{timestamp}.csv'), index=False)
+        
+        # Save training metrics
+        training_metrics_df = pd.DataFrame({
+            'step': range(len(self.all_rewards)),
+            'reward': self.all_rewards,
+            'success_count': self.all_success_counts,
+            'time': self.all_timestamps
+        })
+        training_metrics_df.to_csv(os.path.join(csv_dir, f'training_metrics_{timestamp}.csv'), index=False)
+
 def train(env):
-    # Generate a unique timestamp for this training run
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"Student_Agent_{timestamp}"
-
-    # Create a directory to save the best models
-    best_model_path = os.path.join(model_dir, f"best_{run_name}")
-    os.makedirs(best_model_path, exist_ok=True)
-
-    # Create an evaluation environment
-    eval_env = gym.make('UnicyclePendulumStudent-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
-   
-    # Set up the evaluation callback
-    eval_callback = EvalCallback(
-       eval_env, 
-       best_model_save_path=best_model_path,
-       log_path=log_dir, 
-       eval_freq=1000,
-       deterministic=True, 
-       render=False,
-    )
-
-    # Initialize the SAC model
+    
+    # Initialize model
     model = SAC(
-    'MlpPolicy',
-    env,
-    learning_rate=3e-4,
-    buffer_size=1000000,
-    batch_size=256,
-    verbose=1,
-    device='cuda',
-    tensorboard_log=log_dir
+        'MlpPolicy',
+        env,
+        learning_rate=3e-4,
+        buffer_size=1000000,
+        batch_size=256,
+        verbose=1,
+        device='cuda',
+        tensorboard_log=log_dir
     )
-
-    start_time = time.time()
-    threshold_index = 0
-
-    # Main training loop
-    total_episodes = 0
-    current_success_count = 0
-    while threshold_index < len(SUCCESS_THRESHOLDS):
-        # Train the model for 10000 timesteps
-        model.learn(total_timesteps=10000, reset_num_timesteps=False, tb_log_name=run_name, callback=eval_callback)
-        
-        # Get the latest info from the environment
-        obs, info = env.reset()
-        current_success_count = info.get('success_count', current_success_count)
-        total_episodes = info.get('total_episodes', total_episodes + 1)
-        
-        print(f"Total episodes: {total_episodes}, Total Successes: {current_success_count}")
-
-        # Check if we've reached threshold (10 successes)
-        if current_success_count >= SUCCESS_THRESHOLDS[-1]:
-            end_time = time.time()
-            training_time = end_time - start_time
-            print(f"\nTraining completed! All success thresholds achieved.")
-            print(f"Total training time: {training_time:.2f} seconds")
-            print(f"Total episodes: {total_episodes}")
-            break
-
-    # Save the trained model
-    model.save(os.path.join(model_dir, f"{run_name}_trained"))
+    
+    # Set up monitoring
+    monitor = TrainingMonitor(target_success=1000, plot_freq=5000)
+    
+    # Start training
+    try:
+        print("Starting training...")
+        model.learn(
+            total_timesteps=int(1e6),
+            callback=monitor,
+            tb_log_name=run_name
+        )
+    except KeyboardInterrupt:
+        print("\nTraining interrupted by user")
+    
+    # Save final model
+    final_model_path = os.path.join(model_dir, f"{run_name}_final")
+    model.save(final_model_path)
+    print(f"Final model saved to: {final_model_path}")
 
 def test(env, path_to_model):
     """
