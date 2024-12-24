@@ -229,7 +229,7 @@ def train(env):
     
     # Create a separate environment for evaluation
     # This ensures unbiased performance assessment
-    eval_env = gym.make('UnicyclePendulumStudent-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
+    eval_env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
     
     # Set up evaluation callback for periodic model assessment
     # This will test the model in a separate environment and save the best performing version
@@ -343,14 +343,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Create the unicycle environment
-    env = gym.make('UnicyclePendulumStudent-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
+    env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
 
     if args.train:
         train(env)
 
     if args.test:
         if os.path.isfile(args.test):
-            test_env = gym.make('UnicyclePendulumStudent-v0', render_mode='human', max_episode_steps=MAX_EPISODE_STEPS)
+            test_env = gym.make('Student-v0', render_mode='human', max_episode_steps=MAX_EPISODE_STEPS)
             
             import glfw
             if glfw.init():

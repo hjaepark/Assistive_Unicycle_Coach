@@ -15,7 +15,7 @@ DEFAULT_CAMERA_CONFIG = {
     "lookat": np.array((0.0, 0.0, 1.0)),
 }
 
-class UnicyclePendulumStudent(MujocoEnv, utils.EzPickle):
+class Student(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": ["human", "rgb_array", "depth_array"],
     }
