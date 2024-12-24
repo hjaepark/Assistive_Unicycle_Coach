@@ -10,6 +10,7 @@ from scipy.spatial.transform import Rotation
 import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import pandas as pd
 
 # Create directories to hold models and logs
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -36,7 +37,7 @@ class TrainingMonitor(BaseCallback):
     Training progress monitoring and visualization callback.
     Tracks success rate, trajectory, rewards, and creates periodic visualizations.
     """
-    def __init__(self, target_success=1000, plot_freq=5000):
+    def __init__(self, target_success=1000, plot_freq=10000):
         super().__init__(verbose=1)
         self.target_success = target_success
         self.plot_freq = plot_freq
@@ -53,30 +54,34 @@ class TrainingMonitor(BaseCallback):
         self.wheel_velocities = []       # Store wheel velocities
         
         # Training progress tracking
+        self.stacked_rewards = []
+        self.stacked_success_rates = []
+        self.stacked_positions = []
+        
         self.steps = 0
         self.success_count = 0
         self.training_start = time.time()
+        self.last_success_count = 0
         
     def _on_step(self):
         """Process each training step and collect data"""
         self.steps += 1
         
-        # Get current state and info from environment
+        # Obtain currnet status and environment 
+        # self.locals "dictionary" stores current status
         obs = self.locals['new_obs'][0]
         info = self.locals['infos'][0]
         reward = self.locals['rewards'][0]
         
-        # Extract position and orientation data
         position = obs[:3]
         unicycle_quat = obs[3:7]
         pendulum_quat = obs[7:11]
         wheel_velocity = obs[21]
         
-        # Convert quaternions to Euler angles
         unicycle_euler = Rotation.from_quat(np.roll(unicycle_quat, -1)).as_euler('xyz')
         pendulum_euler = Rotation.from_quat(np.roll(pendulum_quat, -1)).as_euler('xyz')
         
-        # Store all training data
+        # Store in list
         self.all_positions.append(position)
         self.current_trajectory.append(position)
         self.unicycle_roll_pitch_yaw.append(unicycle_euler)
@@ -87,72 +92,82 @@ class TrainingMonitor(BaseCallback):
         self.all_success_counts.append(self.success_count)
         self.all_timestamps.append(time.time() - self.training_start)
         
-        # Store successful trajectories
+        # Store trajectory once reached goal
         if info.get('goal_reached', False):
             self.success_trajectories.append(np.array(self.current_trajectory))
             self.current_trajectory = []
         
-        # Create visualization at specified intervals
         if self.steps % self.plot_freq == 0:
+            # Average reward calculation
+            current_rewards = self.all_rewards[-self.plot_freq:]
+            avg_reward = np.mean(current_rewards) if current_rewards else 0
+            self.stacked_rewards.append(avg_reward)
+            
+            # Success rate calculation
+            success_in_interval = self.success_count - self.last_success_count
+            success_rate = success_in_interval / self.plot_freq
+            self.stacked_success_rates.append(success_rate)
+            
+            # Store current position
+            self.stacked_positions.append(np.array(self.all_positions[-self.plot_freq:]))
+            
+            self.last_success_count = self.success_count
+
             self._create_training_plots()
             self._log_progress()
-        
-        # Check if target reached
-        if self.success_count >= self.target_success:
-            elapsed_time = time.time() - self.training_start
-            print(f"\nTarget of {self.target_success} successes achieved!")
-            print(f"Training completed in {elapsed_time:.2f} seconds")
-            self._create_training_plots(final=True)
-            self._save_final_data()
-            return False
             
         return True
     
-    def _create_training_plots(self, final=False):
-        """Create and save comprehensive training visualization"""
+    def _create_training_plots(self):
+        """Create a comprehensive visualization showing training progress across intervals"""
         fig = plt.figure(figsize=(20, 15))
         
-        # Trajectory plot (3D)
-        ax1 = fig.add_subplot(221, projection='3d')
-        positions = np.array(self.all_positions[-self.plot_freq:])
-        ax1.plot(positions[:, 0], positions[:, 1], positions[:, 2])
-        ax1.set_title('Recent Trajectory (3D)')
-        ax1.set_xlabel('X Position')
-        ax1.set_ylabel('Y Position')
-        ax1.set_zlabel('Z Position')
+        # 1. Average reward per interval
+        ax1 = fig.add_subplot(221)
+        intervals = np.arange(len(self.stacked_rewards)) * self.plot_freq
+        ax1.plot(intervals, self.stacked_rewards, marker='o', color='blue')
+        ax1.set_title('Average Reward per Interval')
+        ax1.set_xlabel('Training Steps')
+        ax1.set_ylabel('Average Reward')
+ 
+        if len(self.stacked_rewards) > 5:
+            moving_avg = pd.Series(self.stacked_rewards).rolling(window=5).mean()
+            ax1.plot(intervals, moving_avg, color='red', linestyle='--', label='Moving Average')
+        ax1.grid(True)
+        ax1.legend()
         
-        # Roll, Pitch, Yaw plot
+        # 2. Success rate per interval
         ax2 = fig.add_subplot(222)
-        unicycle_rpy = np.array(self.unicycle_roll_pitch_yaw[-self.plot_freq:])
-        pendulum_rpy = np.array(self.pendulum_roll_pitch_yaw[-self.plot_freq:])
-        steps = range(len(unicycle_rpy))
-        ax2.plot(steps, unicycle_rpy, linestyle='-', label=['Roll', 'Pitch', 'Yaw'])
-        ax2.plot(steps, pendulum_rpy, linestyle='--')
-        ax2.set_title('Orientation (Roll, Pitch, Yaw)')
-        ax2.set_xlabel('Steps')
-        ax2.set_ylabel('Angle (rad)')
-        ax2.legend()
+        ax2.plot(intervals, self.stacked_success_rates, marker='o', color='green')
+        ax2.set_title('Success Rate per Interval')
+        ax2.set_xlabel('Training Steps')
+        ax2.set_ylabel('Success Rate')
+        ax2.grid(True)
         
-        # Reward plot
-        ax3 = fig.add_subplot(223)
-        rewards = self.all_rewards[-self.plot_freq:]
-        ax3.plot(range(len(rewards)), rewards)
-        ax3.set_title('Recent Rewards')
-        ax3.set_xlabel('Steps')
-        ax3.set_ylabel('Reward')
+        # 3. Recent trajectory
+        ax3 = fig.add_subplot(223, projection='3d')
+        recent_positions = self.stacked_positions[-1] if self.stacked_positions else None
+        if recent_positions is not None:
+            ax3.plot(recent_positions[:, 0], recent_positions[:, 1], recent_positions[:, 2], 
+                    color='blue', alpha=0.6, label='Recent Trajectory')
+            ax3.set_title(f'Recent Trajectory (Steps {self.steps-self.plot_freq} to {self.steps})')
+        ax3.set_xlabel('X Position')
+        ax3.set_ylabel('Y Position')
+        ax3.set_zlabel('Z Position')
+        ax3.grid(True)
+        ax3.legend()
         
-        # Success count plot
+        # 4. Culmulative average success rate
         ax4 = fig.add_subplot(224)
-        ax4.plot(self.all_timestamps, self.all_success_counts)
-        ax4.set_title('Cumulative Success Count')
-        ax4.set_xlabel('Time (s)')
-        ax4.set_ylabel('Number of Successes')
+        cumulative_success_rate = np.cumsum(self.stacked_success_rates) / (np.arange(len(self.stacked_success_rates)) + 1)
+        ax4.plot(intervals, cumulative_success_rate, marker='o', color='purple')
+        ax4.set_title('Cumulative Average Success Rate')
+        ax4.set_xlabel('Training Steps')
+        ax4.set_ylabel('Success Rate')
+        ax4.grid(True)
         
         plt.tight_layout()
-        
-        # Save plot
-        filename = 'final_training.png' if final else f'training_step_{self.steps}.png'
-        plt.savefig(os.path.join(plot_dir, filename))
+        plt.savefig(os.path.join(plot_dir, f'training_progress_{self.steps}.png'))
         plt.close()
     
     def _log_progress(self):
@@ -165,7 +180,6 @@ class TrainingMonitor(BaseCallback):
     
     def _save_final_data(self):
         """Save all training data to CSV files for later analysis"""
-        import pandas as pd
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Save position and orientation data
@@ -198,30 +212,36 @@ def train(env):
     run_name = f"Student_Agent_{timestamp}"
     
     # Initialize model
-    model = SAC(
-        'MlpPolicy',
-        env,
-        learning_rate=3e-4,
-        buffer_size=1000000,
-        batch_size=256,
-        verbose=1,
-        device='cuda',
-        tensorboard_log=log_dir
-    )
-    
+    model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+
     # Set up monitoring
     monitor = TrainingMonitor(target_success=1000, plot_freq=5000)
     
     # Start training
     try:
         print("Starting training...")
-        model.learn(
-            total_timesteps=int(1e6),
-            callback=monitor,
-            tb_log_name=run_name
-        )
+
+        while True:
+            model.learn(
+                total_timesteps=int(1e5),  
+                callback=monitor,
+                tb_log_name=run_name,
+                reset_num_timesteps=False
+            )
+            
+            # Check if reached target number
+            if monitor.success_count >= monitor.target_success:
+                elapsed_time = time.time() - monitor.training_start
+                print(f"\nTarget of {monitor.target_success} successes achieved!")
+                print(f"Training completed in {elapsed_time:.2f} seconds")
+                monitor._create_training_plots()
+                monitor._save_final_data()
+                break
+
     except KeyboardInterrupt:
         print("\nTraining interrupted by user")
+        monitor._create_training_plots()
+        monitor._save_final_data()
     
     # Save final model
     final_model_path = os.path.join(model_dir, f"{run_name}_final")
