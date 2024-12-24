@@ -37,7 +37,7 @@ class TrainingMonitor(BaseCallback):
     Training progress monitoring and visualization callback.
     Tracks success rate, trajectory, rewards, and creates periodic visualizations.
     """
-    def __init__(self, target_success=1000, plot_freq=10000):
+    def __init__(self, target_success=1000, plot_freq=5000):
         super().__init__(verbose=1)
         self.target_success = target_success
         self.plot_freq = plot_freq
@@ -64,15 +64,24 @@ class TrainingMonitor(BaseCallback):
         self.last_success_count = 0
         
     def _on_step(self):
-        """Process each training step and collect data"""
+        """Process each training step and collect data to monitor learning progress.
+        
+        Collects and stores various metrics including:
+        - Position and orientation data of unicycle and pendulum
+        - Rewards and success counts
+        - Trajectories and timing information
+        
+        Updates visualization and progress logs at specified intervals.
+        """
+
         self.steps += 1
         
-        # Obtain currnet status and environment 
-        # self.locals "dictionary" stores current status
+        # Extract current state information from environment
         obs = self.locals['new_obs'][0]
         info = self.locals['infos'][0]
         reward = self.locals['rewards'][0]
         
+        # Parse observation into position and orientation components
         position = obs[:3]
         unicycle_quat = obs[3:7]
         pendulum_quat = obs[7:11]
@@ -119,10 +128,19 @@ class TrainingMonitor(BaseCallback):
         return True
     
     def _create_training_plots(self):
-        """Create a comprehensive visualization showing training progress across intervals"""
+        """Create comprehensive visualizations of training progress.
+        
+        Generates four subplot figures:
+        1. Average reward trend with moving average
+        2. Success rate per interval
+        3. Recent trajectory visualization in 3D
+        4. Cumulative success rate over time
+        
+        Plots are automatically saved to the specified directory.
+        """
+
         fig = plt.figure(figsize=(20, 15))
         
-        # 1. Average reward per interval
         ax1 = fig.add_subplot(221)
         intervals = np.arange(len(self.stacked_rewards)) * self.plot_freq
         ax1.plot(intervals, self.stacked_rewards, marker='o', color='blue')
@@ -136,7 +154,6 @@ class TrainingMonitor(BaseCallback):
         ax1.grid(True)
         ax1.legend()
         
-        # 2. Success rate per interval
         ax2 = fig.add_subplot(222)
         ax2.plot(intervals, self.stacked_success_rates, marker='o', color='green')
         ax2.set_title('Success Rate per Interval')
@@ -144,7 +161,6 @@ class TrainingMonitor(BaseCallback):
         ax2.set_ylabel('Success Rate')
         ax2.grid(True)
         
-        # 3. Recent trajectory
         ax3 = fig.add_subplot(223, projection='3d')
         recent_positions = self.stacked_positions[-1] if self.stacked_positions else None
         if recent_positions is not None:
@@ -157,7 +173,6 @@ class TrainingMonitor(BaseCallback):
         ax3.grid(True)
         ax3.legend()
         
-        # 4. Culmulative average success rate
         ax4 = fig.add_subplot(224)
         cumulative_success_rate = np.cumsum(self.stacked_success_rates) / (np.arange(len(self.stacked_success_rates)) + 1)
         ax4.plot(intervals, cumulative_success_rate, marker='o', color='purple')
@@ -208,28 +223,49 @@ class TrainingMonitor(BaseCallback):
         training_metrics_df.to_csv(os.path.join(csv_dir, f'training_metrics_{timestamp}.csv'), index=False)
 
 def train(env):
+    # Generate unique identifier for this training run
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"Student_Agent_{timestamp}"
     
-    # Initialize model
-    model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
-
-    # Set up monitoring
-    monitor = TrainingMonitor(target_success=1000, plot_freq=5000)
+    # Create a separate environment for evaluation
+    # This ensures unbiased performance assessment
+    eval_env = gym.make('UnicyclePendulumStudent-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
     
-    # Start training
+    # Set up evaluation callback for periodic model assessment
+    # This will test the model in a separate environment and save the best performing version
+    eval_callback = EvalCallback(
+        eval_env,
+        best_model_save_path=os.path.join(model_dir, f"best_{run_name}"),
+        log_path=log_dir,
+        eval_freq=10000,  # Evaluate every 10,000 steps for more frequent performance checks
+        deterministic=True,  # Use deterministic actions during evaluation
+        render=False
+    )
+    
+    # Combine our monitoring callback with the evaluation callback
+    # This gives us both detailed progress tracking and objective performance assessment
+    monitor = TrainingMonitor(target_success=1000, plot_freq=5000)
+    callbacks = CallbackList([monitor, eval_callback])
+    
+    # Initialize the SAC model with default parameters
+    # We're using MLP policy as it's suitable for continuous control tasks
+    model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+    
     try:
         print("Starting training...")
-
+        # Main training loop - continues until success threshold is reached
         while True:
+            # Train in smaller chunks (10,000 steps) for better stability
+            # This allows more frequent evaluation and progress checking
             model.learn(
-                total_timesteps=int(1e5),  
-                callback=monitor,
+                total_timesteps=int(1e4),
+                callback=callbacks,
                 tb_log_name=run_name,
-                reset_num_timesteps=False
+                reset_num_timesteps=False  # Maintain continuous step counting across iterations
             )
             
-            # Check if reached target number
+            # Check if we've reached our target success count
+            # If so, save final visualizations and data before ending
             if monitor.success_count >= monitor.target_success:
                 elapsed_time = time.time() - monitor.training_start
                 print(f"\nTarget of {monitor.target_success} successes achieved!")
@@ -237,16 +273,12 @@ def train(env):
                 monitor._create_training_plots()
                 monitor._save_final_data()
                 break
-
+                
     except KeyboardInterrupt:
+        # Ensure we save our progress even if training is interrupted
         print("\nTraining interrupted by user")
         monitor._create_training_plots()
         monitor._save_final_data()
-    
-    # Save final model
-    final_model_path = os.path.join(model_dir, f"{run_name}_final")
-    model.save(final_model_path)
-    print(f"Final model saved to: {final_model_path}")
 
 def test(env, path_to_model):
     """
