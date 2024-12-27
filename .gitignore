@@ -6,7 +6,8 @@ venv/
 ENV/
 env/
 
-data/
+data/*
+!data/shared/
 
 *.egg-info/
 dist/
