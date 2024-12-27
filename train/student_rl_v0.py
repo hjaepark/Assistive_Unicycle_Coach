@@ -61,12 +61,12 @@ MAX_EPISODE_STEPS = 10000
 # Success thresholds for model evaluation and saving
 SUCCESS_THRESHOLDS = [1000]
 
-class UnicyclePositionLogger(BaseCallback):
+class TrainingProgressMonitor(BaseCallback):
     """
     Custom callback for logging unicycle positions, actions, and success information during training.
     """
     def __init__(self, run_dir, verbose=0):
-        super(UnicyclePositionLogger, self).__init__(verbose)
+        super(TrainingProgressMonitor, self).__init__(verbose)
         # Initialize directory paths for organized data storage
         self.run_dir = run_dir
         self.progress_plots_dir = os.path.join(run_dir, "plots", "progress")
@@ -123,7 +123,7 @@ class UnicyclePositionLogger(BaseCallback):
         
         self.training_times.append(time.time() - self.start_time)
 
-        # Plot progress every 1000 episodes
+        # Plot progress every 5000 episodes
         if info.get('terminal_observation') is not None:
             self.current_episode += 1
             self.episode_rewards.append(self.current_episode_reward)
@@ -131,7 +131,7 @@ class UnicyclePositionLogger(BaseCallback):
             self.episode_counts.append(self.current_episode)
             self.current_episode_reward = 0
             
-            if self.current_episode % 1000 == 0:
+            if self.current_episode % 5000 == 0:
                 self.plot_progress()
         
         return True
@@ -173,11 +173,12 @@ class UnicyclePositionLogger(BaseCallback):
         metrics_df.to_csv(os.path.join(self.metrics_dir, f'metrics_{self.current_episode}.csv'), 
                          index=False)
 
-def plot_training_results(logger, run_name):
+def plot_training_results(logger, run_name, final_plots_dir):
     """
-    Function to plot various training metrics.
+    Function to plot training metrics focusing on progress towards 1000 successes target.
+    Visualizes key performance indicators during the training process.
     """
-    fig, axs = plt.subplots(3, 2, figsize=(20, 30))
+    fig, axs = plt.subplots(2, 2, figsize=(20, 20))
     fig.suptitle(f'Training Results for {run_name}', fontsize=16)
 
     # 1. Success rate vs episodes graph
@@ -204,32 +205,11 @@ def plot_training_results(logger, run_name):
     axs[1, 1].set_ylabel('Total Training Time (seconds)')
     axs[1, 1].set_title('Training Time vs Successes')
 
-    # 5. Performance metrics comparison bar graph
-    thresholds = ['10^2', '10^3', '10^4']
-    metrics = ['Avg Reward', 'Avg Goal Time', 'Success Rate']
-    data = np.array([
-        [logger.avg_rewards[i] for i in [100, 1000, 10000]],
-        [logger.avg_goal_times[i] for i in [100, 1000, 10000]],
-        [logger.success_rates[i] for i in [100, 1000, 10000]]
-    ])
-
-    x = np.arange(len(thresholds))
-    width = 0.25
-
-    for i in range(len(metrics)):
-        axs[2, 0].bar(x + i*width, data[i], width, label=metrics[i])
-
-    axs[2, 0].set_xlabel('Success Thresholds')
-    axs[2, 0].set_ylabel('Performance Metrics')
-    axs[2, 0].set_title('Performance Metrics Comparison')
-    axs[2, 0].set_xticks(x + width)
-    axs[2, 0].set_xticklabels(thresholds)
-    axs[2, 0].legend()
-
-    # Highlighting 10^2, 10^3, 10^4 points in relevant graphs
-    for ax in [axs[0, 0], axs[0, 1], axs[1, 0], axs[1, 1]]:
-        for threshold in [100, 1000, 10000]:
-            ax.axvline(x=threshold, color='r', linestyle='--', alpha=0.5)
+    # Add a horizontal line at 1000 successes to show the target
+    for ax in [axs[1, 0], axs[1, 1]]:
+        ax.axvline(x=1000, color='g', linestyle='--', alpha=0.5, 
+                  label='Target Success Count')
+        ax.legend()
 
     plt.tight_layout()
     plt.savefig(os.path.join(final_plots_dir, 'training_results.png'))
@@ -254,12 +234,12 @@ def train(env):
     )
 
     # Set up the custom logger callback
-    unicycle_logger = UnicyclePositionLogger(run_dir)
+    unicycle_logger = TrainingProgressMonitor(run_dir)
     
     # Combine callbacks
     callbacks = [eval_callback, unicycle_logger]
 
-    # Initialize the SAC model
+    # Initialize the SAC policy student model
     model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=logs_dir)
 
     start_time = time.time()
@@ -368,7 +348,7 @@ def test(env, path_to_model):
 
 if __name__ == '__main__':
     # Set up command line argument parsing₩
-    parser = argparse.ArgumentParser(description='Train or test SAC model.')
+    parser = argparse.ArgumentParser(description='Train or test student model.')
     parser.add_argument('-train', '--train', action='store_true')
     parser.add_argument('-test', '--test', metavar='path_to_model')
     args = parser.parse_args()
