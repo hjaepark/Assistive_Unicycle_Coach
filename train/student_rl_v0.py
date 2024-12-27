@@ -20,13 +20,40 @@ import pandas as pd
 ##########################################################################################################################
 
 
-# Create directories to hold models and logs
+# Basic directory structure setup
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 data_dir = os.path.join(current_dir, "data")
-model_dir = os.path.join(data_dir, "models")
-log_dir = os.path.join(data_dir, "logs")
-csv_dir = os.path.join(data_dir, "csv")
-plot_dir = os.path.join(data_dir, "plot")
+
+# Create runs directory (top-level directory for all experiment runs)
+runs_dir = os.path.join(data_dir, "runs")
+
+# Create timestamp directory for current run
+timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+run_name = f"student_{timestamp}"
+run_dir = os.path.join(runs_dir, f"run_{timestamp}")
+
+# Setup detailed directory structure for current run
+models_dir = os.path.join(run_dir, "models")
+best_model_dir = os.path.join(models_dir, "best_model")
+checkpoint_dir = os.path.join(models_dir, "checkpoints")
+plots_dir = os.path.join(run_dir, "plots")
+progress_plots_dir = os.path.join(plots_dir, "progress")
+final_plots_dir = os.path.join(plots_dir, "final")
+logs_dir = os.path.join(run_dir, "logs")
+metrics_dir = os.path.join(run_dir, "metrics")
+
+# Additional directories for long-term storage
+archive_dir = os.path.join(data_dir, "archive")
+shared_dir = os.path.join(data_dir, "shared")
+
+# Create all directories
+directories = [
+    runs_dir, run_dir, models_dir, best_model_dir, checkpoint_dir,
+    plots_dir, progress_plots_dir, final_plots_dir, logs_dir, 
+    metrics_dir, archive_dir, shared_dir
+]
+for dir_path in directories:
+    os.makedirs(dir_path, exist_ok=True)
 
 # Create directories
 os.makedirs(model_dir, exist_ok=True)
