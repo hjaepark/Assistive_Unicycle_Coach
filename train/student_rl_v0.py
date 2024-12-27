@@ -237,9 +237,9 @@ def plot_training_results(logger, run_name):
 
 def train(env):
     """
-    Main training function for the SAC agent.
+    Main training function for the student agent.
+    Implements proper success tracking and termination conditions.
     """
-    
     # Create an evaluation environment
     eval_env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
     
@@ -264,48 +264,52 @@ def train(env):
 
     start_time = time.time()
     threshold_index = 0
-
-    # Main training loop
-    total_episodes = 0
-    current_success_count = 0
+    total_timesteps = 0
+    
+    # Main training loop with proper success tracking
     while threshold_index < len(SUCCESS_THRESHOLDS):
         # Train the model for 10000 timesteps
-        model.learn(total_timesteps=10000, reset_num_timesteps=False, tb_log_name=run_name, callback=callbacks)
+        model.learn(total_timesteps=10000, reset_num_timesteps=False, 
+                   tb_log_name=run_name, callback=callbacks)
+        total_timesteps += 10000
         
-        # Get the latest info from the environment
-        obs, info = env.reset()
-        current_success_count = info.get('success_count', current_success_count)
-        total_episodes = info.get('total_episodes', total_episodes + 1)
-        
-        print(f"Total episodes: {total_episodes}, Total Successes: {current_success_count}")
-        
-        # Check if we've reached the 100 episodes
-        if total_episodes % 100 == 0:
-            unicycle_logger.plot_progress()
+        # Get monitoring metrics from the logger
+        current_success_count = unicycle_logger.success_counts[-1] if unicycle_logger.success_counts else 0
+        total_episodes = len(unicycle_logger.episode_counts)
+        current_training_time = unicycle_logger.training_times[-1] if unicycle_logger.training_times else 0
 
-        """
-        # Check if we've reached the next success threshold
+        hours = int(current_training_time // 3600)
+        minutes = int((current_training_time % 3600) // 60)
+        seconds = int(current_training_time % 60)
+        time_format = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
+        # Print comprehensive training progress
+        print(f"Training Progress:")
+        print(f"Total timesteps: {total_timesteps}")
+        print(f"Total episodes: {total_episodes}")
+        print(f"Current success count: {current_success_count}")
+        print(f"Training time: {time_format}")
+        print("-" * 50)
+        
+        # Check if we've reached the success threshold
         if current_success_count >= SUCCESS_THRESHOLDS[threshold_index]:
             print(f"\nReached {SUCCESS_THRESHOLDS[threshold_index]} successes!")
-            model.save(f"{best_model_path}/model_{SUCCESS_THRESHOLDS[threshold_index]}_successes")
+            # Save checkpoint model
+            model.save(os.path.join(checkpoint_dir, f"model_{SUCCESS_THRESHOLDS[threshold_index]}_successes"))
             threshold_index += 1
-        """
+            
+            # If we've reached all thresholds, break the loop
+            if threshold_index >= len(SUCCESS_THRESHOLDS):
+                end_time = time.time()
+                training_time = end_time - start_time
+                print(f"\nTraining completed! All success thresholds achieved.")
+                print(f"Total training time: {training_time:.2f} seconds")
+                print(f"Total episodes: {total_episodes}")
+                break
 
-        # Check if we've reached threshold (1000)
-        # 1000 success MAX
-        if current_success_count >= SUCCESS_THRESHOLDS[-1]:
-            end_time = time.time()
-            training_time = end_time - start_time
-            print(f"\nTraining completed! All success thresholds achieved.")
-            print(f"Total training time: {training_time:.2f} seconds")
-            print(f"Total episodes: {total_episodes}")
-            break
-
-    # Update model saving path
+    # Save final model and plot results
     model.save(os.path.join(models_dir, f"{run_name}_final"))
-    
-    # Update final results plotting
-    plot_training_results(unicycle_logger, run_name, final_plots_dir)
+    plot_training_results(unicycle_logger, run_name)
 
 def test(env, path_to_model):
     """
