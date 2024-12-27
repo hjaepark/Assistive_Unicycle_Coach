@@ -3,7 +3,7 @@ from stable_baselines3 import SAC
 import os
 import argparse
 import envs
-from stable_baselines3.common.callbacks import BaseCallback, CallbackList, EvalCallback
+from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 import datetime
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -11,6 +11,14 @@ import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import pandas as pd
+
+
+##########################################################################################################################
+##########################################################################################################################
+############################### Student agent training code for the Unicycle Project #####################################
+##########################################################################################################################
+##########################################################################################################################
+
 
 # Create directories to hold models and logs
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,253 +40,236 @@ MAX_EPISODE_STEPS = 10000
 # Success thresholds for model evaluation and saving
 SUCCESS_THRESHOLDS = [1000]
 
-class TrainingMonitor(BaseCallback):
+class UnicyclePositionLogger(BaseCallback):
     """
-    Training progress monitoring and visualization callback.
-    Tracks success rate, trajectory, rewards, and creates periodic visualizations.
+    Custom callback for logging unicycle positions, actions, and success information during training.
     """
-    def __init__(self, target_success=1000, plot_freq=5000):
-        super().__init__(verbose=1)
-        self.target_success = target_success
-        self.plot_freq = plot_freq
-        
-        # Training data storage
-        self.all_positions = []          # Store unicycle positions
-        self.unicycle_roll_pitch_yaw = [] # Store unicycle orientation
-        self.pendulum_roll_pitch_yaw = [] # Store pendulum orientation
-        self.all_rewards = []            # Store rewards
-        self.all_success_counts = []     # Store cumulative successes
-        self.all_timestamps = []         # Store timing information
-        self.success_trajectories = []   # Store successful trajectories
-        self.current_trajectory = []     # Store current episode trajectory
-        self.wheel_velocities = []       # Store wheel velocities
-        
-        # Training progress tracking
-        self.stacked_rewards = []
-        self.stacked_success_rates = []
-        self.stacked_positions = []
-        
-        self.steps = 0
-        self.success_count = 0
-        self.training_start = time.time()
-        self.last_success_count = 0
-        
-    def _on_step(self):
-        """Process each training step and collect data to monitor learning progress.
-        
-        Collects and stores various metrics including:
-        - Position and orientation data of unicycle and pendulum
-        - Rewards and success counts
-        - Trajectories and timing information
-        
-        Updates visualization and progress logs at specified intervals.
-        """
+    def __init__(self, best_model_path, verbose=0):
+        super(UnicyclePositionLogger, self).__init__(verbose)
+        self.best_model_path = best_model_path
+        self.unicycle_positions = []
+        self.actions = []
+        self.timesteps = []
+        self.success_timesteps = []
+        self.success_counts = []
+        self.total_episodes = []
+        self.success_rates = []
+        self.avg_rewards = []
+        self.avg_goal_times = []
+        self.training_times = []
+        self.start_time = time.time()
 
-        self.steps += 1
-        
-        # Extract current state information from environment
+        # Progress update variables
+        self.episode_rewards = []
+        self.episode_successes = []
+        self.episode_counts = []
+        self.current_episode = 0
+        self.current_episode_reward = 0
+
+    def _on_step(self):
+        """
+        This method is called at each step of the training process.
+        It logs various metrics for later analysis and plotting.
+        """
         obs = self.locals['new_obs'][0]
         info = self.locals['infos'][0]
-        reward = self.locals['rewards'][0]
+        self.current_episode_reward += info['reward']
         
-        # Parse observation into position and orientation components
-        position = obs[:3]
-        unicycle_quat = obs[3:7]
-        pendulum_quat = obs[7:11]
-        wheel_velocity = obs[21]
         
-        unicycle_euler = Rotation.from_quat(np.roll(unicycle_quat, -1)).as_euler('xyz')
-        pendulum_euler = Rotation.from_quat(np.roll(pendulum_quat, -1)).as_euler('xyz')
+        self.unicycle_positions.append(obs[:3])  # Log unicycle position
+        self.actions.append(self.locals['actions'][0])  # Log action taken
+        self.timesteps.append(self.num_timesteps)  # Log current timestep
         
-        # Store in list
-        self.all_positions.append(position)
-        self.current_trajectory.append(position)
-        self.unicycle_roll_pitch_yaw.append(unicycle_euler)
-        self.pendulum_roll_pitch_yaw.append(pendulum_euler)
-        self.wheel_velocities.append(wheel_velocity)
-        self.all_rewards.append(reward)
-        self.success_count = info['success_count']
-        self.all_success_counts.append(self.success_count)
-        self.all_timestamps.append(time.time() - self.training_start)
+        self.success_counts.append(info['success_count'])
+        self.total_episodes.append(info['total_episodes'])
         
-        # Store trajectory once reached goal
-        if info.get('goal_reached', False):
-            self.success_trajectories.append(np.array(self.current_trajectory))
-            self.current_trajectory = []
+        # Calculate success rate over last 100 episodes
+        recent_successes = sum([1 for s in self.success_counts[-100:] if s > 0])
+        self.success_rates.append(recent_successes / min(100, len(self.success_counts)))
         
-        if self.steps % self.plot_freq == 0:
-            # Average reward calculation
-            current_rewards = self.all_rewards[-self.plot_freq:]
-            avg_reward = np.mean(current_rewards) if current_rewards else 0
-            self.stacked_rewards.append(avg_reward)
-            
-            # Success rate calculation
-            success_in_interval = self.success_count - self.last_success_count
-            success_rate = success_in_interval / self.plot_freq
-            self.stacked_success_rates.append(success_rate)
-            
-            # Store current position
-            self.stacked_positions.append(np.array(self.all_positions[-self.plot_freq:]))
-            
-            self.last_success_count = self.success_count
+        # Calculate average reward over last 100 episodes
+        self.avg_rewards.append(np.mean([info['reward'] for info in self.locals['infos'][-100:]]))
+        
+        # Calculate average goal reach time
+        if info['goal_reached']:
+            self.avg_goal_times.append(info['steps'])
+        else:
+            self.avg_goal_times.append(self.avg_goal_times[-1] if self.avg_goal_times else 0)
+        
+        self.training_times.append(time.time() - self.start_time)
 
-            self._create_training_plots()
-            self._log_progress()
+        # Plot progress every 1000 episodes
+        if info.get('terminal_observation') is not None:
+            self.current_episode += 1
+            self.episode_rewards.append(self.current_episode_reward)
+            self.episode_successes.append(info['success_count'])
+            self.episode_counts.append(self.current_episode)
+            self.current_episode_reward = 0
             
+            if self.current_episode % 1000 == 0:
+                self.plot_progress()
+        
         return True
     
-    def _create_training_plots(self):
-        """Create comprehensive visualizations of training progress.
-        
-        Generates four subplot figures:
-        1. Average reward trend with moving average
-        2. Success rate per interval
-        3. Recent trajectory visualization in 3D
-        4. Cumulative success rate over time
-        
-        Plots are automatically saved to the specified directory.
-        """
-
-        fig = plt.figure(figsize=(20, 15))
-        
-        ax1 = fig.add_subplot(221)
-        intervals = np.arange(len(self.stacked_rewards)) * self.plot_freq
-        ax1.plot(intervals, self.stacked_rewards, marker='o', color='blue')
-        ax1.set_title('Average Reward per Interval')
-        ax1.set_xlabel('Training Steps')
-        ax1.set_ylabel('Average Reward')
- 
-        if len(self.stacked_rewards) > 5:
-            moving_avg = pd.Series(self.stacked_rewards).rolling(window=5).mean()
-            ax1.plot(intervals, moving_avg, color='red', linestyle='--', label='Moving Average')
-        ax1.grid(True)
-        ax1.legend()
-        
-        ax2 = fig.add_subplot(222)
-        ax2.plot(intervals, self.stacked_success_rates, marker='o', color='green')
-        ax2.set_title('Success Rate per Interval')
-        ax2.set_xlabel('Training Steps')
-        ax2.set_ylabel('Success Rate')
-        ax2.grid(True)
-        
-        ax3 = fig.add_subplot(223, projection='3d')
-        recent_positions = self.stacked_positions[-1] if self.stacked_positions else None
-        if recent_positions is not None:
-            ax3.plot(recent_positions[:, 0], recent_positions[:, 1], recent_positions[:, 2], 
-                    color='blue', alpha=0.6, label='Recent Trajectory')
-            ax3.set_title(f'Recent Trajectory (Steps {self.steps-self.plot_freq} to {self.steps})')
-        ax3.set_xlabel('X Position')
-        ax3.set_ylabel('Y Position')
-        ax3.set_zlabel('Z Position')
-        ax3.grid(True)
-        ax3.legend()
-        
-        ax4 = fig.add_subplot(224)
-        cumulative_success_rate = np.cumsum(self.stacked_success_rates) / (np.arange(len(self.stacked_success_rates)) + 1)
-        ax4.plot(intervals, cumulative_success_rate, marker='o', color='purple')
-        ax4.set_title('Cumulative Average Success Rate')
-        ax4.set_xlabel('Training Steps')
-        ax4.set_ylabel('Success Rate')
-        ax4.grid(True)
-        
-        plt.tight_layout()
-        plt.savefig(os.path.join(plot_dir, f'training_progress_{self.steps}.png'))
+    def plot_progress(self):
+        plt.figure(figsize=(12, 8))
+        plt.plot(self.episode_counts, self.episode_successes, 'b.-')
+        plt.title('Cumulative Successes over Episodes')
+        plt.xlabel('Episodes')
+        plt.ylabel('Cumulative Successes')
+        plt.grid(True)
+        plt.savefig(f'{self.best_model_path}/progress_{self.current_episode}.png')
         plt.close()
-    
-    def _log_progress(self):
-        """Log current training progress"""
-        elapsed_time = time.time() - self.training_start
-        print(f"\nTraining Progress - Step {self.steps}:")
-        print(f"Success count: {self.success_count}")
-        print(f"Time elapsed: {elapsed_time:.2f} seconds")
-        print(f"Success rate: {self.success_count/self.steps:.4f}")
-    
-    def _save_final_data(self):
-        """Save all training data to CSV files for later analysis"""
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Save position and orientation data
-        position_orientation_df = pd.DataFrame({
-            'step': range(len(self.all_positions)),
-            'x': [p[0] for p in self.all_positions],
-            'y': [p[1] for p in self.all_positions],
-            'z': [p[2] for p in self.all_positions],
-            'unicycle_roll': [rpy[0] for rpy in self.unicycle_roll_pitch_yaw],
-            'unicycle_pitch': [rpy[1] for rpy in self.unicycle_roll_pitch_yaw],
-            'unicycle_yaw': [rpy[2] for rpy in self.unicycle_roll_pitch_yaw],
-            'pendulum_roll': [rpy[0] for rpy in self.pendulum_roll_pitch_yaw],
-            'pendulum_pitch': [rpy[1] for rpy in self.pendulum_roll_pitch_yaw],
-            'pendulum_yaw': [rpy[2] for rpy in self.pendulum_roll_pitch_yaw],
-            'wheel_velocity': self.wheel_velocities
-        })
-        position_orientation_df.to_csv(os.path.join(csv_dir, f'motion_data_{timestamp}.csv'), index=False)
-        
-        # Save training metrics
-        training_metrics_df = pd.DataFrame({
-            'step': range(len(self.all_rewards)),
-            'reward': self.all_rewards,
-            'success_count': self.all_success_counts,
-            'time': self.all_timestamps
-        })
-        training_metrics_df.to_csv(os.path.join(csv_dir, f'training_metrics_{timestamp}.csv'), index=False)
+
+        plt.figure(figsize=(12, 8))
+        plt.plot(self.episode_counts, self.episode_rewards, 'r.-')
+        plt.title('Episode Rewards over Time')
+        plt.xlabel('Episodes')
+        plt.ylabel('Episode Reward')
+        plt.grid(True)
+        plt.savefig(f'{self.best_model_path}/rewards_{self.current_episode}.png')
+        plt.close()
+
+def plot_training_results(logger, run_name):
+    """
+    Function to plot various training metrics.
+    """
+    fig, axs = plt.subplots(3, 2, figsize=(20, 30))
+    fig.suptitle(f'Training Results for {run_name}', fontsize=16)
+
+    # 1. Success rate vs episodes graph
+    axs[0, 0].plot(logger.total_episodes, logger.success_rates)
+    axs[0, 0].set_xlabel('Total Episodes')
+    axs[0, 0].set_ylabel('Success Rate')
+    axs[0, 0].set_title('Success Rate vs Episodes')
+
+    # 2. Average reward vs episodes graph
+    axs[0, 1].plot(logger.total_episodes, logger.avg_rewards)
+    axs[0, 1].set_xlabel('Total Episodes')
+    axs[0, 1].set_ylabel('Average Reward')
+    axs[0, 1].set_title('Average Reward vs Episodes')
+
+    # 3. Goal reach time vs success count graph
+    axs[1, 0].plot(logger.success_counts, logger.avg_goal_times)
+    axs[1, 0].set_xlabel('Cumulative Successes')
+    axs[1, 0].set_ylabel('Average Goal Reach Time (steps)')
+    axs[1, 0].set_title('Goal Reach Time vs Successes')
+
+    # 4. Training time vs success count graph
+    axs[1, 1].plot(logger.success_counts, logger.training_times)
+    axs[1, 1].set_xlabel('Cumulative Successes')
+    axs[1, 1].set_ylabel('Total Training Time (seconds)')
+    axs[1, 1].set_title('Training Time vs Successes')
+
+    # 5. Performance metrics comparison bar graph
+    thresholds = ['10^2', '10^3', '10^4']
+    metrics = ['Avg Reward', 'Avg Goal Time', 'Success Rate']
+    data = np.array([
+        [logger.avg_rewards[i] for i in [100, 1000, 10000]],
+        [logger.avg_goal_times[i] for i in [100, 1000, 10000]],
+        [logger.success_rates[i] for i in [100, 1000, 10000]]
+    ])
+
+    x = np.arange(len(thresholds))
+    width = 0.25
+
+    for i in range(len(metrics)):
+        axs[2, 0].bar(x + i*width, data[i], width, label=metrics[i])
+
+    axs[2, 0].set_xlabel('Success Thresholds')
+    axs[2, 0].set_ylabel('Performance Metrics')
+    axs[2, 0].set_title('Performance Metrics Comparison')
+    axs[2, 0].set_xticks(x + width)
+    axs[2, 0].set_xticklabels(thresholds)
+    axs[2, 0].legend()
+
+    # Highlighting 10^2, 10^3, 10^4 points in relevant graphs
+    for ax in [axs[0, 0], axs[0, 1], axs[1, 0], axs[1, 1]]:
+        for threshold in [100, 1000, 10000]:
+            ax.axvline(x=threshold, color='r', linestyle='--', alpha=0.5)
+
+    plt.tight_layout()
+    plt.savefig(f'{logger.best_model_path}/training_results.png')
+    plt.close()
 
 def train(env):
-    # Generate unique identifier for this training run
+    """
+    Main training function for the SAC agent.
+    """
+    # Generate a unique timestamp for this training run
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_name = f"Student_Agent_{timestamp}"
+    run_name = f"SAC_{timestamp}"
     
-    # Create a separate environment for evaluation
-    # This ensures unbiased performance assessment
+    # Create a directory to save the best models
+    best_model_path = f"{model_dir}/best_{run_name}"
+    os.makedirs(best_model_path, exist_ok=True)
+    
+    # Create an evaluation environment
     eval_env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
     
-    # Set up evaluation callback for periodic model assessment
-    # This will test the model in a separate environment and save the best performing version
+    # Set up the evaluation callback
     eval_callback = EvalCallback(
-        eval_env,
-        best_model_save_path=os.path.join(model_dir, f"best_{run_name}"),
-        log_path=log_dir,
-        eval_freq=10000,  # Evaluate every 10,000 steps for more frequent performance checks
-        deterministic=True,  # Use deterministic actions during evaluation
-        render=False
+        eval_env, 
+        best_model_save_path=best_model_path,
+        log_path=log_dir, 
+        eval_freq=10000,
+        deterministic=True, 
+        render=False,
     )
+
+    # Set up the custom logger callback
+    unicycle_logger = UnicyclePositionLogger(best_model_path)
     
-    # Combine our monitoring callback with the evaluation callback
-    # This gives us both detailed progress tracking and objective performance assessment
-    monitor = TrainingMonitor(target_success=1000, plot_freq=5000)
-    callbacks = CallbackList([monitor, eval_callback])
-    
-    # Initialize the SAC model with default parameters
-    # We're using MLP policy as it's suitable for continuous control tasks
+    # Combine callbacks
+    callbacks = [eval_callback, unicycle_logger]
+
+    # Initialize the SAC model
     model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+
+    start_time = time.time()
+    threshold_index = 0
+
+    # Main training loop
+    total_episodes = 0
+    current_success_count = 0
+    while threshold_index < len(SUCCESS_THRESHOLDS):
+        # Train the model for 10000 timesteps
+        model.learn(total_timesteps=10000, reset_num_timesteps=False, tb_log_name=run_name, callback=callbacks)
+        
+        # Get the latest info from the environment
+        obs, info = env.reset()
+        current_success_count = info.get('success_count', current_success_count)
+        total_episodes = info.get('total_episodes', total_episodes + 1)
+        
+        print(f"Total episodes: {total_episodes}, Total Successes: {current_success_count}")
+        
+        # Check if we've reached the 100 episodes
+        if total_episodes % 100 == 0:
+            unicycle_logger.plot_progress()
+
+        """
+        # Check if we've reached the next success threshold
+        if current_success_count >= SUCCESS_THRESHOLDS[threshold_index]:
+            print(f"\nReached {SUCCESS_THRESHOLDS[threshold_index]} successes!")
+            model.save(f"{best_model_path}/model_{SUCCESS_THRESHOLDS[threshold_index]}_successes")
+            threshold_index += 1
+        """
+
+        # Check if we've reached threshold (1000)
+        # 1000 success MAX
+        if current_success_count >= SUCCESS_THRESHOLDS[-1]:
+            end_time = time.time()
+            training_time = end_time - start_time
+            print(f"\nTraining completed! All success thresholds achieved.")
+            print(f"Total training time: {training_time:.2f} seconds")
+            print(f"Total episodes: {total_episodes}")
+            break
+
+    # Save the final model
+    model.save(f"{model_dir}/{run_name}_final")
     
-    try:
-        print("Starting training...")
-        # Main training loop - continues until success threshold is reached
-        while True:
-            # Train in smaller chunks (10,000 steps) for better stability
-            # This allows more frequent evaluation and progress checking
-            model.learn(
-                total_timesteps=int(1e4),
-                callback=callbacks,
-                tb_log_name=run_name,
-                reset_num_timesteps=False  # Maintain continuous step counting across iterations
-            )
-            
-            # Check if we've reached our target success count
-            # If so, save final visualizations and data before ending
-            if monitor.success_count >= monitor.target_success:
-                elapsed_time = time.time() - monitor.training_start
-                print(f"\nTarget of {monitor.target_success} successes achieved!")
-                print(f"Training completed in {elapsed_time:.2f} seconds")
-                monitor._create_training_plots()
-                monitor._save_final_data()
-                break
-                
-    except KeyboardInterrupt:
-        # Ensure we save our progress even if training is interrupted
-        print("\nTraining interrupted by user")
-        monitor._create_training_plots()
-        monitor._save_final_data()
+    # Generate and save the training results plots
+    plot_training_results(unicycle_logger, run_name)
 
 def test(env, path_to_model):
     """
@@ -336,7 +327,7 @@ def test(env, path_to_model):
         print("Episode ended by truncation (max steps reached).")
 
 if __name__ == '__main__':
-    # Set up command line argument parsing
+    # Set up command line argument parsing₩
     parser = argparse.ArgumentParser(description='Train or test SAC model.')
     parser.add_argument('-train', '--train', action='store_true')
     parser.add_argument('-test', '--test', metavar='path_to_model')
@@ -351,21 +342,6 @@ if __name__ == '__main__':
     if args.test:
         if os.path.isfile(args.test):
             test_env = gym.make('Student-v0', render_mode='human', max_episode_steps=MAX_EPISODE_STEPS)
-            
-            import glfw
-            if glfw.init():
-                glfw.window_hint(glfw.RESIZABLE, glfw.TRUE)
-                glfw.window_hint(glfw.VISIBLE, glfw.TRUE)
-            
-            obs, info = test_env.reset()
-            
-            test_env.render()
-
-            window = glfw.get_current_context()
-            if window:
-                glfw.set_window_size(window, 1280, 720)
-            
             test(test_env, path_to_model=args.test)
         else:
             print(f'{args.test} not found.')
-
