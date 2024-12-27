@@ -55,12 +55,6 @@ directories = [
 for dir_path in directories:
     os.makedirs(dir_path, exist_ok=True)
 
-# Create directories
-os.makedirs(model_dir, exist_ok=True)
-os.makedirs(log_dir, exist_ok=True)
-os.makedirs(csv_dir, exist_ok=True)
-os.makedirs(plot_dir, exist_ok=True)
-
 # Maximum number of steps per episode
 MAX_EPISODE_STEPS = 10000
 
@@ -71,9 +65,13 @@ class UnicyclePositionLogger(BaseCallback):
     """
     Custom callback for logging unicycle positions, actions, and success information during training.
     """
-    def __init__(self, best_model_path, verbose=0):
+    def __init__(self, run_dir, verbose=0):
         super(UnicyclePositionLogger, self).__init__(verbose)
-        self.best_model_path = best_model_path
+        # Initialize directory paths for organized data storage
+        self.run_dir = run_dir
+        self.progress_plots_dir = os.path.join(run_dir, "plots", "progress")
+        self.metrics_dir = os.path.join(run_dir, "metrics")
+
         self.unicycle_positions = []
         self.actions = []
         self.timesteps = []
@@ -139,23 +137,41 @@ class UnicyclePositionLogger(BaseCallback):
         return True
     
     def plot_progress(self):
+        """
+        Updated plotting function to save files in the new directory structure
+        """
+        # Plot and save success graph
         plt.figure(figsize=(12, 8))
         plt.plot(self.episode_counts, self.episode_successes, 'b.-')
         plt.title('Cumulative Successes over Episodes')
         plt.xlabel('Episodes')
         plt.ylabel('Cumulative Successes')
         plt.grid(True)
-        plt.savefig(f'{self.best_model_path}/progress_{self.current_episode}.png')
+        plt.savefig(os.path.join(self.progress_plots_dir, f'progress_{self.current_episode}.png'))
         plt.close()
 
+        # Plot and save rewards graph
         plt.figure(figsize=(12, 8))
         plt.plot(self.episode_counts, self.episode_rewards, 'r.-')
         plt.title('Episode Rewards over Time')
         plt.xlabel('Episodes')
         plt.ylabel('Episode Reward')
         plt.grid(True)
-        plt.savefig(f'{self.best_model_path}/rewards_{self.current_episode}.png')
+        plt.savefig(os.path.join(self.progress_plots_dir, f'rewards_{self.current_episode}.png'))
         plt.close()
+
+        # Save metrics to CSV
+        metrics_data = {
+            'episode': self.episode_counts,
+            'success_count': self.episode_successes,
+            'reward': self.episode_rewards,
+            'success_rate': self.success_rates,
+            'avg_reward': self.avg_rewards,
+            'avg_goal_time': self.avg_goal_times
+        }
+        metrics_df = pd.DataFrame(metrics_data)
+        metrics_df.to_csv(os.path.join(self.metrics_dir, f'metrics_{self.current_episode}.csv'), 
+                         index=False)
 
 def plot_training_results(logger, run_name):
     """
@@ -216,20 +232,13 @@ def plot_training_results(logger, run_name):
             ax.axvline(x=threshold, color='r', linestyle='--', alpha=0.5)
 
     plt.tight_layout()
-    plt.savefig(f'{logger.best_model_path}/training_results.png')
+    plt.savefig(os.path.join(final_plots_dir, 'training_results.png'))
     plt.close()
 
 def train(env):
     """
     Main training function for the SAC agent.
     """
-    # Generate a unique timestamp for this training run
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_name = f"SAC_{timestamp}"
-    
-    # Create a directory to save the best models
-    best_model_path = f"{model_dir}/best_{run_name}"
-    os.makedirs(best_model_path, exist_ok=True)
     
     # Create an evaluation environment
     eval_env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
@@ -237,21 +246,21 @@ def train(env):
     # Set up the evaluation callback
     eval_callback = EvalCallback(
         eval_env, 
-        best_model_save_path=best_model_path,
-        log_path=log_dir, 
+        best_model_save_path=best_model_dir,
+        log_path=logs_dir, 
         eval_freq=10000,
         deterministic=True, 
         render=False,
     )
 
     # Set up the custom logger callback
-    unicycle_logger = UnicyclePositionLogger(best_model_path)
+    unicycle_logger = UnicyclePositionLogger(run_dir)
     
     # Combine callbacks
     callbacks = [eval_callback, unicycle_logger]
 
     # Initialize the SAC model
-    model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+    model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=logs_dir)
 
     start_time = time.time()
     threshold_index = 0
@@ -292,11 +301,11 @@ def train(env):
             print(f"Total episodes: {total_episodes}")
             break
 
-    # Save the final model
-    model.save(f"{model_dir}/{run_name}_final")
+    # Update model saving path
+    model.save(os.path.join(models_dir, f"{run_name}_final"))
     
-    # Generate and save the training results plots
-    plot_training_results(unicycle_logger, run_name)
+    # Update final results plotting
+    plot_training_results(unicycle_logger, run_name, final_plots_dir)
 
 def test(env, path_to_model):
     """
