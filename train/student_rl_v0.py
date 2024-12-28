@@ -72,24 +72,31 @@ class TrainingProgressMonitor(BaseCallback):
         self.progress_plots_dir = os.path.join(run_dir, "plots", "progress")
         self.metrics_dir = os.path.join(run_dir, "metrics")
 
+        # Essential tracking variables
         self.unicycle_positions = []
         self.actions = []
         self.timesteps = []
-        self.success_timesteps = []
         self.success_counts = []
-        self.total_episodes = []
         self.success_rates = []
-        self.avg_rewards = []
         self.avg_goal_times = []
-        self.training_times = []
-        self.start_time = time.time()
-
-        # Progress update variables
-        self.episode_rewards = []
-        self.episode_successes = []
+        
+        # Episode tracking
         self.episode_counts = []
+        self.episode_rewards = []
         self.current_episode = 0
         self.current_episode_reward = 0
+        
+        # Time tracking
+        self.training_times = []
+        self.start_time = time.time()
+        
+        # Performance monitoring
+        self.timestep_rewards = []
+        self.roll_angles = []
+        self.pitch_angles = []
+        self.yaw_angles = []
+        self.wheel_velocities = []
+        self.steering_angles = []
 
     def _on_step(self):
         """
@@ -98,118 +105,167 @@ class TrainingProgressMonitor(BaseCallback):
         """
         obs = self.locals['new_obs'][0]
         info = self.locals['infos'][0]
+        action = self.locals['actions'][0]
+
+        # Update current eposide reward
         self.current_episode_reward += info['reward']
         
-        
-        self.unicycle_positions.append(obs[:3])  # Log unicycle position
-        self.actions.append(self.locals['actions'][0])  # Log action taken
-        self.timesteps.append(self.num_timesteps)  # Log current timestep
-        
+        # Store basic tracking infos
+        self.unicycle_positions.append(obs[:3])
+        self.actions.append(action)
+        self.timesteps.append(self.num_timesteps)
         self.success_counts.append(info['success_count'])
-        self.total_episodes.append(info['total_episodes'])
         
-        # Calculate success rate over last 100 episodes
+        # Update urrent timestep reward
+        self.timestep_rewards.append(info['reward'])
+
+        # Extract and store angle infos
+        quat = obs[3:7]
+        euler = Rotation.from_quat(np.roll(quat, -1)).as_euler('xyz')
+        self.roll_angles.append(euler[0])
+        self.pitch_angles.append(euler[1])
+        self.yaw_angles.append(euler[2])     
+
+        # Store control infos
+        self.wheel_velocities.append(obs[21])
+        self.steering_angles.append(action[1])
+
+        # Calculate success rates
         recent_successes = sum([1 for s in self.success_counts[-100:] if s > 0])
-        self.success_rates.append(recent_successes / min(100, len(self.success_counts)))
+        self.success_rates.append(recent_successes / min(100, len(self.success_counts)))   
         
-        # Calculate average reward over last 100 episodes
-        self.avg_rewards.append(np.mean([info['reward'] for info in self.locals['infos'][-100:]]))
-        
-        # Calculate average goal reach time
+        # Calculate goal reaching time
         if info['goal_reached']:
             self.avg_goal_times.append(info['steps'])
         else:
             self.avg_goal_times.append(self.avg_goal_times[-1] if self.avg_goal_times else 0)
-        
+
+        # Store training time
         self.training_times.append(time.time() - self.start_time)
 
-        # Plot progress every 5000 episodes
+        # Episode ends & plot graph every 1000 episodes
         if info.get('terminal_observation') is not None:
             self.current_episode += 1
             self.episode_rewards.append(self.current_episode_reward)
-            self.episode_successes.append(info['success_count'])
             self.episode_counts.append(self.current_episode)
             self.current_episode_reward = 0
             
-            if self.current_episode % 5000 == 0:
+            if self.current_episode % 1000 == 0:
                 self.plot_progress()
-        
+
         return True
-    
+
     def plot_progress(self):
         """
-        Updated plotting function to save files in the new directory structure
+        Enhanced visualization method with 6 subplots showing different aspects of training
         """
-        # Plot and save success graph
-        plt.figure(figsize=(12, 8))
-        plt.plot(self.episode_counts, self.episode_successes, 'b.-')
-        plt.title('Cumulative Successes over Episodes')
-        plt.xlabel('Episodes')
-        plt.ylabel('Cumulative Successes')
-        plt.grid(True)
-        plt.savefig(os.path.join(self.progress_plots_dir, f'progress_{self.current_episode}.png'))
+        fig = plt.figure(figsize=(20, 30))
+        
+        # Plot 1: Reward per Timestep (top left)
+        ax1 = fig.add_subplot(3, 2, 1)
+        ax1.plot(self.timesteps, self.timestep_rewards)
+        ax1.set_xlabel('Timesteps')
+        ax1.set_ylabel('Cumulative Reward')
+        ax1.set_title('Reward per Timestep')
+        ax1.grid(True)
+        
+        # Plot 2: Reward per Episode (top right)
+        ax2 = fig.add_subplot(3, 2, 2)
+        ax2.plot(self.episode_counts, self.episode_rewards)
+        ax2.set_xlabel('Episodes')
+        ax2.set_ylabel('Episode Reward')
+        ax2.set_title('Reward per Episode')
+        ax2.grid(True)
+        
+        # Plot 3: 3D Trajectory (middle left)
+        ax3 = fig.add_subplot(3, 2, 3, projection='3d')
+        positions = np.array(self.unicycle_positions)
+        ax3.plot3D(positions[:, 0], positions[:, 1], positions[:, 2])
+        ax3.set_xlabel('X')
+        ax3.set_ylabel('Y')
+        ax3.set_zlabel('Z')
+        ax3.set_title('Unicycle 3D Trajectory')
+        
+        # Plot 4: Control Inputs (middle right)
+        ax4 = fig.add_subplot(3, 2, 4)
+        ax4.plot(self.timesteps, self.wheel_velocities, label='Wheel Velocity')
+        ax4.plot(self.timesteps, self.steering_angles, label='Steering Angle')
+        ax4.set_xlabel('Timesteps')
+        ax4.set_ylabel('Control Input')
+        ax4.set_title('Control Inputs Over Time')
+        ax4.legend()
+        ax4.grid(True)
+        
+        # Plot 5: Angular Changes (bottom left)
+        ax5 = fig.add_subplot(3, 2, 5)
+        ax5.plot(self.timesteps, self.roll_angles, label='Roll')
+        ax5.plot(self.timesteps, self.pitch_angles, label='Pitch')
+        ax5.plot(self.timesteps, self.yaw_angles, label='Yaw')
+        ax5.set_xlabel('Timesteps')
+        ax5.set_ylabel('Angles (rad)')
+        ax5.set_title('Angular Changes')
+        ax5.legend()
+        ax5.grid(True)
+        
+        # Plot 6: Action Distribution (bottom right)
+        ax6 = fig.add_subplot(3, 2, 6)
+        actions = np.array(self.actions)
+        ax6.hist2d(actions[:, 0], actions[:, 1], bins=30)
+        ax6.set_xlabel('Action 1')
+        ax6.set_ylabel('Action 2')
+        ax6.set_title('Action Distribution')
+        
+        plt.tight_layout()
+        plot_path = os.path.join(self.progress_plots_dir, f'progress_{self.current_episode}.png')
+        plt.savefig(plot_path)
         plt.close()
-
-        # Plot and save rewards graph
-        plt.figure(figsize=(12, 8))
-        plt.plot(self.episode_counts, self.episode_rewards, 'r.-')
-        plt.title('Episode Rewards over Time')
-        plt.xlabel('Episodes')
-        plt.ylabel('Episode Reward')
-        plt.grid(True)
-        plt.savefig(os.path.join(self.progress_plots_dir, f'rewards_{self.current_episode}.png'))
-        plt.close()
-
-        # Save metrics to CSV
-        metrics_data = {
-            'episode': self.episode_counts,
-            'success_count': self.episode_successes,
-            'reward': self.episode_rewards,
-            'success_rate': self.success_rates,
-            'avg_reward': self.avg_rewards,
-            'avg_goal_time': self.avg_goal_times
-        }
-        metrics_df = pd.DataFrame(metrics_data)
-        metrics_df.to_csv(os.path.join(self.metrics_dir, f'metrics_{self.current_episode}.csv'), 
-                         index=False)
-
+    
 def plot_training_results(logger, run_name, final_plots_dir):
-    """
-    Function to plot training metrics focusing on progress towards 1000 successes target.
-    Visualizes key performance indicators during the training process.
-    """
-    fig, axs = plt.subplots(2, 2, figsize=(20, 20))
-    fig.suptitle(f'Training Results for {run_name}', fontsize=16)
+    num_episodes = len(logger.episode_counts)
+    aligned_success_rates = logger.success_rates[-num_episodes:]
+    aligned_goal_times = logger.avg_goal_times[-num_episodes:]
+    last_episode_start = len(logger.unicycle_positions) - logger.episode_counts[-1]
+    final_positions = np.array(logger.unicycle_positions[last_episode_start:])
 
-    # 1. Success rate vs episodes graph
-    axs[0, 0].plot(logger.total_episodes, logger.success_rates)
-    axs[0, 0].set_xlabel('Total Episodes')
-    axs[0, 0].set_ylabel('Success Rate')
-    axs[0, 0].set_title('Success Rate vs Episodes')
+    fig = plt.figure(figsize=(20, 20))
+    
+    # Plot 1: Success Rate Progress (top left)
+    ax1 = fig.add_subplot(2, 2, 1)
+    ax1.plot(logger.episode_counts, aligned_success_rates)
+    ax1.set_xlabel('Total Episodes')
+    ax1.set_ylabel('Success Rate')
+    ax1.set_title('Learning Progress')
+    ax1.grid(True)
 
-    # 2. Average reward vs episodes graph
-    axs[0, 1].plot(logger.total_episodes, logger.avg_rewards)
-    axs[0, 1].set_xlabel('Total Episodes')
-    axs[0, 1].set_ylabel('Average Reward')
-    axs[0, 1].set_title('Average Reward vs Episodes')
+    # Plot 2: 3D Trajectory (top right)
+    ax2 = fig.add_subplot(2, 2, 2, projection='3d')
+    positions = np.array(logger.unicycle_positions)
+    ax2.plot3D(positions[:, 0], positions[:, 1], positions[:, 2])
+    ax2.set_xlabel('X')
+    ax2.set_ylabel('Y')
+    ax2.set_zlabel('Z')
+    ax2.set_title('Final Episode Trajectory')
 
-    # 3. Goal reach time vs success count graph
-    axs[1, 0].plot(logger.success_counts, logger.avg_goal_times)
-    axs[1, 0].set_xlabel('Cumulative Successes')
-    axs[1, 0].set_ylabel('Average Goal Reach Time (steps)')
-    axs[1, 0].set_title('Goal Reach Time vs Successes')
+    # Plot 3: Goal Reach Time (bottom left)
+    ax3 = fig.add_subplot(2, 2, 3)
+    ax3.plot(logger.success_counts, aligned_goal_times)
+    ax3.set_xlabel('Cumulative Successes')
+    ax3.set_ylabel('Average Goal Reach Time (steps)')
+    ax3.set_title('Task Efficiency')
+    ax3.grid(True)
+    ax3.axvline(x=1000, color='g', linestyle='--', alpha=0.5,
+                label='Target Success Count')
+    ax3.legend()
 
-    # 4. Training time vs success count graph
-    axs[1, 1].plot(logger.success_counts, logger.training_times)
-    axs[1, 1].set_xlabel('Cumulative Successes')
-    axs[1, 1].set_ylabel('Total Training Time (seconds)')
-    axs[1, 1].set_title('Training Time vs Successes')
-
-    # Add a horizontal line at 1000 successes to show the target
-    for ax in [axs[1, 0], axs[1, 1]]:
-        ax.axvline(x=1000, color='g', linestyle='--', alpha=0.5, 
-                  label='Target Success Count')
-        ax.legend()
+    # Plot 4: Angular Changes (bottom right)
+    ax4 = fig.add_subplot(2, 2, 4)
+    ax4.plot(logger.timesteps[-1000:], logger.roll_angles[-1000:], label='Roll')
+    ax4.plot(logger.timesteps[-1000:], logger.pitch_angles[-1000:], label='Pitch')
+    ax4.set_xlabel('Timesteps')
+    ax4.set_ylabel('Angles (rad)')
+    ax4.set_title('Final Episode Stability')
+    ax4.legend()
+    ax4.grid(True)
 
     plt.tight_layout()
     plt.savefig(os.path.join(final_plots_dir, 'training_results.png'))
@@ -289,7 +345,7 @@ def train(env):
 
     # Save final model and plot results
     model.save(os.path.join(models_dir, f"{run_name}_final"))
-    plot_training_results(unicycle_logger, run_name)
+    plot_training_results(unicycle_logger, run_name, final_plots_dir)
 
 def test(env, path_to_model):
     """
