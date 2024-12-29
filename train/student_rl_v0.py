@@ -221,55 +221,69 @@ class TrainingProgressMonitor(BaseCallback):
         plt.close()
     
 def plot_training_results(logger, run_name, final_plots_dir):
-    num_episodes = len(logger.episode_counts)
-    aligned_success_rates = logger.success_rates[-num_episodes:]
-    aligned_goal_times = logger.avg_goal_times[-num_episodes:]
-    last_episode_start = len(logger.unicycle_positions) - logger.episode_counts[-1]
-    final_positions = np.array(logger.unicycle_positions[last_episode_start:])
+    try:
+        num_episodes = len(logger.episode_counts)
+        aligned_success_rates = logger.success_rates[-num_episodes:]
+        aligned_goal_times = logger.avg_goal_times[-num_episodes:]
+        
+        episode_success_counts = []
+        current_count = 0
+        for count in logger.success_counts:
+            if count > current_count:
+                current_count = count
+            episode_success_counts.append(current_count)
+        aligned_success_counts = episode_success_counts[-num_episodes:]
 
-    fig = plt.figure(figsize=(20, 20))
-    
-    # Plot 1: Success Rate Progress (top left)
-    ax1 = fig.add_subplot(2, 2, 1)
-    ax1.plot(logger.episode_counts, aligned_success_rates)
-    ax1.set_xlabel('Total Episodes')
-    ax1.set_ylabel('Success Rate')
-    ax1.set_title('Learning Progress')
-    ax1.grid(True)
+        fig = plt.figure(figsize=(20, 20))
+        
+        # Plot 1: Success Rate Progress (top left)
+        ax1 = fig.add_subplot(2, 2, 1)
+        ax1.plot(logger.episode_counts, aligned_success_rates)
+        ax1.set_xlabel('Total Episodes')
+        ax1.set_ylabel('Success Rate')
+        ax1.set_title('Learning Progress')
+        ax1.grid(True)
 
-    # Plot 2: 3D Trajectory (top right)
-    ax2 = fig.add_subplot(2, 2, 2, projection='3d')
-    positions = np.array(logger.unicycle_positions)
-    ax2.plot3D(positions[:, 0], positions[:, 1], positions[:, 2])
-    ax2.set_xlabel('X')
-    ax2.set_ylabel('Y')
-    ax2.set_zlabel('Z')
-    ax2.set_title('Final Episode Trajectory')
+        # Plot 2: 3D Trajectory (top right)
+        ax2 = fig.add_subplot(2, 2, 2, projection='3d')
+        positions = np.array(logger.unicycle_positions[-10000:])
+        ax2.plot3D(positions[:, 0], positions[:, 1], positions[:, 2])
+        ax2.set_xlabel('X')
+        ax2.set_ylabel('Y')
+        ax2.set_zlabel('Z')
+        ax2.set_title('Final Episode Trajectory')
 
-    # Plot 3: Goal Reach Time (bottom left)
-    ax3 = fig.add_subplot(2, 2, 3)
-    ax3.plot(logger.success_counts, aligned_goal_times)
-    ax3.set_xlabel('Cumulative Successes')
-    ax3.set_ylabel('Average Goal Reach Time (steps)')
-    ax3.set_title('Task Efficiency')
-    ax3.grid(True)
-    ax3.axvline(x=1000, color='g', linestyle='--', alpha=0.5,
-                label='Target Success Count')
-    ax3.legend()
+        # Plot 3: Goal Reach Time (bottom left)
+        ax3 = fig.add_subplot(2, 2, 3)
+        ax3.plot(aligned_success_counts, aligned_goal_times)
+        ax3.set_xlabel('Cumulative Successes')
+        ax3.set_ylabel('Average Goal Reach Time (steps)')
+        ax3.set_title('Task Efficiency')
+        ax3.grid(True)
+        ax3.axvline(x=1000, color='g', linestyle='--', alpha=0.5,
+                    label='Target Success Count')
+        ax3.legend()
 
-    # Plot 4: Angular Changes (bottom right)
-    ax4 = fig.add_subplot(2, 2, 4)
-    ax4.plot(logger.timesteps[-1000:], logger.roll_angles[-1000:], label='Roll')
-    ax4.plot(logger.timesteps[-1000:], logger.pitch_angles[-1000:], label='Pitch')
-    ax4.set_xlabel('Timesteps')
-    ax4.set_ylabel('Angles (rad)')
-    ax4.set_title('Final Episode Stability')
-    ax4.legend()
-    ax4.grid(True)
+        # Plot 4: Angular Changes (bottom right)
+        ax4 = fig.add_subplot(2, 2, 4)
+        recent_timesteps = logger.timesteps[-1000:]
+        ax4.plot(recent_timesteps, logger.roll_angles[-1000:], label='Roll')
+        ax4.plot(recent_timesteps, logger.pitch_angles[-1000:], label='Pitch')
+        ax4.set_xlabel('Timesteps')
+        ax4.set_ylabel('Angles (rad)')
+        ax4.set_title('Final Episode Stability')
+        ax4.legend()
+        ax4.grid(True)
 
-    plt.tight_layout()
-    plt.savefig(os.path.join(final_plots_dir, 'training_results.png'))
-    plt.close()
+        plt.suptitle(f'Training Results for {run_name}', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(os.path.join(final_plots_dir, 'training_results.png'))
+        
+    except Exception as e:
+        print(f"Error during plotting final results: {e}")
+        
+    finally:
+        plt.close('all')
 
 def train(env):
     """
