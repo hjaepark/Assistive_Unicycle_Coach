@@ -417,7 +417,7 @@ def test(env, path_to_model):
         print("Episode ended by truncation (max steps reached).")
 
 if __name__ == '__main__':
-    # Set up command line argument parsing₩
+    # Set up command line argument parsing
     parser = argparse.ArgumentParser(description='Train or test student model.')
     parser.add_argument('-train', '--train', action='store_true')
     parser.add_argument('-test', '--test', metavar='path_to_model')
