@@ -1,0 +1,91 @@
+import gymnasium as gym
+from stable_baselines3 import SAC
+from gymnasium import spaces
+import numpy as np
+
+class CoachStudentWrapper(gym.Wrapper):
+    """
+    A wrapper that loads a pre-trained Coach model, obtains coach_action,
+    and merges it with the student's action to produce the final action,
+    depending on the specified 'mode'.
+    """
+
+    def __init__(
+        self,
+        env: gym.Env,
+        coach_model_path: str,
+        mode: str = "residual",
+        alpha: float = 0.5,        # Degree of coach action influence or intervention level
+        reward_coef: float = 0.01,  # Scaling factor (weight) applied during reward shaping
+        reward_shaping: bool = False
+    ):
+        
+        super().__init__(env)
+        self.coach_model = SAC.load(coach_model_path, env=None)
+        self.mode = mode
+        self.alpha = alpha
+        self.reward_coef = reward_coef
+
+        # Exisiting observation/action space
+        self.observation_space = env.observation_space
+        self.action_space = env.action_space  # Box(low=-1, high=1, shape=(3,), dtype=np.float32)
+
+    def step(self, student_action):
+        # (1) Obtain current obs (state)
+        obs = self.env._get_obs()
+
+        # (2) Predict Coach model action
+        coach_action, _ = self.coach_model.predict(obs, deterministic=True)
+
+        # (3) Merge student and coach action
+        final_action = self._merge_actions(student_action, coach_action)
+
+        # (4) Apply final action to the environment
+        next_obs, reward, done, truncated, info = self.env.step(final_action)
+
+        # (5) (옵션) Reward shaping 등 보상 조정
+        reward = self._modify_reward(reward, student_action, coach_action, done)
+
+        return next_obs, reward, done, truncated, info
+
+    def reset(self, **kwargs):
+        return super().reset(**kwargs)
+
+    def _merge_actions(self, student_action: np.ndarray, coach_action: np.ndarray) -> np.ndarray:
+        """
+        Method of merging student and coach action depends on mode
+        """
+
+        # Residual Policy
+        if self.mode == "residual":
+            final_action = (1 - self.alpha) * student_action + self.alpha * coach_action
+
+        # Partial Residual Policy
+        elif self.mode == "partial_residual":
+            final_action = student_action + self.alpha * (coach_action - student_action)
+
+        # [Debug] 100% coach action
+        elif self.mode == "coach_only":
+            final_action = coach_action
+
+        # [Debug] 100# student action
+        elif self.mode == "student_only":
+            final_action = student_action
+
+        else:
+            # 기본값: residual과 동일 or 그냥 student_action
+            final_action = student_action
+
+        return final_action
+
+    def _modify_reward(self, original_reward, student_action, coach_action, done):
+        if not self.reward_shaping:  # reward_shaping이 False면
+            return original_reward   # 원래 보상을 그대로 반환
+        
+        reward = original_reward
+        if not done:
+            if self.mode == "reward_shaping" or self.mode == "hybrid":
+                similarity = -np.linalg.norm(coach_action - student_action)
+                reward += self.reward_coef * similarity
+        
+        return reward
