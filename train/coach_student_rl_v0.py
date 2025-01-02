@@ -83,7 +83,7 @@ def train_coach_student(env, coach_model_path):
         coach_model_path=coach_model_path,
         mode="residual",
         alpha=0.5,
-        reward_coef=0.01,      # 추가 필요
+        reward_coef=0.01,
         reward_shaping=False
     )
 

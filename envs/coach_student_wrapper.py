@@ -25,17 +25,19 @@ class CoachStudentWrapper(gym.Wrapper):
         self.mode = mode
         self.alpha = alpha
         self.reward_coef = reward_coef
+        self.reward_shaping = reward_shaping
 
         # Exisiting observation/action space
         self.observation_space = env.observation_space
         self.action_space = env.action_space  # Box(low=-1, high=1, shape=(3,), dtype=np.float32)
 
     def step(self, student_action):
-        # (1) Obtain current obs (state)
-        obs = self.env._get_obs()
+        # (1) Use the current observation state stored during reset or previous step
+        if not hasattr(self, '_current_obs'):
+            self._current_obs = self.env.reset()[0]  # Initialize if not existing
 
-        # (2) Predict Coach model action
-        coach_action, _ = self.coach_model.predict(obs, deterministic=True)
+        # (2) Predict Coach model action using current observation
+        coach_action, _ = self.coach_model.predict(self._current_obs, deterministic=True)
 
         # (3) Merge student and coach action
         final_action = self._merge_actions(student_action, coach_action)
@@ -43,13 +45,19 @@ class CoachStudentWrapper(gym.Wrapper):
         # (4) Apply final action to the environment
         next_obs, reward, done, truncated, info = self.env.step(final_action)
 
+        # (5) Store the next observation for future use
+        self._current_obs = next_obs
+
         # (5) (옵션) Reward shaping 등 보상 조정
         reward = self._modify_reward(reward, student_action, coach_action, done)
 
         return next_obs, reward, done, truncated, info
 
     def reset(self, **kwargs):
-        return super().reset(**kwargs)
+        # Initialize the environment and get the initial observation state
+        # This stores the starting state needed for coach-student interaction
+        self._current_obs, info = super().reset(**kwargs)
+        return self._current_obs, info
 
     def _merge_actions(self, student_action: np.ndarray, coach_action: np.ndarray) -> np.ndarray:
         """
