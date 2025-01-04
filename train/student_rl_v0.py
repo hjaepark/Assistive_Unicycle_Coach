@@ -364,7 +364,9 @@ def train(env):
 def test(env, path_to_model):
     """
     Function to test a trained model.
+    Test does not need following requirements. Only the basic test bench needed to render the model.
     """
+    
     # Load the trained model
     model = SAC.load(path_to_model, env=env)
 
