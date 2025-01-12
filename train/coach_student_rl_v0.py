@@ -150,29 +150,23 @@ def train_coach_student(env, coach_model_path):
     # (옵션) 최종 그래프나 결과 플롯
     # plot_training_results(training_monitor_callback, run_name, final_plots_dir)
 
-def test_coach_student(env, path_to_model, coach_model_path):
+def test_coach_student(env, path_to_model):
     """
-    Function to test a trained model.
+    Test the trained student model WITHOUT any coach involvement
     """
-    wrapped_env = CoachStudentWrapper(
-        env=env,
-        coach_model_path=coach_model_path,
-        mode="residual",
-        alpha=0.5
-    )
 
-    # Load the trained model
-    model = SAC.load(path_to_model, env=wrapped_env)
+    # Load the trained student model to test
+    model = SAC.load(path_to_model, env=env)
 
-    obs, info = wrapped_env.reset()
+    obs, info = env.reset()
     terminated = truncated = False
     step_count = 0
     total_reward = 0
 
     while not (terminated or truncated) and step_count < MAX_EPISODE_STEPS:
         action, _ = model.predict(obs, deterministic=True)
-        obs, reward, terminated, truncated, info = wrapped_env.step(action)
-        wrapped_env.render()
+        obs, reward, terminated, truncated, info = env.step(action)
+        env.render()
         total_reward += reward
         step_count += 1
     
@@ -195,6 +189,6 @@ if __name__ == '__main__':
     if args.test:
         if os.path.isfile(args.test):
             test_env = gym.make('Student-v0', render_mode='human', max_episode_steps=MAX_EPISODE_STEPS)
-            test_coach_student(test_env, path_to_model=args.test, coach_model_path=args.coach)
+            test_coach_student(test_env, path_to_model=args.test)
         else:
             print(f"{args.test} not found.")
