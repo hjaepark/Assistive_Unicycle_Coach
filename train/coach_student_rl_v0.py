@@ -133,10 +133,30 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
 
         if strategy == 1:
             # Continuous
-            new_alpha = 0.5
+            
+            """
+            Todo
+            
+            Make it pass the alpha parameter from the terminal command line
+            or
+            Manually change the alpha value
+            """
+            new_alpha = 1.0
+            #new_alpha = 0.9
+            #new_alpha = 0.8
+            #new_alpha = 0.7
+            #new_alpha = 0.6
+            #new_alpha = 0.5
 
         elif strategy == 2:
             # Performance-Based
+
+            """
+            Todo
+
+            Test new_alpha parameters & current_success_count
+            Optimize based on the result from the strategy 1
+            """
             if current_success_count > 800:
                 new_alpha = 0.0
             elif current_success_count > 500:
@@ -148,18 +168,40 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
 
         elif strategy == 3:
             # Progressive
+
+            """
+            Todo
+
+            Test max_steps or total steps traditional training requires
+            Apply max_steps with a reasonable margin based on the result eg. if 90 -> 100
+            """
             max_steps = 1_000_000
             frac = min(total_timesteps / max_steps, 1.0)
             new_alpha = 0.5 * (1.0 - frac)
 
         elif strategy == 4:
             # Need-Based
+
+            """
+            Todo
+
+            Test and implement appropriate max alpha value
+            """
+
             if len(training_monitor_callback.success_counts) >= 2:
                 prev_success = training_monitor_callback.success_counts[-2]
+
                 if current_success_count == prev_success:
+                # 최근 success_count가 전과 동일 -> 성공이 늘어나지 않았음
+                # ==> 학생이 학습 정체 상태로 추정 -> 코치 개입도(alpha) ↑
                     new_alpha += 0.05
+                
                 else:
+                # success_count가 늘어났다면 -> 학습이 잘 진행됨
+                # ==> 학생이 스스로 잘 하고 있으니 -> 코치 개입도(alpha) ↓
                     new_alpha -= 0.05
+
+
             new_alpha = max(0.0, min(0.5, new_alpha))
 
         # 4. Apply
