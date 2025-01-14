@@ -25,4 +25,5 @@ Investigate four different strategies for coach engagement to determine the most
 <br>In this approach, coach influence (α) systematically decreases over training episodes. This implements a scheduled reduction in coach_action magnitude, enabling the student to gradually develop independence while maintaining learning stability.
 4. Need-Based Intervention
 <br>This strategy implements an adaptive intervention mechanism where the coach engages only when student performance drops below threshold. The α value dynamically adjusts based on recent performance metrics, providing support only when necessary.
-Each strategy aims to balance learning efficiency with the development of student autonomy. Results will be analyzed based on learning speed, final performance, and resource efficiency.
+
+<br>Each strategy aims to balance learning efficiency with the development of student autonomy. Results will be analyzed based on learning speed, final performance, and resource efficiency.
