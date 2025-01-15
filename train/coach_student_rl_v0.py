@@ -60,10 +60,19 @@ MAX_EPISODE_STEPS = 10000
 # Success thresholds for model evaluation and saving
 SUCCESS_THRESHOLDS = [1000]
 
-def train_coach_student(env, coach_model_path):
+def train_coach_student(env, coach_model_path, strategy: int = 1):
+    
     """
+
     Main training function
+    strategy:
+      1 = Continuous
+      2 = Performance-Based
+      3 = Progressive Disengagement
+      4 = Need-Based
+
     """
+
     # Apply coach+student wrapper
     wrapped_env = CoachStudentWrapper(
         env=env,
@@ -109,14 +118,97 @@ def train_coach_student(env, coach_model_path):
     total_timesteps = 0
 
     while threshold_index < len(SUCCESS_THRESHOLDS):
+        # 1. Initialize the training
         model.learn(total_timesteps=10000, reset_num_timesteps=False,
                     tb_log_name=run_name, callback=callbacks)
         total_timesteps += 10000
-        
+
+        # 2. Check the status of the training
         current_success_count = training_monitor_callback.success_counts[-1] if training_monitor_callback.success_counts else 0
         total_episodes = len(training_monitor_callback.episode_counts)
         current_training_time = training_monitor_callback.training_times[-1] if training_monitor_callback.training_times else 0
         
+        # 3. Update alpha based on the strategy
+        new_alpha = wrapped_env.alpha
+
+        if strategy == 1:
+            # Continuous
+            
+            """
+            Todo
+            
+            Make it pass the alpha parameter from the terminal command line
+            or
+            Manually change the alpha value
+            """
+            new_alpha = 1.0
+            #new_alpha = 0.9
+            #new_alpha = 0.8
+            #new_alpha = 0.7
+            #new_alpha = 0.6
+            #new_alpha = 0.5
+
+        elif strategy == 2:
+            # Performance-Based
+
+            """
+            Todo
+
+            Test new_alpha parameters & current_success_count
+            Optimize based on the result from the strategy 1
+            """
+            if current_success_count > 800:
+                new_alpha = 0.0
+            elif current_success_count > 500:
+                new_alpha = 0.1
+            elif current_success_count > 200:
+                new_alpha = 0.3
+            else:
+                new_alpha = 0.5
+
+        elif strategy == 3:
+            # Progressive
+
+            """
+            Todo
+
+            Test max_steps or total steps traditional training requires
+            Apply max_steps with a reasonable margin based on the result eg. if 90 -> 100
+            """
+            max_steps = 1_000_000
+            frac = min(total_timesteps / max_steps, 1.0)
+            new_alpha = 0.5 * (1.0 - frac)
+
+        elif strategy == 4:
+            # Need-Based
+
+            """
+            Todo
+
+            Test and implement appropriate max alpha value
+            """
+
+            if len(training_monitor_callback.success_counts) >= 2:
+                prev_success = training_monitor_callback.success_counts[-2]
+
+                if current_success_count == prev_success:
+                # 최근 success_count가 전과 동일 -> 성공이 늘어나지 않았음
+                # ==> 학생이 학습 정체 상태로 추정 -> 코치 개입도(alpha) ↑
+                    new_alpha += 0.05
+                
+                else:
+                # success_count가 늘어났다면 -> 학습이 잘 진행됨
+                # ==> 학생이 스스로 잘 하고 있으니 -> 코치 개입도(alpha) ↓
+                    new_alpha -= 0.05
+
+
+            new_alpha = max(0.0, min(0.5, new_alpha))
+
+        # 4. Apply
+        wrapped_env.set_alpha(new_alpha)
+        wrapped_eval_env.set_alpha(new_alpha)
+
+        # 5. Print training logs
         hours = int(current_training_time // 3600)
         minutes = int((current_training_time % 3600) // 60)
         seconds = int(current_training_time % 60)
@@ -129,7 +221,7 @@ def train_coach_student(env, coach_model_path):
         print(f"Training time: {time_format}")
         print("-" * 50)
 
-        # Check if we've reached the success threshold
+        # 6. Check if we've reached the success threshold
         if current_success_count >= SUCCESS_THRESHOLDS[threshold_index]:
             print(f"\nReached {SUCCESS_THRESHOLDS[threshold_index]} successes!")
             # Save checkpoint model
@@ -150,29 +242,23 @@ def train_coach_student(env, coach_model_path):
     # (옵션) 최종 그래프나 결과 플롯
     # plot_training_results(training_monitor_callback, run_name, final_plots_dir)
 
-def test_coach_student(env, path_to_model, coach_model_path):
+def test_coach_student(env, path_to_model):
     """
-    Function to test a trained model.
+    Test the trained student model WITHOUT any coach involvement
     """
-    wrapped_env = CoachStudentWrapper(
-        env=env,
-        coach_model_path=coach_model_path,
-        mode="residual",
-        alpha=0.5
-    )
 
-    # Load the trained model
-    model = SAC.load(path_to_model, env=wrapped_env)
+    # Load the trained student model to test
+    model = SAC.load(path_to_model, env=env)
 
-    obs, info = wrapped_env.reset()
+    obs, info = env.reset()
     terminated = truncated = False
     step_count = 0
     total_reward = 0
 
     while not (terminated or truncated) and step_count < MAX_EPISODE_STEPS:
         action, _ = model.predict(obs, deterministic=True)
-        obs, reward, terminated, truncated, info = wrapped_env.step(action)
-        wrapped_env.render()
+        obs, reward, terminated, truncated, info = env.step(action)
+        env.render()
         total_reward += reward
         step_count += 1
     
@@ -184,17 +270,19 @@ if __name__ == '__main__':
     parser.add_argument('-train', '--train', action='store_true', help='Train with coach-student wrapper')
     parser.add_argument('-test', '--test', metavar='PATH', help='Path to trained model for testing')
     parser.add_argument('-coach', '--coach', metavar='PATH', default='reference_model.zip', help='Path to coach model')
+    parser.add_argument('--strategy', type=int, default=1, help='Coaching strategy (1=Continuous, 2=Performance, 3=Progressive, 4=Need-Based)')
     args = parser.parse_args()
 
     # Create the unicycle environment
     env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
 
+    # Now passing strategy options too
     if args.train:
-        train_coach_student(env, coach_model_path=args.coach)
+        train_coach_student(env, coach_model_path=args.coach, strategy=args.strategy)
 
     if args.test:
         if os.path.isfile(args.test):
             test_env = gym.make('Student-v0', render_mode='human', max_episode_steps=MAX_EPISODE_STEPS)
-            test_coach_student(test_env, path_to_model=args.test, coach_model_path=args.coach)
+            test_coach_student(test_env, path_to_model=args.test)
         else:
             print(f"{args.test} not found.")

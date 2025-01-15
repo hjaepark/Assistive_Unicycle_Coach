@@ -32,23 +32,23 @@ class CoachStudentWrapper(gym.Wrapper):
         self.action_space = env.action_space  # Box(low=-1, high=1, shape=(3,), dtype=np.float32)
 
     def step(self, student_action):
-        # (1) Use the current observation state stored during reset or previous step
+        # 1. Use the current observation state stored during reset or previous step
         if not hasattr(self, '_current_obs'):
-            self._current_obs = self.env.reset()[0]  # Initialize if not existing
-
-        # (2) Predict Coach model action using current observation
+            raise RuntimeError("Environment needs to be reset before calling step")
+        
+        # 2. Predict Coach model action using current observation
         coach_action, _ = self.coach_model.predict(self._current_obs, deterministic=True)
 
-        # (3) Merge student and coach action
+        # 3. Merge student and coach action
         final_action = self._merge_actions(student_action, coach_action)
 
-        # (4) Apply final action to the environment
+        # 4. Apply final action to the environment
         next_obs, reward, done, truncated, info = self.env.step(final_action)
 
-        # (5) Store the next observation for future use
+        # 5. Store the next observation for future use
         self._current_obs = next_obs
 
-        # (5) (옵션) Reward shaping 등 보상 조정
+        # (옵션) Reward shaping 등 보상 조정
         reward = self._modify_reward(reward, student_action, coach_action, done)
 
         return next_obs, reward, done, truncated, info
@@ -97,3 +97,10 @@ class CoachStudentWrapper(gym.Wrapper):
                 reward += self.reward_coef * similarity
         
         return reward
+    
+    def set_alpha(self, new_alpha: float):
+        """
+        Dynamically update the alpha value (coach influence).
+        Clamps the alpha value to [0.0, 1.0].
+        """
+        self.alpha = np.clip(new_alpha, 0.0, 1.0)
