@@ -73,6 +73,11 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
 
     """
 
+    """
+    TODO
+    Check both residual and partial residual policy to prove that they are equal in computing
+    """
+
     # Apply coach+student wrapper
     wrapped_env = CoachStudentWrapper(
         env=env,
