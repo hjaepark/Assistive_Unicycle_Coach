@@ -11,6 +11,7 @@ Assistive_Unicycle_Coach/
 Implement a (partial) residual policy approach where the final action is computed as:
         
         final_action = student_action + α * (coach_action - student_action)
+        ** Prove if residual policy and partial residual policy equal in computing **
         
 where α represents the coach's influence level.
 
