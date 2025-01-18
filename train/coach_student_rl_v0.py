@@ -9,8 +9,8 @@ import envs
 from envs.student_v0 import Student
 from envs.coach_student_wrapper import CoachStudentWrapper
 
-# Using monitoring class from the student agent training code
-from train.student_rl_v0 import TrainingProgressMonitor
+# Using monitoring class
+from train.monitoring.coach_student_monitor import CoachStudentMonitor
 
 
 ##########################################################################################################################
@@ -111,9 +111,9 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
     )
 
     # Using custom logger callback from student agent training code
-    training_monitor_callback = TrainingProgressMonitor(run_dir)
+    training_monitor = CoachStudentMonitor(run_dir)
     # Combine callbacks
-    callbacks = [eval_callback, training_monitor_callback]
+    callbacks = [eval_callback, training_monitor]
 
     # Initialize the SAC policy
     model = SAC("MlpPolicy", wrapped_env, verbose=1, device="cuda", tensorboard_log=logs_dir)
@@ -127,11 +127,11 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
         model.learn(total_timesteps=10000, reset_num_timesteps=False,
                     tb_log_name=run_name, callback=callbacks)
         total_timesteps += 10000
-
+        
         # 2. Check the status of the training
-        current_success_count = training_monitor_callback.success_counts[-1] if training_monitor_callback.success_counts else 0
-        total_episodes = len(training_monitor_callback.episode_counts)
-        current_training_time = training_monitor_callback.training_times[-1] if training_monitor_callback.training_times else 0
+        training_summary = training_monitor.get_training_summary()
+        current_success_count = training_summary['current_success_count']
+        total_episodes = training_summary['total_episodes']
         
         # 3. Update alpha based on the strategy
         new_alpha = wrapped_env.alpha
@@ -140,7 +140,7 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
             # Continuous
             
             """
-            Todo
+            TODO
             
             Make it pass the alpha parameter from the terminal command line
             or
@@ -157,7 +157,7 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
             # Performance-Based
 
             """
-            Todo
+            TODO
 
             Test new_alpha parameters & current_success_count
             Optimize based on the result from the strategy 1
@@ -175,7 +175,7 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
             # Progressive
 
             """
-            Todo
+            TODO
 
             Test max_steps or total steps traditional training requires
             Apply max_steps with a reasonable margin based on the result eg. if 90 -> 100
@@ -188,13 +188,13 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
             # Need-Based
 
             """
-            Todo
+            TODO
 
             Test and implement appropriate max alpha value
             """
 
-            if len(training_monitor_callback.success_counts) >= 2:
-                prev_success = training_monitor_callback.success_counts[-2]
+            if len(training_monitor.success_counts) >= 2:
+                prev_success = training_monitor.success_counts[-2]
 
                 if current_success_count == prev_success:
                 # 최근 success_count가 전과 동일 -> 성공이 늘어나지 않았음
@@ -214,16 +214,12 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
         wrapped_eval_env.set_alpha(new_alpha)
 
         # 5. Print training logs
-        hours = int(current_training_time // 3600)
-        minutes = int((current_training_time % 3600) // 60)
-        seconds = int(current_training_time % 60)
-        time_format = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
         print(f"Training Progress:")
         print(f"Total timesteps: {total_timesteps}")
-        print(f"Total episodes: {total_episodes}")
-        print(f"Current success count: {current_success_count}")
-        print(f"Training time: {time_format}")
+        print(f"Total episodes: {training_summary['total_episodes']}")
+        print(f"Current success count: {training_summary['current_success_count']}")
+        print(f"Training time: {training_summary['training_time']}")
+        print(f"Average reward: {training_summary['average_reward']:.2f}")
         print("-" * 50)
 
         # 6. Check if we've reached the success threshold
