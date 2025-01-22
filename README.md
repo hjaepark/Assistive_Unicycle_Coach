@@ -5,6 +5,9 @@ Assistive_Unicycle_Coach/
 <br>├── train/             # Training scripts
 <br>└── wrappers/          # Environment wrappers
 
+<br>Use tensorboard with
+
+        tensorboard --logdir ./data/logs
 
 # Experiment
 ## Coach-Student Learning with Reference Solution
