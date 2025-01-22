@@ -28,28 +28,19 @@ Now using coach_student_wrapper
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 data_dir = os.path.join(current_dir, "data")
 
-# Create runs directory (top-level directory for all experiment runs)
-runs_dir = os.path.join(data_dir, "runs")
-
 # Create timestamp directory for current run
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 run_name = f"coach_student_{timestamp}"
-run_dir = os.path.join(runs_dir, f"run_{timestamp}")
 
 # Setup detailed directory structure for current run
-models_dir = os.path.join(run_dir, "models")
+models_dir = os.path.join(data_dir, "models")
 best_model_dir = os.path.join(models_dir, "best_model")
 checkpoint_dir = os.path.join(models_dir, "checkpoints")
-plots_dir = os.path.join(run_dir, "plots")
-progress_plots_dir = os.path.join(plots_dir, "progress")
-final_plots_dir = os.path.join(plots_dir, "final")
-logs_dir = os.path.join(run_dir, "logs")
-metrics_dir = os.path.join(run_dir, "metrics")
+logs_dir = os.path.join(data_dir, "logs")
 
 # Create all directories
 directories = [
-    runs_dir, run_dir, models_dir, best_model_dir, checkpoint_dir,
-    plots_dir, progress_plots_dir, final_plots_dir, logs_dir, metrics_dir
+    data_dir, models_dir, best_model_dir, checkpoint_dir, logs_dir
 ]
 for d in directories:
     os.makedirs(d, exist_ok=True)
@@ -111,7 +102,7 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
     )
 
     # Using custom logger callback from student agent training code
-    training_monitor = CoachStudentMonitor(run_dir)
+    training_monitor = CoachStudentMonitor(data_dir)
     # Combine callbacks
     callbacks = [eval_callback, training_monitor]
 
