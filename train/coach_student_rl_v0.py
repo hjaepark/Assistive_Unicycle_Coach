@@ -11,6 +11,8 @@ from envs.coach_student_wrapper import CoachStudentWrapper
 
 # Using monitoring class
 from train.monitoring.coach_student_monitor import CoachStudentMonitor
+from train.monitoring.coach_monitor import CoachMonitorCallback
+from train.monitoring.student_monitor import StudentMonitorCallback
 
 
 ##########################################################################################################################
@@ -103,8 +105,11 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
 
     # Using custom logger callback from student agent training code
     training_monitor = CoachStudentMonitor(data_dir)
+    coach_monitor = CoachMonitorCallback(verbose=1)
+    student_monitor = StudentMonitorCallback(verbose=1)
+
     # Combine callbacks
-    callbacks = [eval_callback, training_monitor]
+    callbacks = [eval_callback, training_monitor, coach_monitor, student_monitor]
 
     # Initialize the SAC policy
     model = SAC("MlpPolicy", wrapped_env, verbose=1, device="cuda", tensorboard_log=logs_dir)
@@ -231,8 +236,6 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
     
     # Save final model and plot results
     model.save(os.path.join(models_dir, f"{run_name}_final"))
-    # (옵션) 최종 그래프나 결과 플롯
-    # plot_training_results(training_monitor_callback, run_name, final_plots_dir)
 
 def test_coach_student(env, path_to_model):
     """

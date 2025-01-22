@@ -19,13 +19,17 @@ class CoachStudentWrapper(gym.Wrapper):
         reward_coef: float = 0.01,  # Scaling factor (weight) applied during reward shaping
         reward_shaping: bool = False
     ):
-        
+
         super().__init__(env)
         self.coach_model = SAC.load(coach_model_path, env=None)
         self.mode = mode
         self.alpha = alpha
         self.reward_coef = reward_coef
         self.reward_shaping = reward_shaping
+
+        # Add new attributes to store last actions
+        self.last_coach_action = None
+        self.last_student_action = None
 
         # Exisiting observation/action space
         self.observation_space = env.observation_space
@@ -35,9 +39,15 @@ class CoachStudentWrapper(gym.Wrapper):
         # 1. Use the current observation state stored during reset or previous step
         if not hasattr(self, '_current_obs'):
             raise RuntimeError("Environment needs to be reset before calling step")
+        # Store student action
+        self.last_student_action = student_action
         
+
         # 2. Predict Coach model action using current observation
         coach_action, _ = self.coach_model.predict(self._current_obs, deterministic=True)
+        # Store coach action
+        self.last_coach_action = coach_action
+
 
         # 3. Merge student and coach action
         final_action = self._merge_actions(student_action, coach_action)
@@ -54,6 +64,10 @@ class CoachStudentWrapper(gym.Wrapper):
         return next_obs, reward, done, truncated, info
 
     def reset(self, **kwargs):
+        # Reset the action tracking attributes
+        self.last_coach_action = None
+        self.last_student_action = None
+        
         # Initialize the environment and get the initial observation state
         # This stores the starting state needed for coach-student interaction
         self._current_obs, info = super().reset(**kwargs)
