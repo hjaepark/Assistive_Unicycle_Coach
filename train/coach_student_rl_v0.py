@@ -11,6 +11,8 @@ from envs.coach_student_wrapper import CoachStudentWrapper
 
 # Using monitoring class
 from train.monitoring.coach_student_monitor import CoachStudentMonitor
+from train.monitoring.coach_monitor import CoachMonitorCallback
+from train.monitoring.student_monitor import StudentMonitorCallback
 
 
 ##########################################################################################################################
@@ -28,28 +30,19 @@ Now using coach_student_wrapper
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 data_dir = os.path.join(current_dir, "data")
 
-# Create runs directory (top-level directory for all experiment runs)
-runs_dir = os.path.join(data_dir, "runs")
-
 # Create timestamp directory for current run
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 run_name = f"coach_student_{timestamp}"
-run_dir = os.path.join(runs_dir, f"run_{timestamp}")
 
 # Setup detailed directory structure for current run
-models_dir = os.path.join(run_dir, "models")
+models_dir = os.path.join(data_dir, "models")
 best_model_dir = os.path.join(models_dir, "best_model")
 checkpoint_dir = os.path.join(models_dir, "checkpoints")
-plots_dir = os.path.join(run_dir, "plots")
-progress_plots_dir = os.path.join(plots_dir, "progress")
-final_plots_dir = os.path.join(plots_dir, "final")
-logs_dir = os.path.join(run_dir, "logs")
-metrics_dir = os.path.join(run_dir, "metrics")
+logs_dir = os.path.join(data_dir, "logs")
 
 # Create all directories
 directories = [
-    runs_dir, run_dir, models_dir, best_model_dir, checkpoint_dir,
-    plots_dir, progress_plots_dir, final_plots_dir, logs_dir, metrics_dir
+    data_dir, models_dir, best_model_dir, checkpoint_dir, logs_dir
 ]
 for d in directories:
     os.makedirs(d, exist_ok=True)
@@ -111,9 +104,12 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
     )
 
     # Using custom logger callback from student agent training code
-    training_monitor = CoachStudentMonitor(run_dir)
+    training_monitor = CoachStudentMonitor(data_dir)
+    coach_monitor = CoachMonitorCallback(verbose=1)
+    student_monitor = StudentMonitorCallback(verbose=1)
+
     # Combine callbacks
-    callbacks = [eval_callback, training_monitor]
+    callbacks = [eval_callback, training_monitor, coach_monitor, student_monitor]
 
     # Initialize the SAC policy
     model = SAC("MlpPolicy", wrapped_env, verbose=1, device="cuda", tensorboard_log=logs_dir)
@@ -240,8 +236,6 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
     
     # Save final model and plot results
     model.save(os.path.join(models_dir, f"{run_name}_final"))
-    # (옵션) 최종 그래프나 결과 플롯
-    # plot_training_results(training_monitor_callback, run_name, final_plots_dir)
 
 def test_coach_student(env, path_to_model):
     """
