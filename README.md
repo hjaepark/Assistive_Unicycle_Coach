@@ -2,14 +2,47 @@
 Assistive_Unicycle_Coach/
 <br>├── data/              # Training data and saved models
 <br>├── envs/              # Environment definitions
-<br>├── train/             # Training scripts
-<br>└── wrappers/          # Environment wrappers
+<br>└── train/             # Training scripts
 
-<br>Use tensorboard with
+## Core Components
+### Coach-Student Learning with Reference Solution
 
-        tensorboard --logdir ./data/logs
+
+### 1. Environment (`student_v0.py`)
+This module defines the unicycle simulation environment. The environment implements:
+- A 22-dimensional state space
+- A 3-dimensional action space  
+- Reward function and termination conditions for balancing and forward movement tasks
+
+### 2. Coach-Student Wrapper (`coach_student_wrapper.py`) 
+This wrapper manages the interaction between student and coach models with the following key functionalities:
+- Loading of pre-trained coach models (fully-trained student = coach "expert")
+- Definition of action combination methods (residual, partial_residual)
+- Intervention control through alpha parameter adjustment
+
+### 3. Training Implementation (`coach_student_rl_v0.py`)
+The main training script orchestrates the entire learning process by:
+- Configuring the environment and applying necessary wrappers
+- Implementing various learning strategies (continuous, performance-based)
+- Handling model persistence and evaluation procedures
+
+### 4. Monitoring Tools
+**coach_student_monitor.py**
+- Tracks comprehensive learning metrics
+- Monitors overall system performance
+
+**student_monitor.py**
+- Tracks student model performance metrics
+- Monitors learning progression
+
+**coach_monitor.py**
+- Measures coach intervention frequency 
+- Analyzes coach influence on student learning
 
 # Experiment
+<br>Activate TensorBoard with
+
+        tensorboard --logdir ./data/logs
 ## Coach-Student Learning with Reference Solution
 Implement a (partial) residual policy approach where the final action is computed as:
         
