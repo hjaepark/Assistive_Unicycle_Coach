@@ -25,6 +25,7 @@ from train.monitoring.student_monitor import StudentMonitorCallback
 Now using coach_student_wrapper
 """
 
+# TEST
 
 # Basic directory structure setup
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
