@@ -111,6 +111,33 @@ class UnifiedMonitor(BaseCallback):
             # Log coach-related metrics
             self._log_coach_metrics(wrapped_env)
 
+    def _update_training_metrics(self, info, reward):
+        """
+        Updates overall training progress metrics.
+        Tracks episode counts, success counts, and cumulative rewards.
+        """
+        # Update success counts if available
+        if 'success_count' in info:
+            self.training_metrics['success_counts'].append(info['success_count'])
+        
+        # Update episode counts when episode completes
+        if info.get('terminal_observation') is not None:
+            self.training_metrics['episode_counts'].append(
+                len(self.training_metrics['episode_counts']) + 1
+            )
+        
+        # Update training times
+        current_time = time.time() - self.training_start_time
+        self.training_metrics['training_times'].append(current_time)
+        
+        # Update cumulative rewards
+        if self.training_metrics['cumulative_rewards']:
+            self.training_metrics['cumulative_rewards'].append(
+                self.training_metrics['cumulative_rewards'][-1] + reward
+            )
+        else:
+            self.training_metrics['cumulative_rewards'].append(reward)
+
     def _log_performance_metrics(self):
         """
         Records performance metrics to TensorBoard.
