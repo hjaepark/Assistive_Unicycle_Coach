@@ -8,11 +8,8 @@ from stable_baselines3.common.callbacks import EvalCallback
 import envs
 from envs.student_v0 import Student
 from envs.coach_student_wrapper import CoachStudentWrapper
+from train.monitoring.unified_monitor import UnifiedMonitor
 
-# Using monitoring class
-from train.monitoring.coach_student_monitor import CoachStudentMonitor
-from train.monitoring.coach_monitor import CoachMonitorCallback
-from train.monitoring.student_monitor import StudentMonitorCallback
 
 
 ##########################################################################################################################
@@ -24,8 +21,6 @@ from train.monitoring.student_monitor import StudentMonitorCallback
 """
 Now using coach_student_wrapper
 """
-
-# TEST
 
 # Basic directory structure setup
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -72,17 +67,23 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
     Check both residual and partial residual policy to prove that they are equal in computing
     """
 
+    # Launch env at the bottom of the code
+
     # Apply coach+student wrapper
     wrapped_env = CoachStudentWrapper(
         env=env,
         coach_model_path=coach_model_path,
         mode="residual",
         alpha=0.5,
+        
+        # Mechanism to adjust student's reward, once turned off it's purely following traditional reward mechanism
+        # TODO Reward mechanism will need to be reconsidered later
         reward_coef=0.01,
         reward_shaping=False
     )
 
     # Create evaluation environment
+    # Preventing overfitting & evaluate precisely
     eval_env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
 
     # Apply wrapper to evaluation environment
@@ -105,12 +106,13 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
     )
 
     # Using custom logger callback from student agent training code
-    training_monitor = CoachStudentMonitor(data_dir)
-    coach_monitor = CoachMonitorCallback(verbose=1)
-    student_monitor = StudentMonitorCallback(verbose=1)
+    ### Update monitor ###
+    monitor = UnifiedMonitor(run_dir=data_dir, verbose=1)
+
 
     # Combine callbacks
-    callbacks = [eval_callback, training_monitor, coach_monitor, student_monitor]
+    ### Update callback ###
+    callbacks = [eval_callback, monitor]
 
     # Initialize the SAC policy
     model = SAC("MlpPolicy", wrapped_env, verbose=1, device="cuda", tensorboard_log=logs_dir)
@@ -126,7 +128,8 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
         total_timesteps += 10000
         
         # 2. Check the status of the training
-        training_summary = training_monitor.get_training_summary()
+        ### Update variable ###
+        training_summary = monitor.get_training_summary()
         current_success_count = training_summary['current_success_count']
         total_episodes = training_summary['total_episodes']
         
