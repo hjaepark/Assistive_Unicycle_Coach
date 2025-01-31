@@ -192,9 +192,9 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
 
             Test and implement appropriate max alpha value
             """
-
-            if len(training_monitor.success_counts) >= 2:
-                prev_success = training_monitor.success_counts[-2]
+            ### Update variable ###
+            if len(monitor.success_counts) >= 2:
+                prev_success = monitor.success_counts[-2]
 
                 if current_success_count == prev_success:
                 # 최근 success_count가 전과 동일 -> 성공이 늘어나지 않았음
@@ -220,6 +220,7 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
         print(f"Current success count: {training_summary['current_success_count']}")
         print(f"Training time: {training_summary['training_time']}")
         print(f"Average reward: {training_summary['average_reward']:.2f}")
+        print(f"Current alpha: {wrapped_env.alpha:.2f}") # Print alpha value
         print("-" * 50)
 
         # 6. Check if we've reached the success threshold
