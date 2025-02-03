@@ -49,7 +49,7 @@ MAX_EPISODE_STEPS = 10000
 # Success thresholds for model evaluation and saving
 SUCCESS_THRESHOLDS = [1000]
 
-def train_coach_student(env, coach_model_path, strategy: int = 1):
+def train_coach_student(env, coach_model_path, mode: str = 'residual', strategy: int = 1):
     
     """
 
@@ -73,7 +73,7 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
     wrapped_env = CoachStudentWrapper(
         env=env,
         coach_model_path=coach_model_path,
-        mode="residual",
+        mode=mode,
         alpha=0.5,
         
         # Mechanism to adjust student's reward, once turned off it's purely following traditional reward mechanism
@@ -90,7 +90,7 @@ def train_coach_student(env, coach_model_path, strategy: int = 1):
     wrapped_eval_env = CoachStudentWrapper(
         env=eval_env,
         coach_model_path=coach_model_path,
-        mode="residual",
+        mode=mode,
         alpha=0.5,
         reward_coef=0.01,
         reward_shaping=False
@@ -269,16 +269,24 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train or test coach-student model.')
     parser.add_argument('-train', '--train', action='store_true', help='Train with coach-student wrapper')
     parser.add_argument('-test', '--test', metavar='PATH', help='Path to trained model for testing')
+    parser.add_argument('--mode', type=str, default='residual', 
+                        choices=['residual', 'partial_residual', 'coach_only', 'student_only'],
+                        help='Action combination mode (residual/partial_residual/coach_only/student_only)')
+    parser.add_argument('--strategy', type=int, default=1, 
+                        choices=[1, 2, 3, 4],
+                        help='Coaching strategy: 1=Continuous, 2=Performance-Based, 3=Progressive Disengagement, 4=Need-Based')    
     parser.add_argument('-coach', '--coach', metavar='PATH', default='reference_model.zip', help='Path to coach model')
-    parser.add_argument('--strategy', type=int, default=1, help='Coaching strategy (1=Continuous, 2=Performance, 3=Progressive, 4=Need-Based)')
     args = parser.parse_args()
 
-    # Create the unicycle environment
+    # Create the unicycle
     env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
 
     # Now passing strategy options too
     if args.train:
-        train_coach_student(env, coach_model_path=args.coach, strategy=args.strategy)
+        train_coach_student(env, 
+                            coach_model_path=args.coach, 
+                            mode=args.mode,
+                            strategy=args.strategy)
 
     if args.test:
         if os.path.isfile(args.test):
