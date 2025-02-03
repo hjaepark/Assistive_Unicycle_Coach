@@ -86,11 +86,11 @@ class CoachStudentWrapper(gym.Wrapper):
         elif self.mode == "partial_residual":
             final_action = student_action + self.alpha * (coach_action - student_action)
 
-        # [Debug] 100% coach action
+        # 100% coach action
         elif self.mode == "coach_only":
             final_action = coach_action
 
-        # [Debug] 100# student action
+        # 100# student action
         elif self.mode == "student_only":
             final_action = student_action
 
