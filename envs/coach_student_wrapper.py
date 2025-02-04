@@ -5,19 +5,29 @@ import numpy as np
 
 class CoachStudentWrapper(gym.Wrapper):
     """
-    A wrapper that loads a pre-trained Coach model, obtains coach_action,
-    and merges it with the student's action to produce the final action,
-    depending on the specified 'mode'.
+    This wrapper loads & merges actions from a pre-trained (coach) policy
+    and a student (RL) policy using two possible modes:
+      1) "mixture"          => a_final = (1 - alpha)*student + alpha*coach
+      2) "add-on"           => a_final = student + alpha*(coach - student)
+    Although mathematically equivalent, the second mode preserves the
+    student's action in hardware contexts and only applies the difference
+    as an add-on torque.
     """
+
+    # Temporary
+    DEFAULT_MODE = "add-on"
+    DEFAULT_ALPHA = 0.5 # Degree of coach action influence or intervention level
+    DEFAULT_REWARD_COEF = 0.01 # Scaling factor (weight) applied during reward shaping
+    DEFAULT_REWARD_SHAPING = False
 
     def __init__(
         self,
         env: gym.Env,
         coach_model_path: str,
-        mode: str = "residual",
-        alpha: float = 0.5,        # Degree of coach action influence or intervention level
-        reward_coef: float = 0.01,  # Scaling factor (weight) applied during reward shaping
-        reward_shaping: bool = False
+        mode: str = DEFAULT_MODE,
+        alpha: float = DEFAULT_ALPHA,
+        reward_coef: float = DEFAULT_REWARD_COEF,
+        reward_shaping: bool = DEFAULT_REWARD_SHAPING
     ):
 
         super().__init__(env)
@@ -78,12 +88,12 @@ class CoachStudentWrapper(gym.Wrapper):
         Method of merging student and coach action depends on mode
         """
 
-        # Residual Policy
-        if self.mode == "residual":
+        # Mixture Policy (linear interpolation)
+        if self.mode == "mixture":
             final_action = (1 - self.alpha) * student_action + self.alpha * coach_action
 
-        # Partial Residual Policy
-        elif self.mode == "partial_residual":
+        # Add-on Policy
+        elif self.mode == "add-on":
             final_action = student_action + self.alpha * (coach_action - student_action)
 
         # 100% coach action
@@ -92,10 +102,6 @@ class CoachStudentWrapper(gym.Wrapper):
 
         # 100# student action
         elif self.mode == "student_only":
-            final_action = student_action
-
-        else:
-            # 기본값: residual과 동일 or 그냥 student_action
             final_action = student_action
 
         return final_action
