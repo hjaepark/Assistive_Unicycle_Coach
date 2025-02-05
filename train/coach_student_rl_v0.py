@@ -11,7 +11,6 @@ from envs.coach_student_wrapper import CoachStudentWrapper
 from train.monitoring.unified_monitor import UnifiedMonitor
 
 
-
 ##########################################################################################################################
 ##########################################################################################################################
 ######################## Student agent with Coach agent training code for the Unicycle Project ###########################
@@ -107,7 +106,7 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
 
     # Using custom logger callback from student agent training code
     ### Update monitor ###
-    monitor = UnifiedMonitor(run_dir=data_dir, verbose=1)
+    monitor = UnifiedMonitor(verbose=1)
 
 
     # Combine callbacks

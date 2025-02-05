@@ -1,191 +1,259 @@
 from stable_baselines3.common.callbacks import BaseCallback
 import numpy as np
 import time
-import os
 
 class UnifiedMonitor(BaseCallback):
     """
-    Unified monitoring system that tracks both student and coach interactions.
-    This system provides real-time visualization through TensorBoard while maintaining
-    the independence of each component's metrics.
-    
-    Key features:
-    1. Student learning progress tracking
-    2. Coach intervention monitoring
-    3. Overall training progress tracking
-    4. Real-time metric visualization
+    Unified monitoring system for:
+      - Overall metrics (episodes, length, truncated/terminated, etc.)
+      - Student agent metrics (rewards, actions, success rate, independence)
+      - Coach-related metrics (alpha, intervention frequency, etc.)
+
+    Provides real-time visualization through TensorBoard, keeping each component's
+    metrics separate yet accessible in a single callback.
     """
-    def __init__(self, run_dir, evaluation_window=100, independence_threshold=0.1, verbose=0):
-        super().__init__(verbose)
-        # System configuration
-        self.run_dir = run_dir
-        self.setup_directories()
-        self.training_start_time = time.time()
-        self.evaluation_window = evaluation_window
-        self.independence_threshold = independence_threshold
 
-        # Student-related metrics initialization
-        self.student_metrics = {
-            'episode_rewards': [],
-            'episode_lengths': [],
-            'success_count': 0,
-            'independent_success_count': 0,
-            'current_episode_reward': 0,
-            'previous_success_rate': 0.0
-        }
+    def __init__(self, verbose=0, window_size=100, intervention_threshold=0.1):
+        super().__init__(verbose=verbose)
+        self.window_size = window_size
+        self.intervention_threshold = intervention_threshold  # Threshold for coach-student action difference
 
-        # Coach-related metrics initialization
-        self.coach_metrics = {
-            'intervention_counter': 0,
-            'total_steps': 0,
-            'episode_interventions': [],
-            'current_episode_interventions': 0
-        }
+        # ------------------------- Overall monitoring -------------------------
+        self.start_time = None               # Wall-clock time when training started
+        self.num_episodes = 0                # Total completed episodes
+        self.current_ep_length = 0           # Current episode length (step count)
+        self.episode_lengths = []            # History of episode lengths
+        self.terminated_episodes = 0         # Count of episodes that ended normally
+        self.truncated_episodes = 0          # Count of episodes truncated by time limit
 
-        # Overall training metrics initialization
-        self.training_metrics = {
-            'success_counts': [],
-            'episode_counts': [],
-            'training_times': [],
-            'cumulative_rewards': []
-        }
+        # ------------------------- Student monitoring -------------------------
+        self.current_ep_reward = 0.0         # Accumulated reward in the current episode
+        self.episode_rewards = []            # History of episode rewards
+        self.episode_successes = []          # History of whether each episode reached the goal (1.0 or 0.0)
+        self.independent_successes = 0       # Count of episodes with zero coach intervention + success
 
-    def setup_directories(self):
-        """Sets up directory structure for storing monitoring data."""
-        self.metrics_dir = os.path.join(self.run_dir, "metrics")
-        os.makedirs(self.metrics_dir, exist_ok=True)
+        # Optional: tracking student actions (size=3 for each step)
+        self.current_ep_student_actions = [] # Actions in current episode
+        self.episode_actions_stats = []      # (Optional) store per-episode action stats if needed
 
-    def _on_step(self) -> bool:
-        try:
-            # Collect basic step information
-            wrapped_env = self.training_env.envs[0]
-            info = self.locals['infos'][0]
-            done = self.locals['dones'][0]
-            reward = self.locals['rewards'][0]
+        # ------------------------- Coach monitoring -------------------------
+        self.current_ep_intervention_count = 0  # Number of interventions in the current episode
+        self.episode_interventions = []         # History of intervention counts per episode
 
-            # Update metrics for each component
-            self._update_student_metrics(reward, info, done)
-            self._update_coach_metrics(wrapped_env)
-            self._update_training_metrics(info, reward)
+        # Alpha tracking (optional)
+        self.current_ep_alpha = []
+        self.alpha_history = []
 
-            return True
-
-        except Exception as e:
-            if self.verbose > 0:
-                print(f"Warning: Failed to log metrics: {str(e)}")
-            return True
-
-    def _update_student_metrics(self, reward, info, done):
+    def _on_training_start(self):
         """
-        Updates student learning progress metrics.
-        Tracks rewards, success rates, and independence measures.
+        Called before the first training rollout.
         """
-        self.student_metrics['current_episode_reward'] += reward
-
-        if done:
-            # Process episode completion metrics
-            if info.get('success', False):
-                self.student_metrics['success_count'] += 1
-                if self.coach_metrics['current_episode_interventions'] == 0:
-                    self.student_metrics['independent_success_count'] += 1
-
-            # Calculate and log performance metrics
-            self._log_performance_metrics()
-            
-            # Reset episode counters
-            self.student_metrics['current_episode_reward'] = 0
-
-    def _update_coach_metrics(self, wrapped_env):
-        """
-        Updates coach intervention metrics.
-        Monitors intervention frequency and impact on student actions.
-        """
-        self.coach_metrics['total_steps'] += 1
-        
-        if wrapped_env.last_coach_action is not None:
-            # Check for coach intervention
-            if np.any(np.abs(wrapped_env.last_coach_action) > self.independence_threshold):
-                self.coach_metrics['current_episode_interventions'] += 1
-                self.coach_metrics['intervention_counter'] += 1
-
-            # Log coach-related metrics
-            self._log_coach_metrics(wrapped_env)
-
-    def _update_training_metrics(self, info, reward):
-        """
-        Updates overall training progress metrics.
-        Tracks episode counts, success counts, and cumulative rewards.
-        """
-        # Update success counts if available
-        if 'success_count' in info:
-            self.training_metrics['success_counts'].append(info['success_count'])
-        
-        # Update episode counts when episode completes
-        if info.get('terminal_observation') is not None:
-            self.training_metrics['episode_counts'].append(
-                len(self.training_metrics['episode_counts']) + 1
-            )
-        
-        # Update training times
-        current_time = time.time() - self.training_start_time
-        self.training_metrics['training_times'].append(current_time)
-        
-        # Update cumulative rewards
-        if self.training_metrics['cumulative_rewards']:
-            self.training_metrics['cumulative_rewards'].append(
-                self.training_metrics['cumulative_rewards'][-1] + reward
-            )
-        else:
-            self.training_metrics['cumulative_rewards'].append(reward)
-
-    def _log_performance_metrics(self):
-        """
-        Records performance metrics to TensorBoard.
-        Includes pure performance and independence rate calculations.
-        """
-        if len(self.student_metrics['episode_rewards']) >= self.evaluation_window:
-            recent_performance = np.mean(
-                self.student_metrics['episode_rewards'][-self.evaluation_window:]
-            )
-            self.logger.record("student/pure_performance", recent_performance)
-
-        if self.student_metrics['success_count'] > 0:
-            independence_rate = (self.student_metrics['independent_success_count'] / 
-                               self.student_metrics['success_count'])
-            self.logger.record("student/independence_rate", independence_rate)
-
-    def _log_coach_metrics(self, wrapped_env):
-        """
-        Records coach-related metrics to TensorBoard.
-        Tracks intervention frequency and contribution level.
-        """
-        intervention_freq = (self.coach_metrics['intervention_counter'] / 
-                           self.coach_metrics['total_steps'])
-        self.logger.record("coach/intervention_frequency", intervention_freq)
-        
-        if wrapped_env.last_student_action is not None:
-            contribution = np.linalg.norm(
-                wrapped_env.last_coach_action - wrapped_env.last_student_action
-            )
-            self.logger.record("coach/contribution", contribution)
+        self.start_time = time.time()
 
     def get_training_summary(self):
         """
-        Provides a comprehensive summary of current training progress.
-        Returns key metrics including success rate, independence rate, and training duration.
+        Provides a concise snapshot of the training progress.
+        Used for strategy updates or logging in train_coach_student.
         """
-        training_time = time.time() - self.training_start_time
-        hours, remainder = divmod(training_time, 3600)
+        training_time_sec = time.time() - self.start_time if self.start_time else 0
+        hours, remainder = divmod(training_time_sec, 3600)
         minutes, seconds = divmod(remainder, 60)
-        time_format = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
+        formatted_time = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
+
+        total_episodes = self.num_episodes
+        current_success_count = int(np.sum(self.episode_successes))
+        average_reward = float(np.mean(self.episode_rewards)) if self.episode_rewards else 0.0
 
         return {
-            'total_episodes': len(self.training_metrics['episode_counts']),
-            'current_success_count': self.student_metrics['success_count'],
-            'independence_rate': (self.student_metrics['independent_success_count'] / 
-                                max(1, self.student_metrics['success_count'])),
-            'average_reward': np.mean(self.student_metrics['episode_rewards'] or [0]),
-            'training_time': time_format,
-            'intervention_rate': (self.coach_metrics['intervention_counter'] / 
-                                max(1, self.coach_metrics['total_steps']))
+            "total_episodes": total_episodes,
+            "current_success_count": current_success_count,
+            "average_reward": average_reward,
+            "training_time": formatted_time,
         }
+
+    def _on_step(self) -> bool:
+        """
+        Called every time 'env.step()' is executed. 
+        We assume a single environment, so self.locals[...] will be length=1 lists.
+        """
+        # Retrieve SB3 vectors (usually length=1 for single env)
+        rewards = self.locals["rewards"]
+        dones   = self.locals["dones"]
+        infos   = self.locals["infos"]
+
+        reward = rewards[0]
+        done   = dones[0]
+        info   = infos[0]
+
+        # (A) Update overall metrics each step
+        self._update_overall_metrics(reward, done, info)
+
+        # (B) Update student metrics each step
+        self._update_student_metrics(reward, done, info)
+
+        # (C) Update coach metrics each step
+        self._update_coach_metrics()
+
+        # If the episode ended, finalize logs for overall, student, and coach
+        if done:
+            self._log_overall_episode(info)
+            self._log_student_episode(info)
+            self._log_coach_episode(info)
+
+        return True
+
+    def _on_training_end(self):
+        """
+        Called when training finishes (model.learn() is done).
+        """
+        if self.verbose > 0:
+            total_time = time.time() - self.start_time if self.start_time else 0
+            print(f"[UnifiedMonitor] Training finished - Episodes: {self.num_episodes}, "
+                  f"Elapsed time: {total_time:.2f} s")
+
+    # --------------------------------------------------------------------------
+    # (1) Overall metrics
+    # --------------------------------------------------------------------------
+    def _update_overall_metrics(self, reward, done, info):
+        """
+        Step-by-step updates for overall metrics (episode length, etc.).
+        """
+        self.current_ep_length += 1
+
+    def _log_overall_episode(self, info):
+        """
+        Called when an episode finishes (done=True). Logs overall episode stats.
+        """
+        self.num_episodes += 1
+        self.episode_lengths.append(self.current_ep_length)
+
+        # Distinguish truncated vs. normal termination
+        if info.get("TimeLimit.truncated", False):
+            self.truncated_episodes += 1
+        else:
+            self.terminated_episodes += 1
+
+        # Compute average episode length in the recent window
+        recent_lengths = self.episode_lengths[-self.window_size:]
+        mean_length = np.mean(recent_lengths)
+
+        # Elapsed wall time
+        elapsed_time = time.time() - self.start_time if self.start_time else 0
+
+        # Record to TensorBoard (under 'overall/')
+        self.logger.record("overall/episode_length", self.current_ep_length)
+        self.logger.record("overall/mean_length", mean_length)
+        self.logger.record("overall/total_episodes", self.num_episodes)
+        self.logger.record("overall/elapsed_time_sec", elapsed_time)
+        self.logger.record("overall/terminated_episodes", self.terminated_episodes)
+        self.logger.record("overall/truncated_episodes", self.truncated_episodes)
+        self.logger.record("overall/total_timesteps", self.num_timesteps)
+
+        # Reset for next episode
+        self.current_ep_length = 0
+
+    # --------------------------------------------------------------------------
+    # (2) Student metrics
+    # --------------------------------------------------------------------------
+    def _update_student_metrics(self, reward, done, info):
+        """
+        Step-by-step updates for the student's performance, reward, actions, etc.
+        """
+        self.current_ep_reward += reward
+
+        # Track student's actions (if using CoachStudentWrapper with last_student_action)
+        wrapped_env = self.training_env.envs[0]
+        if getattr(wrapped_env, "last_student_action", None) is not None:
+            student_action = wrapped_env.last_student_action  # shape: (3,)
+            self.current_ep_student_actions.append(student_action)
+
+    def _log_student_episode(self, info):
+        """
+        Called when an episode finishes. Logs final student-related metrics
+        (reward, success, action stats, etc.).
+        """
+        # 1) Reward & success
+        self.episode_rewards.append(self.current_ep_reward)
+        goal_reached = info.get("goal_reached", False)
+        self.episode_successes.append(float(goal_reached))
+
+        # 2) Rolling averages
+        recent_rewards = self.episode_rewards[-self.window_size:]
+        mean_reward = np.mean(recent_rewards)
+        recent_successes = self.episode_successes[-self.window_size:]
+        mean_success = np.mean(recent_successes)
+
+        # Independent success: no coach intervention + goal reached
+        if goal_reached and (self.current_ep_intervention_count == 0):
+            self.independent_successes += 1
+
+        # 3) Action distribution stats (optional)
+        if len(self.current_ep_student_actions) > 0:
+            actions_array = np.array(self.current_ep_student_actions)  # shape: (ep_steps, 3)
+            mean_action = actions_array.mean(axis=0)
+            std_action  = actions_array.std(axis=0)
+
+            # Log each dimension's mean/std
+            self.logger.record("student/action_wheel_mean", mean_action[0])
+            self.logger.record("student/action_wheel_std",  std_action[0])
+            self.logger.record("student/action_roll_mean",  mean_action[1])
+            self.logger.record("student/action_roll_std",   std_action[1])
+            self.logger.record("student/action_yaw_mean",   mean_action[2])
+            self.logger.record("student/action_yaw_std",    std_action[2])
+
+        # 4) Log final student scalars
+        self.logger.record("student/episode_reward", self.current_ep_reward)
+        self.logger.record("student/mean_reward", mean_reward)
+        self.logger.record("student/mean_success", mean_success)
+        self.logger.record("student/current_successes", np.sum(self.episode_successes))
+        self.logger.record("student/independent_successes", self.independent_successes)
+
+        # Reset for next episode
+        self.current_ep_reward = 0.0
+        self.current_ep_student_actions.clear()
+
+    # --------------------------------------------------------------------------
+    # (3) Coach metrics
+    # --------------------------------------------------------------------------
+    def _update_coach_metrics(self):
+        """
+        Step-by-step updates for coach-related metrics (alpha, interventions, etc.).
+        """
+        wrapped_env = self.training_env.envs[0]
+
+        # 1) Track alpha (if present)
+        if hasattr(wrapped_env, "alpha"):
+            alpha_val = wrapped_env.alpha
+            self.current_ep_alpha.append(alpha_val)
+
+        # 2) Compare coach vs. student actions for interventions
+        if (getattr(wrapped_env, "last_coach_action", None) is not None and
+            getattr(wrapped_env, "last_student_action", None) is not None):
+            coach_action = wrapped_env.last_coach_action
+            student_action = wrapped_env.last_student_action
+            difference = np.linalg.norm(coach_action - student_action)
+            # If difference > threshold, we count an intervention
+            if difference > self.intervention_threshold:
+                self.current_ep_intervention_count += 1
+
+    def _log_coach_episode(self, info):
+        """
+        Called when an episode finishes. Logs coach-related metrics (alpha stats, intervention count, etc.).
+        """
+        # Alpha stats
+        if len(self.current_ep_alpha) > 0:
+            alpha_array = np.array(self.current_ep_alpha)
+            mean_alpha = alpha_array.mean()
+            std_alpha  = alpha_array.std()
+            self.logger.record("coach/mean_alpha", mean_alpha)
+            self.logger.record("coach/std_alpha",  std_alpha)
+            # Keep entire history if needed
+            self.alpha_history.extend(self.current_ep_alpha)
+
+        # Interventions this episode
+        self.episode_interventions.append(self.current_ep_intervention_count)
+        self.logger.record("coach/intervention_count", self.current_ep_intervention_count)
+
+        # Reset coach counters for next episode
+        self.current_ep_alpha.clear()
+        self.current_ep_intervention_count = 0
