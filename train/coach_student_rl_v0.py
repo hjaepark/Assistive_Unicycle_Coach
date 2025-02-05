@@ -11,7 +11,6 @@ from envs.coach_student_wrapper import CoachStudentWrapper
 from train.monitoring.unified_monitor import UnifiedMonitor
 
 
-
 ##########################################################################################################################
 ##########################################################################################################################
 ######################## Student agent with Coach agent training code for the Unicycle Project ###########################
@@ -64,7 +63,7 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
 
     """
     TODO
-    Check both residual and partial residual policy to prove that they are equal in computing
+    Check both mixture and partial add-on policy to prove that they are equal in computing
     """
 
     # Launch env at the bottom of the code
@@ -107,7 +106,7 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
 
     # Using custom logger callback from student agent training code
     ### Update monitor ###
-    monitor = UnifiedMonitor(run_dir=data_dir, verbose=1)
+    monitor = UnifiedMonitor(verbose=1)
 
 
     # Combine callbacks
@@ -262,9 +261,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train or test coach-student model.')
     parser.add_argument('-train', '--train', action='store_true', help='Train with coach-student wrapper')
     parser.add_argument('-test', '--test', metavar='PATH', help='Path to trained model for testing')
-    parser.add_argument('--mode', type=str, default='residual', 
-                        choices=['residual', 'partial_residual', 'coach_only', 'student_only'],
-                        help='Action combination mode (residual/partial_residual/coach_only/student_only)')
+    parser.add_argument('--mode', type=str, default='add-on', 
+                        choices=['mixture', 'add-on', 'coach_only', 'student_only'],
+                        help='Action combination mode (mixture/add-on/coach_only/student_only)')
     parser.add_argument('--strategy', type=int, default=1, 
                         choices=[1, 2, 3, 4],
                         help='Coaching strategy: 1=Continuous, 2=Performance-Based, 3=Progressive Disengagement, 4=Need-Based')
