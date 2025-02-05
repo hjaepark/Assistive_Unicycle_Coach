@@ -7,7 +7,7 @@ ENV/
 env/
 
 data/*
-!data/shared/
+!data/experimental_data/
 
 *.egg-info/
 dist/
