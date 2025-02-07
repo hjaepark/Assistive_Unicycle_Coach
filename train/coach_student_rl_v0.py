@@ -48,6 +48,9 @@ MAX_EPISODE_STEPS = 10000
 # Success thresholds for model evaluation and saving
 SUCCESS_THRESHOLDS = [1000]
 
+# Success thresholds for model evaluation and saving (training will end after 500,000 total timesteps)
+MAX_TIMESTEPS = 500000
+
 def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha: float):
     
     """
@@ -212,18 +215,23 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
         # 6. Check if we've reached the success threshold
         if current_success_count >= SUCCESS_THRESHOLDS[threshold_index]:
             print(f"\nReached {SUCCESS_THRESHOLDS[threshold_index]} successes!")
-            # Save checkpoint model
             model.save(os.path.join(checkpoint_dir, f"model_{SUCCESS_THRESHOLDS[threshold_index]}_successes"))
             threshold_index += 1
 
-            # If we've reached all thresholds, break the loop
-            if threshold_index >= len(SUCCESS_THRESHOLDS):
-                end_time = time.time()
-                training_time = end_time - start_time
-                print(f"\nTraining completed! All success thresholds achieved.")
-                print(f"Total training time: {training_time:.2f} seconds")
-                print(f"Total episodes: {total_episodes}")
-                break
+        if threshold_index >= len(SUCCESS_THRESHOLDS):
+            end_time = time.time()
+            training_time = end_time - start_time
+            print(f"\nTraining completed! All success thresholds achieved.")
+            print(f"Total training time: {training_time:.2f} seconds")
+            print(f"Total episodes: {total_episodes}")
+            break
+
+        # 7. Check if we've reached the maximum timesteps
+        if total_timesteps >= MAX_TIMESTEPS:
+            print(f"Reached maximum timesteps of {MAX_TIMESTEPS}")
+            break
+        
+        
     
     # Save final model and plot results
     model.save(os.path.join(models_dir, f"{run_name}_final"))
