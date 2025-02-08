@@ -8,3 +8,6 @@ Assistive_Unicycle_Coach/
 <br>Activate TensorBoard with
 
         tensorboard --logdir ./data/logs
+
+
+<br> 4 modes, 4 strategies, alpha 0-1
