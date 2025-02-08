@@ -9,5 +9,4 @@ Assistive_Unicycle_Coach/
 
         tensorboard --logdir ./data/logs
 
-
 <br> 4 modes, 4 strategies, alpha 0-1
