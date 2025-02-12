@@ -9,7 +9,7 @@ import torch
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import EvalCallback
 
-from envs.student_v0 import Student
+from envs.student import Student
 from envs.coach_student_wrapper import CoachStudentWrapper
 from train.monitoring.unified_monitor import UnifiedMonitor
 
