@@ -183,27 +183,16 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
 
         elif strategy == 4:
             # Need-Based
-
-            """
-            TODO
-
-            Test and implement appropriate max alpha value
-            """
-            ### Update variable ###
-            if len(monitor.success_counts) >= 2:
-                prev_success = monitor.success_counts[-2]
-
+            if len(monitor.episode_successes) >= 2:
+                prev_success = np.sum(monitor.episode_successes[:-1])
+                current_success_count = np.sum(monitor.episode_successes)
                 if current_success_count == prev_success:
-                # 최근 success_count가 전과 동일 -> 성공이 늘어나지 않았음
-                # ==> 학생이 학습 정체 상태로 추정 -> 코치 개입도(alpha) ↑
+                    # alpha ↑
                     new_alpha += 0.05
-                
                 else:
-                # success_count가 늘어났다면 -> 학습이 잘 진행됨
-                # ==> 학생이 스스로 잘 하고 있으니 -> 코치 개입도(alpha) ↓
+                    # alpha ↓
                     new_alpha -= 0.05
-
-
+            
             new_alpha = max(0.0, min(0.5, new_alpha))
 
         # 4. Apply
