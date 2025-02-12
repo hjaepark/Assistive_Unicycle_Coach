@@ -3,9 +3,12 @@ import datetime
 import time
 import argparse
 import gymnasium as gym
+import numpy as np
+import random
+import torch
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import EvalCallback
-import envs
+
 from envs.student_v0 import Student
 from envs.coach_student_wrapper import CoachStudentWrapper
 from train.monitoring.unified_monitor import UnifiedMonitor
@@ -48,10 +51,10 @@ MAX_EPISODE_STEPS = 10000
 # Success thresholds for model evaluation and saving
 SUCCESS_THRESHOLDS = [1000]
 
-# Success thresholds for model evaluation and saving (training will end after 500,000 total timesteps)
-MAX_TIMESTEPS = 500000
+# Success thresholds for model evaluation and saving (training will end after 1,000,000 total timesteps)
+MAX_TIMESTEPS = 1000000
 
-def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha: float):
+def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha: float, run_name: str):
     
     """
 
@@ -62,11 +65,6 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
       3 = Progressive Disengagement
       4 = Need-Based
 
-    """
-
-    """
-    TODO
-    Check both mixture and partial add-on policy to prove that they are equal in computing
     """
 
     # Launch env at the bottom of the code
@@ -115,9 +113,16 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
     # Combine callbacks
     ### Update callback ###
     callbacks = [eval_callback, monitor]
+    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Initialize the SAC policy
-    model = SAC("MlpPolicy", wrapped_env, verbose=1, device="cuda", tensorboard_log=logs_dir)
+    model = SAC(
+        "MlpPolicy", 
+        wrapped_env, 
+        verbose=1, 
+        device=device, 
+        tensorboard_log=logs_dir)
 
     start_time = time.time()
     threshold_index = 0
@@ -125,8 +130,11 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
 
     while threshold_index < len(SUCCESS_THRESHOLDS):
         # 1. Initialize the training
-        model.learn(total_timesteps=10000, reset_num_timesteps=False,
-                    tb_log_name=run_name, callback=callbacks)
+        model.learn(
+            total_timesteps=10000, 
+            reset_num_timesteps=False,
+            tb_log_name=run_name, 
+            callback=callbacks)
         total_timesteps += 10000
         
         # 2. Check the status of the training
@@ -269,27 +277,48 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train or test coach-student model.')
     parser.add_argument('-train', '--train', action='store_true', help='Train with coach-student wrapper')
     parser.add_argument('-test', '--test', metavar='PATH', help='Path to trained model for testing')
-    parser.add_argument('--mode', type=str, default='add-on', 
-                        choices=['mixture', 'add-on', 'coach_only', 'student_only'],
-                        help='Action combination mode (mixture/add-on/coach_only/student_only)')
+    parser.add_argument('--mode', type=str, default='action_merging', 
+                        choices=['action_merging', 'coach_only', 'student_only'],
+                        help='Action merging mode: (action_merging/coach_only/student_only)')
     parser.add_argument('--strategy', type=int, default=1, 
                         choices=[1, 2, 3, 4],
                         help='Coaching strategy: 1=Continuous, 2=Performance-Based, 3=Progressive Disengagement, 4=Need-Based')
-    parser.add_argument('--alpha', type=float, default=0.5,
+    parser.add_argument('--alpha', type=float, default=0,
                         help='Initial alpha value (coach intervention level, between 0.0 and 1.0)')
     parser.add_argument('-coach', '--coach', metavar='PATH', default='reference_model.zip', help='Path to coach model')
+    parser.add_argument('--num_seeds', type=int, default=1,
+                        help='Number of different random seeds to run the training (default: 1).')
     args = parser.parse_args()
-
-    # Create the unicycle
-    env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
 
     # Now passing strategy options too
     if args.train:
-        train_coach_student(env, 
-                            coach_model_path=args.coach, 
-                            mode=args.mode,
-                            strategy=args.strategy,
-                            alpha=args.alpha)
+        for i in range(args.num_seeds):
+            seed = i + 1
+
+            # Fixed seed for python, numpy, and torch
+            np.random.seed(seed)
+            random.seed(seed)
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+
+            # Assign seed for gym.make + reset
+            env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
+            env.reset(seed=seed)
+
+            # Assign tensorboard log
+            seed_run_name = f"{run_name}_seed{seed}"
+            print(f"\n[Seed={seed}] Training start => run_name: {seed_run_name}")
+
+            # Call training function
+            train_coach_student(
+                env=env,
+                coach_model_path=args.coach,
+                mode=args.mode,
+                strategy=args.strategy,
+                alpha=args.alpha,
+                run_name=seed_run_name
+            )
 
     if args.test:
         if os.path.isfile(args.test):
