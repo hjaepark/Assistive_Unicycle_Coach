@@ -6,12 +6,10 @@ import numpy as np
 class CoachStudentWrapper(gym.Wrapper):
     """
     This wrapper loads & merges actions from a pre-trained (coach) policy
-    and a student (RL) policy using two possible modes:
-      1) "mixture"          => a_final = (1 - alpha)*student + alpha*coach
-      2) "add-on"           => a_final = student + alpha*(coach - student)
-    Although mathematically equivalent, the second mode preserves the
-    student's action in hardware contexts and only applies the difference
-    as an add-on torque.
+    and a student (RL) policy using possible modes:
+      1) "action_merging"   => a_final = student + alpha*(coach - student)
+      2) "coach_only"
+      3) "student_only"
     """
 
     # Temporary
@@ -88,12 +86,8 @@ class CoachStudentWrapper(gym.Wrapper):
         Method of merging student and coach action depends on mode
         """
 
-        # Mixture Policy (linear interpolation)
-        if self.mode == "mixture":
-            final_action = (1 - self.alpha) * student_action + self.alpha * coach_action
-
-        # Add-on Policy
-        elif self.mode == "add-on":
+        # Action Merging Policy
+        if self.mode == "action_merging":
             final_action = student_action + self.alpha * (coach_action - student_action)
 
         # 100% coach action
