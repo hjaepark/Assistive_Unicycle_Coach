@@ -9,7 +9,6 @@ import torch
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import EvalCallback
 
-from envs.student import Student
 from envs.coach_student_wrapper import CoachStudentWrapper
 from train.monitoring.unified_monitor import UnifiedMonitor
 
@@ -75,7 +74,7 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
         coach_model_path=coach_model_path,
         mode=mode,
         alpha=alpha,
-        
+
         # Mechanism to adjust student's reward, once turned off it's purely following traditional reward mechanism
         # TODO Reward mechanism will need to be reconsidered later
         reward_coef=0.01,
@@ -84,7 +83,14 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
 
     # Create evaluation environment
     # Preventing overfitting & evaluate precisely
-    eval_env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
+    eval_env = gym.make(
+        env.spec.id,
+        render_mode=None, 
+        max_episode_steps=MAX_EPISODE_STEPS,
+        sensor_noise_sigma=getattr(env, "sensor_noise_sigma", 0.01),
+        enable_sensor_noise=getattr(env, "enable_sensor_noise", True),
+        action_delay=getattr(env, "action_delay", 3),
+    )
 
     # Apply wrapper to evaluation environment
     wrapped_eval_env = CoachStudentWrapper(
@@ -266,6 +272,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train or test coach-student model.')
     parser.add_argument('-train', '--train', action='store_true', help='Train with coach-student wrapper')
     parser.add_argument('-test', '--test', metavar='PATH', help='Path to trained model for testing')
+    parser.add_argument('--env-id', type=str, default='StudentHumanFactor-v0',
+                        help='Which environment to use (Student-v0 or StudentHumanFactor-v0)')
     parser.add_argument('--mode', type=str, default='action_merging', 
                         choices=['action_merging', 'coach_only', 'student_only'],
                         help='Action merging mode: (action_merging/coach_only/student_only)')
@@ -292,7 +300,7 @@ if __name__ == '__main__':
                 torch.cuda.manual_seed_all(seed)
 
             # Assign seed for gym.make + reset
-            env = gym.make('Student-v0', render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
+            env = gym.make(args.env_id, render_mode=None, max_episode_steps=MAX_EPISODE_STEPS)
             env.reset(seed=seed)
 
             # Assign tensorboard log
@@ -311,7 +319,7 @@ if __name__ == '__main__':
 
     if args.test:
         if os.path.isfile(args.test):
-            test_env = gym.make('Student-v0', render_mode='human', max_episode_steps=MAX_EPISODE_STEPS)
+            test_env = gym.make(args.env_id, render_mode='human', max_episode_steps=MAX_EPISODE_STEPS)
             test_coach_student(test_env, path_to_model=args.test)
         else:
             print(f"{args.test} not found.")
