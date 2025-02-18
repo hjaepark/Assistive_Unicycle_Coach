@@ -86,7 +86,10 @@ def train_coach_student(env, coach_model_path, mode: str , strategy: int, alpha:
     eval_env = gym.make(
         env.spec.id,
         render_mode=None, 
-        max_episode_steps=MAX_EPISODE_STEPS
+        max_episode_steps=MAX_EPISODE_STEPS,
+        sensor_noise_sigma=getattr(env, "sensor_noise_sigma", 0.01),
+        enable_sensor_noise=getattr(env, "enable_sensor_noise", True),
+        action_delay=getattr(env, "action_delay", 3),
     )
 
     # Apply wrapper to evaluation environment

@@ -88,7 +88,7 @@ class Student(MujocoEnv, utils.EzPickle):
     1. The unicycle falls over (excessive tilt)
     2. The pendulum falls over (excessive tilt)
     3. The unicycle reaches the 12-meter goal
-    4. The maximum number of steps is reached (1000 steps)
+    4. The maximum number of steps is reached (10000 steps)
 
     ## Solved Requirement
     The environment is considered solved when the agent can consistently move the unicycle 12 meters forward while maintaining balance.

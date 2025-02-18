@@ -105,6 +105,7 @@ class StudentHumanFactor(MujocoEnv, utils.EzPickle):
         max_steps: int = 10000,
         sensor_noise_sigma: float = 0.01,   # Observation noise standard deviation
         enable_sensor_noise: bool = True,   # Enable observation noise
+        action_delay: int = 3,              # Action delay steps
         **kwargs,
     ):
         # XML Path
@@ -120,6 +121,7 @@ class StudentHumanFactor(MujocoEnv, utils.EzPickle):
             max_steps, 
             sensor_noise_sigma,
             enable_sensor_noise,
+            action_delay,
             **kwargs
         )
         
@@ -138,10 +140,14 @@ class StudentHumanFactor(MujocoEnv, utils.EzPickle):
         self.goal_distance = 12.0  
         self.prev_x = 0
         self.goal_reached = False
-
-        # Reset noise parameters
         self.sensor_noise_sigma = sensor_noise_sigma
         self.enable_sensor_noise = enable_sensor_noise
+        self.action_delay = action_delay
+
+        self.action_queue = [
+            np.zeros(self.action_space.shape, dtype=np.float32)
+            for _ in range(self.action_delay)
+        ]
 
         # Initialize MujocoEnv
         MujocoEnv.__init__(
@@ -157,8 +163,13 @@ class StudentHumanFactor(MujocoEnv, utils.EzPickle):
         self.metadata["render_fps"] = int(np.round(1.0 / self.dt))
 
     def step(self, action):
+        # Action delay logic FIFO
+        self.action_queue.append(action)            # Append the new action
+        final_action = self.action_queue.pop(0)     # Pop the oldest (saved) action and use it in simulation
+
+
         # Perform simulation
-        self.do_simulation(action, self.frame_skip)
+        self.do_simulation(final_action, self.frame_skip)
         self.steps += 1
         
         # Get current observation
@@ -209,6 +220,12 @@ class StudentHumanFactor(MujocoEnv, utils.EzPickle):
         unicycle_roll, unicycle_pitch, _ = unicycle_euler
         pendulum_roll, pendulum_pitch, _ = pendulum_euler
         
+        """
+        ###################################
+        ##### Base Reward Calculation #####
+        ###################################
+        """
+
         # Balance reward
         balance_reward = 0.5 * (1.0 - 0.5 * (unicycle_roll**2 + unicycle_pitch**2 + pendulum_roll**2 + pendulum_pitch**2))
         
@@ -229,13 +246,47 @@ class StudentHumanFactor(MujocoEnv, utils.EzPickle):
         y_penalty = -0.5 * abs(y_pos)
         
         # Calculate total reward
-        reward = balance_reward + forward_reward + velocity_reward + tilt_penalty + wheel_speed_penalty + y_penalty
+        base_reward = (
+            balance_reward + forward_reward + velocity_reward
+            + tilt_penalty + wheel_speed_penalty + y_penalty
+        )
         
         # Additional reward for reaching goal
         if self.goal_reached:
-            reward += 100
+            base_reward += 100
         
+        """
+        ##################################
+        ###### Risk Aversion Reward ######
+        ##################################
+        """
+
+        risk_penalty = 0.0
+        risk_margin = 0.3        # Margin for risk penalty
+        c_risk = 1.0             # Coefficient for risk penalty (Hyper Parameter)
+
+        # Apply risk penalty for excessive tilt
+        if abs(unicycle_roll) > risk_margin:
+            risk_penalty += abs(unicycle_roll) - risk_margin
+        if abs(unicycle_pitch) > risk_margin:
+            risk_penalty += abs(unicycle_pitch) - risk_margin
+
+        # Apply risk penalty for excessive pendulum tilt (roll/pitch)
+        if abs(pendulum_roll) > risk_margin:
+            risk_penalty += abs(pendulum_roll) - risk_margin
+        if abs(pendulum_pitch) > risk_margin:
+            risk_penalty += abs(pendulum_pitch) - risk_margin      
+
+        
+        # Final risk penalty
+        risk_penalty_total = c_risk * risk_penalty
+
+        # Calculate final reward
+        reward = base_reward - risk_penalty_total
+  
+
         return reward
+    
 
     def _check_termination(self, x_pos, y_pos, unicycle_euler, pendulum_euler):
         unicycle_roll, unicycle_pitch, _ = unicycle_euler
@@ -298,6 +349,12 @@ class StudentHumanFactor(MujocoEnv, utils.EzPickle):
         self.prev_x = 0
         self.goal_reached = False
         self.total_episodes += 1
+
+        # Reset action delay queue
+        self.action_queue = [
+            np.zeros(self.action_space.shape, dtype=np.float32)
+            for _ in range(self.action_delay)
+        ]
         
         return self._get_obs()
 
