@@ -1,0 +1,7 @@
+# This repo was developed on ubuntu 22.04 & python 3.10
+# Author: Hyeonjae Park
+
+gymnasium[mujoco]
+torch
+stable-baselines3[extra]
+scipy
