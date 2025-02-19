@@ -4,6 +4,10 @@ Assistive_Unicycle_Coach/
 <br>├── envs/              # Environment definitions
 <br>└── train/             # Training scripts
 
+Download requirements with
+
+        pip install -r requirements.txt
+
 # Experiment
 <br>Activate TensorBoard with
 
