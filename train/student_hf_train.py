@@ -53,7 +53,7 @@ class TrainingStopCallback(BaseCallback):
 
                 if success_count >= 1000:
                     if self.verbose > 0:
-                        print("[TrainingStopCallback] Reached 100 success counts.")
+                        print("[TrainingStopCallback] Reached 1000 success counts.")
                     return False 
         return True
 
