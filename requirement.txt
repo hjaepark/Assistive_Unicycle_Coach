@@ -5,3 +5,4 @@ gymnasium[mujoco]
 torch
 stable-baselines3[extra]
 scipy
+tensorflow
