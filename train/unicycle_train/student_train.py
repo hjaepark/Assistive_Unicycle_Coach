@@ -8,7 +8,7 @@ import numpy as np
 import random
 import torch
 
-import envs
+import envs.unicycle as unicycle
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 
@@ -19,7 +19,11 @@ from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 ##########################################################################################################################
 
 # 1) Basic directory setup
-current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(
+    os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
+)
 data_dir = os.path.join(current_dir, "data")
 
 # Timestamp for run identification
