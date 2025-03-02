@@ -260,6 +260,13 @@ def main():
     parser.add_argument("--sensor_noise_std", type=float, default=0.0)
     parser.add_argument("--action_delay", type=int, default=3)
     parser.add_argument("--alpha", type=float, default=0.5, help="Coach action ratio(0~1).")
+    parser.add_argument(
+        "--alpha_method",
+        type=str,
+        default="fixed",
+        choices=["fixed", "timestep_based", "reward_based", "action_discrepancy"],
+        help="Adaptive alpha update strategy."
+    )
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility.")
     # (추가) coach 액션을 obs에 포함할지 여부
     parser.add_argument("--include_coach_in_obs", action="store_true", help="If set, expand observation with coach action.")
@@ -274,7 +281,7 @@ def main():
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-    fixed_reference_model_path = os.path.join("models", "unicycle_coach_reference_model")
+    fixed_reference_model_path = os.path.join("models", "unicycle_coach_hf_reference_model")
 
     if args.train:
         base_env = gym.make(

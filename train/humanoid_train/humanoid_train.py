@@ -1,3 +1,5 @@
+# humanoid_train.py
+
 import os
 import datetime
 import argparse
@@ -7,18 +9,18 @@ import random
 import torch
 
 from stable_baselines3 import SAC
-from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.callbacks import EvalCallback
+
 
 ##########################################################################################################################
 ##########################################################################################################################
-#################### SAC + Humanoid-v5 environment training code, matching the structure of student_hf_train.py ##########
+#################################### Humanoid-v5 agent environment training code  ########################################
 ##########################################################################################################################
 ##########################################################################################################################
 
-# 1) Basic directory setup (same style as student_hf_train.py)
-#    - We assume this file is nested 3 levels under the project root in your actual setup;
-#      adjust if needed.
+# 1) Basic directory setup
 current_dir = os.path.dirname(
     os.path.dirname(
         os.path.dirname(os.path.abspath(__file__))
@@ -26,24 +28,21 @@ current_dir = os.path.dirname(
 )
 data_dir = os.path.join(current_dir, "data")
 
-# Timestamp & run name
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 run_name = f"humanoid_{timestamp}"
 
-# Detailed structure for models and logs
 models_dir = os.path.join(data_dir, "models")
-best_model_dir = os.path.join(models_dir, "best_model", run_name)  # if needed
+best_model_dir = os.path.join(models_dir, "best_model", run_name)  # <-- 베스트 모델 저장 디렉토리
 final_model_dir = os.path.join(models_dir, "final_model")
 logs_dir = os.path.join(data_dir, "logs", run_name)
 
-# Create directories if not exist
 directories = [data_dir, models_dir, best_model_dir, final_model_dir, logs_dir]
 for d in directories:
     os.makedirs(d, exist_ok=True)
 
 
 ##########################################################################################################################
-# 2) SubprocVecEnv를 사용하기 위한 환경 생성 함수
+# 2) 환경 생성 함수
 ##########################################################################################################################
 def make_humanoid_env(
     seed=0,
@@ -63,9 +62,7 @@ def make_humanoid_env(
     render_mode=None
 ):
     """
-    Gymnasium의 Humanoid-v5 환경을 반환하는 클로저를 만들어주는 함수.
-    SubprocVecEnv에서 각 프로세스마다 이 함수를 호출해 환경을 생성.
-    (자전거 코드 대비, MuJoCo Humanoid 환경 사용)
+    SubprocVecEnv / DummyVecEnv 각각에서 사용가능한 환경 생성 클로저.
     """
     def _init():
         env = gym.make(
@@ -85,7 +82,6 @@ def make_humanoid_env(
             include_cfrc_ext_in_observation=include_cfrc_ext_in_observation,
             render_mode=render_mode
         )
-        # Monitor 래퍼 -> 에피소드별 reward, length 등을 기록 (SB3가 텐서보드로 표현 가능)
         env = Monitor(env)
         env.reset(seed=seed)
         return env
@@ -93,7 +89,7 @@ def make_humanoid_env(
 
 
 ##########################################################################################################################
-# 3) Train function
+# 3) Train function (with EvalCallback)
 ##########################################################################################################################
 def train(
     total_timesteps,
@@ -114,14 +110,13 @@ def train(
     include_cfrc_ext_in_observation=True
 ):
     """
-    병렬 환경(SubprocVecEnv)으로 Humanoid-v5를 구성하고 SAC 모델을 학습.
-    (TensorBoard 로깅 포함)
+    SubprocVecEnv 병렬 환경으로 Humanoid-v5를 구성하여 SAC 모델을 학습.
+    EvalCallback을 활용해 주기적으로 평가를 진행하고, best_model_dir에 베스트 모델 저장.
     """
-
-    # 3.1 SubprocVecEnv 병렬 환경 생성
-    env_fns = []
+    # 3.1 학습용 병렬 환경(SubprocVecEnv) 생성
+    train_env_fns = []
     for i in range(num_envs):
-        env_fns.append(make_humanoid_env(
+        train_env_fns.append(make_humanoid_env(
             seed=i,
             forward_reward_weight=forward_reward_weight,
             ctrl_cost_weight=ctrl_cost_weight,
@@ -137,13 +132,31 @@ def train(
             include_qfrc_actuator_in_observation=include_qfrc_actuator_in_observation,
             include_cfrc_ext_in_observation=include_cfrc_ext_in_observation
         ))
-    vec_env = SubprocVecEnv(env_fns)
+    vec_train_env = SubprocVecEnv(train_env_fns)
 
-    # 3.2 모델 생성 (TensorBoard 로그 디렉토리 지정)
-    from stable_baselines3 import SAC
+    # 3.2 평가용 환경(DummyVecEnv) 생성 (single env, or you can stack multiple)
+    eval_env_fns = [make_humanoid_env(
+        seed=9999,  # 평가 환경용 다른 시드
+        forward_reward_weight=forward_reward_weight,
+        ctrl_cost_weight=ctrl_cost_weight,
+        contact_cost_weight=contact_cost_weight,
+        contact_cost_range=contact_cost_range,
+        healthy_reward=healthy_reward,
+        terminate_when_unhealthy=terminate_when_unhealthy,
+        healthy_z_range=healthy_z_range,
+        reset_noise_scale=reset_noise_scale,
+        exclude_current_positions_from_observation=exclude_current_positions_from_observation,
+        include_cinert_in_observation=include_cinert_in_observation,
+        include_cvel_in_observation=include_cvel_in_observation,
+        include_qfrc_actuator_in_observation=include_qfrc_actuator_in_observation,
+        include_cfrc_ext_in_observation=include_cfrc_ext_in_observation
+    )]
+    vec_eval_env = DummyVecEnv(eval_env_fns)
+
+    # 3.3 SAC 모델 생성
     model = SAC(
         'MlpPolicy',
-        vec_env,
+        vec_train_env,
         verbose=1,
         device=device,
         batch_size=256,
@@ -151,22 +164,34 @@ def train(
         learning_rate=3e-4,
         gamma=0.99,
         tau=0.005,
-        tensorboard_log=logs_dir  # <-- 텐서보드 로그 경로 지정
+        tensorboard_log=logs_dir
     )
 
-    # 3.3 모델 학습 (tb_log_name으로 텐서보드 내 다른 실험과 구분)
+    # 3.4 EvalCallback 설정
+    eval_callback = EvalCallback(
+        vec_eval_env,
+        best_model_save_path=best_model_dir,  # 자동으로 best 모델 저장
+        log_path=logs_dir,
+        eval_freq=10_000,          # 예: 1만 스텝마다 평가
+        n_eval_episodes=5,         # 평가시 5 에피소드 평균
+        deterministic=True,
+        render=False
+    )
+
+    # 3.5 모델 학습
     model.learn(
         total_timesteps=total_timesteps,
-        tb_log_name="SAC_Humanoid"
+        tb_log_name="SAC_Humanoid",
+        callback=eval_callback  # <-- EvalCallback 사용
     )
 
-    # 3.4 모델 최종 저장 (자전거 코드 방식)
+    # 3.6 모델 최종 저장
     final_model_path = os.path.join(final_model_dir, f"humanoid_{timestamp}_final")
     model.save(final_model_path)
     print(f"[TRAIN] Training finished. Final model saved at: {final_model_path}")
 
-    # 벡터화 환경 정리
-    vec_env.close()
+    vec_train_env.close()
+    vec_eval_env.close()
 
 
 ##########################################################################################################################
@@ -189,14 +214,13 @@ def test(path_to_model,
          include_cfrc_ext_in_observation=True):
     """
     학습된 SAC 모델(.zip)을 불러와,
-    Humanoid-v5 환경(단일)에서 무한 루프 테스트 (자전거 코드와 같은 구조).
+    Humanoid-v5 환경(단일)에서 무한 루프 테스트.
     Ctrl + C 로 중단.
     """
-    # 4.1 모델 로드
     model = SAC.load(path_to_model)
     print(f"[TEST] Loaded model from: {path_to_model}")
 
-    # 4.2 테스트용 단일 환경 생성
+    # 테스트용 단일 환경 생성
     test_env = gym.make(
         "Humanoid-v5",
         render_mode=render_mode,
@@ -239,12 +263,12 @@ def test(path_to_model,
 
 
 ##########################################################################################################################
-# 5) Main execution (아규먼트 파싱, 자전거 코드 구조와 유사)
+# 5) Main
 ##########################################################################################################################
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train or test the Humanoid SAC model.')
+    parser = argparse.ArgumentParser(description='Train or test the Humanoid SAC model with EvalCallback.')
     parser.add_argument('-train', '--train', action='store_true', help='Train the model.')
-    parser.add_argument('-test', '--test', type=str, help='Test the model (path to model file).')
+    parser.add_argument('-test', '--test', type=str, help='Test the model (path to .zip file).')
     parser.add_argument('--timesteps', type=int, default=10**6, help='Number of timesteps for training.')
     parser.add_argument('--num_envs', type=int, default=8, help='Number of parallel environments for training.')
     args = parser.parse_args()
@@ -255,12 +279,11 @@ if __name__ == '__main__':
     random.seed(seed)
     torch.manual_seed(seed)
 
-    # Train mode
     if args.train:
         train(
             total_timesteps=args.timesteps,
             num_envs=args.num_envs,
-            device="cuda",  # GPU (필요 시 'cpu'로 변경)
+            device="cuda",  # GPU
             forward_reward_weight=1.25,
             ctrl_cost_weight=0.1,
             contact_cost_weight=5e-7,
@@ -276,7 +299,6 @@ if __name__ == '__main__':
             include_cfrc_ext_in_observation=True
         )
 
-    # Test mode
     if args.test:
         test(
             path_to_model=args.test,
