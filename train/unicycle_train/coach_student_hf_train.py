@@ -12,7 +12,7 @@ import envs.unicycle as unicycle
 
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
-from gymnasium import spaces  # 관측공간 변경에 필요
+from gymnasium import spaces
 
 ##########################################################################################################################
 # 1) Basic directory setup
@@ -169,7 +169,7 @@ class AdaptiveAlphaCallback(BaseCallback):
     def __init__(
         self,
         alpha_method="fixed",
-        alpha_init=1.0,
+        alpha_init=0.5,
         alpha_final=0.0,
         alpha_decay_rate=1e-5,
         total_training_steps=2_000_000,
@@ -370,7 +370,7 @@ def main():
                         help="Adaptive alpha update strategy."
     )
     # Timestep_based variable
-    parser.add_argument("--alpha_init", type=float, default=1.0, help="Initial alpha for the timestep_based schedule.")
+    parser.add_argument("--alpha_init", type=float, default=0.5, help="Initial alpha for the timestep_based schedule.")
     parser.add_argument("--alpha_final", type=float, default=0.0, help="Final alpha for the timestep-based schedule.")
     parser.add_argument("--alpha_decay_rate", type=float, default=1e-5, help="Exponential or custom schedule decay rate (optional).")
     
