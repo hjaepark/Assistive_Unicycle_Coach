@@ -1,4 +1,4 @@
-# coach_student_hf_train.py
+#coach_student_hf_train.py
 
 import os
 import datetime
@@ -28,7 +28,7 @@ run_name = f"coach_student_hf_{timestamp}"
 
 models_dir = os.path.join(data_dir, "models")
 best_model_dir = os.path.join(models_dir, "best_model", run_name)
-final_model_dir = os.path.join(models_dir, "final_model")
+final_model_dir = os.path.join(data_dir, "final_model")
 logs_dir = os.path.join(data_dir, "logs", run_name)
 
 for d in [data_dir, models_dir, best_model_dir, final_model_dir, logs_dir]:
@@ -59,15 +59,12 @@ class CoachStudentHFWrapper(gym.Wrapper):
         self.include_coach_in_obs = include_coach_in_obs
 
         # 코치가 학습된 환경의 관측 차원을 파악(= env.observation_space.shape[0])
-        # 예: 딜레이 포함 31차원
         self.raw_obs_dim = env.observation_space.shape[0]
-        self.action_dim = env.action_space.shape[0]  # 예: 3
+        self.action_dim = env.action_space.shape[0]
 
         # (옵션) 관측 공간 확장
         if self.include_coach_in_obs:
-            # 기존 obs_dim + 코치 액션 크기
             new_obs_dim = self.raw_obs_dim + self.action_dim
-            # 범위는 일단 -∞ ~ +∞로 설정
             self.observation_space = spaces.Box(
                 low=-np.inf,
                 high=np.inf,
@@ -75,21 +72,18 @@ class CoachStudentHFWrapper(gym.Wrapper):
                 dtype=env.observation_space.dtype
             )
         else:
-            # 그냥 기존 환경 그대로
             self.observation_space = env.observation_space
 
         self.action_space = env.action_space
-        self._last_obs_raw = None  # 환경에서 받은 '원본 obs'
+        self._last_obs_raw = None
     
     def reset(self, **kwargs):
         obs_raw, info = self.env.reset(**kwargs)
         self._last_obs_raw = obs_raw
 
-        # 코치 액션을 계산 (raw_obs만 넣음)
         coach_action, _ = self.coach_model.predict(obs_raw, deterministic=True)
 
         if self.include_coach_in_obs:
-            # 학생이 볼 최종 obs = [raw_obs, coach_action]
             obs = np.concatenate([obs_raw, coach_action], axis=0)
         else:
             obs = obs_raw
@@ -100,26 +94,20 @@ class CoachStudentHFWrapper(gym.Wrapper):
         if self._last_obs_raw is None:
             raise RuntimeError("Wrapper env must be reset() before step().")
 
-        # 코치 액션은 '원본 관측'을 넣어서 예측
         coach_action, _ = self.coach_model.predict(self._last_obs_raw, deterministic=True)
 
-        # 합성 액션 + 클리핑
         final_action = student_action + self.alpha * (coach_action - student_action)
         final_action = np.clip(final_action, -1.0, 1.0)
 
-        # 환경에 적용
         next_obs_raw, reward, done, truncated, info = self.env.step(final_action)
 
-        # (옵션) 학생 관측에 coach_action(혹은 next_coach_action)을 추가
-        # 다음 스텝 코치 액션을 관측에 넣고 싶으면, 아래처럼 한번 더 예측:
         next_coach_action, _ = self.coach_model.predict(next_obs_raw, deterministic=True)
-
         if self.include_coach_in_obs:
             next_obs = np.concatenate([next_obs_raw, next_coach_action], axis=0)
         else:
             next_obs = next_obs_raw
 
-        self._last_obs_raw = next_obs_raw  # 원본 obs 보관 (다음 스텝 coach_action 계산용)
+        self._last_obs_raw = next_obs_raw
         return next_obs, reward, done, truncated, info
 
     def set_alpha(self, new_alpha: float):
@@ -161,7 +149,7 @@ class StudentMonitor(BaseCallback):
             if "reward" in info:
                 self.logger.record("student/reward", info["reward"])
         return True
-    
+
 ##########################################################################################################################
 # 4) AdaptiveAlpha Callback
 ##########################################################################################################################
@@ -178,7 +166,7 @@ class AdaptiveAlphaCallback(BaseCallback):
         # reward_based parameters
         alpha_reward_ema_beta=0.95,
         alpha_reward_target=1500.0,
-        alpha_reward_delta=0.001        
+        alpha_reward_delta=0.001
     ):
         super().__init__(verbose)
         self.alpha_method = alpha_method
@@ -197,33 +185,20 @@ class AdaptiveAlphaCallback(BaseCallback):
         self.r_ema = 0.0
 
     def _on_training_start(self) -> None:
-        """
-        학습이 실제로 시작되기 직전에 1회 호출됩니다.
-        여기서 alpha를 alpha_init으로 세팅해주면,
-        학습 첫 스텝부터 (t=0) alpha=alpha_init을 확실히 적용할 수 있습니다.
-        """
         if self.alpha_method in ["timestep_based", "reward_based"]:
             self.alpha = self.alpha_init
-            # If reward_based reset EMA
             self.r_ema = 0.0
-
             self._apply_alpha_to_env()
             self.logger.record("alpha/current_alpha", self.alpha)
 
     def _on_step(self) -> bool:
         if self.alpha_method == "timestep_based":
             self._update_alpha_timestep_based()
-
         elif self.alpha_method == "reward_based":
             self._update_alpha_reward_based()
-
         elif self.alpha_method == "fixed":
-            # No alpha update if fixed
             pass
 
-        # "action_discrepancy" not yet
-
-        # only apply if not fixed
         if self.alpha_method != "fixed":
             self._apply_alpha_to_env()
 
@@ -232,26 +207,20 @@ class AdaptiveAlphaCallback(BaseCallback):
     def _update_alpha_timestep_based(self):
         current_step = self.num_timesteps
         ratio = current_step / float(self.total_training_steps)
-
         new_alpha = (1.0 - ratio) * self.alpha_init + ratio * self.alpha_final
         self.alpha = np.clip(new_alpha, 0.0, 1.0)
 
     def _update_alpha_reward_based(self):
-        # 현재 스텝의 reward 배열(벡터화 환경이면 여러 값)
         step_rewards = self.locals["rewards"]
         avg_reward = float(np.mean(step_rewards))
 
-        # EMA 업데이트
         beta = self.alpha_reward_ema_beta
         self.r_ema = beta * self.r_ema + (1.0 - beta) * avg_reward
 
-        # EMA가 목표 이상인지 확인
         if self.r_ema >= self.alpha_reward_target:
-            # 코치 의존 줄이기
             self.alpha = max(0.0, self.alpha - self.alpha_reward_delta)
         else:
-            # 코치 의존 늘리기
-            self.alpha = min(1.0, self.alpha + self.alpha_reward_delta)
+            self.alpha = min(self.alpha_init, self.alpha + self.alpha_reward_delta)
 
     def _apply_alpha_to_env(self):
         if hasattr(self.training_env, "envs"):
@@ -263,7 +232,6 @@ class AdaptiveAlphaCallback(BaseCallback):
                 self.training_env.set_alpha(self.alpha)
         
         self.logger.record("alpha/current_alpha", self.alpha)
-
 
 ##########################################################################################################################
 # 5) Train function
@@ -282,7 +250,6 @@ def train(
     alpha_final,
     alpha_decay_rate,
     include_coach_in_obs,
-
     # reward_based variable
     alpha_reward_ema_beta,
     alpha_reward_target,
@@ -296,7 +263,6 @@ def train(
         tensorboard_log=logs_dir
     )
 
-    # 평가 환경에서도 같은 래퍼 적용
     eval_base_env = gym.make(
         "StudentHF-v0",
         safe_coef=safe_coef,
@@ -330,7 +296,6 @@ def train(
         alpha_decay_rate=alpha_decay_rate,
         total_training_steps=total_timesteps,
 
-        # reward_based variable
         alpha_reward_ema_beta=alpha_reward_ema_beta,
         alpha_reward_target=alpha_reward_target,
         alpha_reward_delta=alpha_reward_delta
@@ -354,7 +319,7 @@ def test(env, path_to_model):
     model = SAC.load(path_to_model)
     print(f"[Test] Loaded model from: {path_to_model}")
 
-    obs = env.reset()[0]  # reset() returns (obs, info), so obs=...
+    obs = env.reset()[0]  # reset() returns (obs, info)
     done = False
     truncated = False
 
@@ -367,8 +332,7 @@ def test(env, path_to_model):
                 done = False
                 truncated = False
 
-            if env.render_mode == "human":
-                env.render()
+            # Optional: env.render() if needed
     except KeyboardInterrupt:
         print("[Test] Interrupted.")
     finally:
@@ -396,28 +360,27 @@ def main():
     # timestep_based variable
     parser.add_argument("--alpha_init", type=float, default=0.5, help="Initial alpha for the timestep_based schedule.")
     parser.add_argument("--alpha_final", type=float, default=0.0, help="Final alpha for the timestep-based schedule.")
-    parser.add_argument("--alpha_decay_rate", type=float, default=1e-5, help="Exponential or custom schedule decay rate (optional).")
+    parser.add_argument("--alpha_decay_rate", type=float, default=1e-5, help="Decay rate for custom schedules (optional).")
 
     # reward_based variable
     parser.add_argument("--alpha_reward_ema_beta", type=float, default=0.95,
-                        help="Decay factor (beta) for the EMA-based reward tracking in 'reward_based' method. e.g. 0.9, 0.95, 0.99")
-    parser.add_argument("--alpha_reward_target", type=float, default=1500.0,
-                        help="Target reward threshold for 'reward_based' method.")
-    parser.add_argument("--alpha_reward_delta", type=float, default=0.001,
-                        help="Step size for alpha update in the 'reward_based' method.")
-    
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility.")
-    parser.add_argument("--include_coach_in_obs", action="store_false", help="If set, expand observation with coach action.")
+                        help="Decay factor (beta) for EMA-based reward tracking in 'reward_based'. e.g. 0.9, 0.95, 0.99")
+    parser.add_argument("--alpha_reward_target", type=float, default=500.0,
+                        help="Target reward threshold for 'reward_based'.")
+    parser.add_argument("--alpha_reward_delta", type=float, default=0.01,
+                        help="Step size for alpha update in 'reward_based'.")
+
+    parser.add_argument("--seed", type=int, default=42, help="Random seed.")
+    parser.add_argument("--include_coach_in_obs", action="store_false", help="If set, expand obs with coach action.")
 
     args = parser.parse_args()
 
     # Seed
-    seed = args.seed
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
+    np.random.seed(args.seed)
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+        torch.cuda.manual_seed_all(args.seed)
 
     fixed_reference_model_path = os.path.join("models", "unicycle_coach_hf_reference_model")
 
@@ -455,7 +418,7 @@ def main():
             # reward_based
             alpha_reward_ema_beta=args.alpha_reward_ema_beta,
             alpha_reward_target=args.alpha_reward_target,
-            alpha_reward_delta=args.alpha_reward_delta            
+            alpha_reward_delta=args.alpha_reward_delta
         )
         wrapped_env.close()
 
