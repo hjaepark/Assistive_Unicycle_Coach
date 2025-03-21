@@ -7,8 +7,8 @@ import gymnasium as gym
 import numpy as np
 import random
 
-import envs.unicycle as unicycle
-from gamepad import Gamepad
+from envs import unicycle
+from hse.gamepad import Gamepad
 
 ##########################################################################################################################
 ##########################################################################################################################
