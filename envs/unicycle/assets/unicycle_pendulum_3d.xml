@@ -52,7 +52,8 @@
 
     <actuator>
         <motor name="wheel_motor" joint="wheel_joint" gear="30" ctrllimited="true" ctrlrange="-1 1"/>
-        <motor name="roll_stabilizer" joint="free_joint" gear="0 0 0 20 0 0" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="pitch_stabilizer" joint="free_joint" gear="0 0 0 60 0 0" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="roll_stabilizer" joint="free_joint" gear="0 0 0 0 60 0" ctrllimited="true" ctrlrange="-1 1"/>
         <motor name="yaw_control" joint="free_joint" gear="0 0 0 0 0 10" ctrllimited="true" ctrlrange="-1 1"/>
     </actuator>
 </mujoco>
