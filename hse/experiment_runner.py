@@ -16,6 +16,16 @@ from hse.gamepad import Gamepad
 ##########################################################################################################################
 ##########################################################################################################################
 
+# Experiment parameters
+DEFAULT_CAMERA_CONFIG = {
+    "trackbodyid": 0,
+    "distance": 4.0,
+    "azimuth": 45.0,
+    "lookat": np.array((0.0, 0.0, 1.0)),
+}
+FRAME_SKIP = 1
+
+
 # Directory setup
 current_dir = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,8 +61,9 @@ def gamepad_to_action(gamepad) -> np.ndarray:
     yaw_gain = 0.125
 
     action = [
-        motor_gain * gamepad["axes"][0],
-        roll_gain * gamepad["axes"][3],
+        motor_gain * -gamepad["axes"][1],
+        roll_gain * gamepad["axes"][2],  # roll?
+        roll_gain * -gamepad["axes"][3],  # pitch?
         yaw_gain * (gamepad["axes"][4] - gamepad["axes"][5]),  # yaw
     ]
     return action
@@ -104,6 +115,11 @@ if __name__ == "__main__":
     np.random.seed(seed)
     random.seed(seed)
 
-    test_env = gym.make("Student-v0", render_mode="human")
+    test_env = gym.make(
+        "Student-v0",
+        render_mode="human",
+        frame_skip=FRAME_SKIP,
+        default_camera_config=DEFAULT_CAMERA_CONFIG,
+    )
     test(test_env)
     test_env.close()
