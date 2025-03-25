@@ -17,7 +17,7 @@ DEFAULT_CAMERA_CONFIG = {
     "lookat": np.array((0.0, 0.0, 1.0)),
 }
 
-TERM_SCALE = 2.0
+TERM_SCALE = 1.5
 
 
 class Student(MujocoEnv, utils.EzPickle):

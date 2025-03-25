@@ -33,7 +33,7 @@
 
             <!-- Wheel: Realistic mass ≈ 1.5 kg -->
             <body name="wheel" pos="0 0 0">
-                <joint name="wheel_joint" type="hinge" axis="0 1 0" frictionloss="0.5" damping="0.5"/>
+                <joint name="wheel_joint" type="hinge" axis="0 1 0" frictionloss="1.5" damping="0.9"/>
                 <geom type="mesh" mesh="wheel" pos="0 0 0" euler="0 0 90" mass="1.5" rgba="0.8 0.8 0.8 0.6"/>
                 <geom name="wheel_marker" type="capsule" size="0.01 0.24" pos="0 0 0" euler="0 0 90" rgba="0.5 0.5 0.5 1"/>
             </body>
@@ -42,9 +42,9 @@
     </worldbody>
 
     <actuator>
-        <motor name="wheel_motor" joint="wheel_joint" gear="30" ctrllimited="true" ctrlrange="-1 1"/>
-        <motor name="pitch_stabilizer" joint="free_joint" gear="0 0 0 60 0 0" ctrllimited="true" ctrlrange="-1 1"/>
-        <motor name="roll_stabilizer" joint="free_joint" gear="0 0 0 0 60 0" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="wheel_motor" joint="wheel_joint" gear="15" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="pitch_stabilizer" joint="free_joint" gear="0 0 0 10 0 0" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="roll_stabilizer" joint="free_joint" gear="0 0 0 0 10 0" ctrllimited="true" ctrlrange="-1 1"/>
         <motor name="yaw_control" joint="free_joint" gear="0 0 0 0 0 10" ctrllimited="true" ctrlrange="-1 1"/>
     </actuator>
 </mujoco>
