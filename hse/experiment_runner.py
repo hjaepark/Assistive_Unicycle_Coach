@@ -74,6 +74,10 @@ def test(env):
     gamepad = Gamepad()
 
     obs = env.reset()
+
+    #print("Observation shape:", obs.shape)
+    #print("Observation:", obs)
+
     done = False
     truncated = False
 
@@ -86,6 +90,8 @@ def test(env):
 
             action = gamepad_to_action(gamepad_state)
             obs, reward, done, truncated, info = env.step(action)
+            #print("Observation shape:", obs.shape)
+            #print("Observation:", obs)
 
             if done or truncated:
                 obs = env.reset()

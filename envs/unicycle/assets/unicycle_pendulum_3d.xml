@@ -29,20 +29,11 @@
                 <body name="seat" pos="0 0 0.55">
                     <geom name="seat_post" type="cylinder" fromto="0 0 0 0 0 -0.18" size="0.015" mass="0.5" rgba="0.5 0.5 0.5 1"/>
                 </body>
-
-                <!-- Pendulum: Represents average human body (Total mass 85 kg, seated height ~65 cm) -->
-                <body name="pendulum" pos="0 0 0.57">
-                    <joint name="pendulum_joint" type="ball" damping="0.1"/>
-                    <!-- Rod: Human torso+lower body mass ≈ 80 kg, length 65 cm -->
-                    <geom name="rod" type="capsule" fromto="0 0 0 0 0 0.65" size="0.015" mass="80" rgba="0.7 0.7 0.7 1"/>
-                    <!-- Sphere mass: Head + extra mass ≈ 5 kg -->
-                    <geom name="sphere_mass" type="sphere" pos="0 0 0.65" size="0.06" mass="5" rgba=".8 .2 .2 1"/>
-                </body>
             </body>
 
             <!-- Wheel: Realistic mass ≈ 1.5 kg -->
             <body name="wheel" pos="0 0 0">
-                <joint name="wheel_joint" type="hinge" axis="0 1 0"/>
+                <joint name="wheel_joint" type="hinge" axis="0 1 0" frictionloss="0.5" damping="0.5"/>
                 <geom type="mesh" mesh="wheel" pos="0 0 0" euler="0 0 90" mass="1.5" rgba="0.8 0.8 0.8 0.6"/>
                 <geom name="wheel_marker" type="capsule" size="0.01 0.24" pos="0 0 0" euler="0 0 90" rgba="0.5 0.5 0.5 1"/>
             </body>

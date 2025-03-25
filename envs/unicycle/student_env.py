@@ -50,7 +50,7 @@ class Student(MujocoEnv, utils.EzPickle):
         utils.EzPickle.__init__(self, xml_file, frame_skip, reset_noise_scale, max_steps, **kwargs)
 
         # Define observation and action spaces
-        observation_space = Box(low=-np.inf, high=np.inf, shape=(22,), dtype=np.float64)
+        observation_space = Box(low=-np.inf, high=np.inf, shape=(15,), dtype=np.float64)
         self.action_space = Box(low=-1, high=1, shape=(3,), dtype=np.float32)
 
         # Environment variables
@@ -91,17 +91,17 @@ class Student(MujocoEnv, utils.EzPickle):
         self._update_success_count(x_pos)
 
         # Calculate Euler angles for unicycle & pendulum
-        unicycle_euler, pendulum_euler = self._get_euler_angles(observation)
+        unicycle_euler = self._get_euler_angles(observation)
 
         # Calculate reward
-        reward = self._calculate_reward(x_pos, y_pos, unicycle_euler, pendulum_euler, observation)
+        reward = self._calculate_reward(x_pos, y_pos, unicycle_euler, observation)
 
         # Check termination conditions
-        terminated = self._check_termination(x_pos, y_pos, unicycle_euler, pendulum_euler)
+        terminated = self._check_termination(x_pos, y_pos, unicycle_euler)
         truncated = bool(self.steps >= self.max_steps)
 
         # Collect additional information
-        info = self._get_info(x_pos, y_pos, unicycle_euler, pendulum_euler, reward)
+        info = self._get_info(x_pos, y_pos, unicycle_euler, reward)
 
         # Render if in human mode
         if self.render_mode == "human":
@@ -138,27 +138,27 @@ class Student(MujocoEnv, utils.EzPickle):
     def _get_euler_angles(self, observation):
         # Convert quaternions to Euler angles
         unicycle_quat = observation[3:7]
-        pendulum_quat = observation[7:11]
+        #pendulum_quat = observation[7:11]
 
         unicycle_euler = Rotation.from_quat(np.roll(unicycle_quat, -1)).as_euler('xyz')
-        pendulum_euler = Rotation.from_quat(np.roll(pendulum_quat, -1)).as_euler('xyz')
+        #pendulum_euler = Rotation.from_quat(np.roll(pendulum_quat, -1)).as_euler('xyz')
 
-        return unicycle_euler, pendulum_euler
+        return unicycle_euler
 
-    def _calculate_reward(self, x_pos, y_pos, unicycle_euler, pendulum_euler, observation):
+    def _calculate_reward(self, x_pos, y_pos, unicycle_euler, observation):
         unicycle_roll, unicycle_pitch, _ = unicycle_euler
-        pendulum_roll, pendulum_pitch, _ = pendulum_euler
+        #pendulum_roll, pendulum_pitch, _ = pendulum_euler
 
         # Balance reward
         balance_reward = 0.5 * (
-            1.0 - 0.5 * (unicycle_roll**2 + unicycle_pitch**2 + pendulum_roll**2 + pendulum_pitch**2)
+            1.0 - 0.5 * (unicycle_roll**2 + unicycle_pitch**2)
         )
 
         # Forward reward
         forward_reward = 2.0 * x_pos
 
         # Velocity reward
-        velocity_reward = observation[12]  # x-velocity
+        velocity_reward = observation[8]  # x-velocity
 
         # Penalty for excessive tilt
         tilt_penalty = (
@@ -166,14 +166,14 @@ class Student(MujocoEnv, utils.EzPickle):
             if (
                 abs(unicycle_roll) > np.pi / 4
                 or abs(unicycle_pitch) > np.pi / 4
-                or abs(pendulum_roll) > np.pi / 4
-                or abs(pendulum_pitch) > np.pi / 4
+                # or abs(pendulum_roll) > np.pi / 4
+                # or abs(pendulum_pitch) > np.pi / 4
             )
             else 0.0
         )
 
         # Penalty for excessive wheel speed
-        wheel_speed_penalty = -0.05 * observation[21] ** 2
+        wheel_speed_penalty = -0.05 * observation[14] ** 2
 
         # Calculate total reward
         reward = balance_reward + forward_reward + velocity_reward + tilt_penalty + wheel_speed_penalty
@@ -184,9 +184,9 @@ class Student(MujocoEnv, utils.EzPickle):
 
         return reward
 
-    def _check_termination(self, x_pos, y_pos, unicycle_euler, pendulum_euler):
+    def _check_termination(self, x_pos, y_pos, unicycle_euler):
         unicycle_roll, unicycle_pitch, _ = unicycle_euler
-        pendulum_roll, pendulum_pitch, _ = pendulum_euler
+        #pendulum_roll, pendulum_pitch, _ = pendulum_euler
 
         # Check termination conditions
         return bool(
@@ -198,9 +198,9 @@ class Student(MujocoEnv, utils.EzPickle):
             or abs(unicycle_pitch) > np.pi / 3 * TERM_SCALE
             or
             # Excessive pendulum tilt
-            abs(pendulum_roll) > np.pi / 3 * TERM_SCALE
-            or abs(pendulum_pitch) > np.pi / 3 * TERM_SCALE
-            or self.goal_reached
+            # abs(pendulum_roll) > np.pi / 3 * TERM_SCALE
+            # or abs(pendulum_pitch) > np.pi / 3 * TERM_SCALE
+            self.goal_reached
             or
             # Required success count achieved
             self.num_success >= self.target_success_count
@@ -213,16 +213,16 @@ class Student(MujocoEnv, utils.EzPickle):
             self.goal_reached = True
         self.prev_x_pos = x_pos
 
-    def _get_info(self, x_pos, y_pos, unicycle_euler, pendulum_euler, reward):
+    def _get_info(self, x_pos, y_pos, unicycle_euler, reward):
         # Collect additional information
         unicycle_roll, unicycle_pitch, _ = unicycle_euler
-        pendulum_roll, pendulum_pitch, _ = pendulum_euler
+        #pendulum_roll, pendulum_pitch, _ = pendulum_euler
 
         return {
             "unicycle_roll": unicycle_roll,
             "unicycle_pitch": unicycle_pitch,
-            "pendulum_roll": pendulum_roll,
-            "pendulum_pitch": pendulum_pitch,
+            #"pendulum_roll": pendulum_roll,
+            #"pendulum_pitch": pendulum_pitch,
             "x_position": x_pos,
             "y_position": y_pos,
             "goal_reached": self.goal_reached,
