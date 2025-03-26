@@ -17,7 +17,7 @@ DEFAULT_CAMERA_CONFIG = {
     "lookat": np.array((0.0, 0.0, 1.0)),
 }
 
-TERM_SCALE = 1.5
+TERM_SCALE = 4/3
 
 
 class Student(MujocoEnv, utils.EzPickle):
@@ -39,7 +39,7 @@ class Student(MujocoEnv, utils.EzPickle):
         frame_skip: int = 2,  # 0.005 timestep in XML * frame_skip 2 = 0.01sec in sim time
         default_camera_config: Dict[str, Union[float, int, np.ndarray]] = DEFAULT_CAMERA_CONFIG,
         reset_noise_scale: float = 0.01,
-        max_steps: int = 1000,
+        max_steps: int = 2000,
         **kwargs,
     ):
         # Unicycle XML Path
@@ -61,7 +61,7 @@ class Student(MujocoEnv, utils.EzPickle):
         self.num_success = 0  # Cumulative success count
         self.prev_x_pos = 0
         self.target_success_count = 1000
-        self.goal_distance = 12.0
+        self.goal_distance = 5.0
         self.goal_reached = False
 
         # Initialize MujocoEnv
@@ -191,7 +191,7 @@ class Student(MujocoEnv, utils.EzPickle):
         # Check termination conditions
         return bool(
             # y-axis movement limit
-            abs(y_pos) > 2.0
+            abs(y_pos) > 4.0
             or
             # Excessive unicycle tilt
             abs(unicycle_roll) > np.pi / 3 * TERM_SCALE
