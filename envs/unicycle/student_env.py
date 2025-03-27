@@ -150,7 +150,7 @@ class Student(MujocoEnv, utils.EzPickle):
         return observation, reward, terminated, truncated, info
 
     def reset_model(self):
-        # Reset model (start new episode)
+        # Reset model
         noise_low = -self._reset_noise_scale
         noise_high = self._reset_noise_scale
 
@@ -192,7 +192,7 @@ class Student(MujocoEnv, utils.EzPickle):
         )
 
         # Forward reward
-        forward_reward = 2.0 * x_pos
+        forward_reward = 2.0 * (np.exp(0.5 * x_pos) - 1)
 
         # Velocity reward
         velocity_reward = observation[8]  # x-velocity
