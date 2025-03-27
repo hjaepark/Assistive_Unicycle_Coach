@@ -10,6 +10,49 @@ from gymnasium import utils
 from gymnasium.envs.mujoco import MujocoEnv
 from gymnasium.spaces import Box
 
+###################################################
+## Action Space
+###################################################
+"""
+The agent takes a 4-element vector for actions.
+
+| Num | Action                                 | Control Range | Name (in XML)           | Joint         | Gear Factor | Effective Torque (N·m)   |
+|-----|----------------------------------------|---------------|-------------------------|---------------|------------ |--------------------------|
+| 0   | Torque applied on the wheel            | -1 to 1       | wheel_motor             | wheel_joint   | 25          | -25 to 25                |
+| 1   | Roll control torque (about x-axis)     | -1 to 1       | roll_control_motor      | free_joint    | 10          | -10 to 10                |
+| 2   | Pitch control torque (about y-axis)    | -1 to 1       | pitch_control_motor     | free_joint    | 10          | -10 to 10                |
+| 3   | Yaw control torque  (about z-axis)     | -1 to 1       | yaw_control_motor       | free_joint    | 10          | -10 to 10                |
+
+Solution model will take action based on the environment after student's action taken.
+"""
+
+###################################################
+## Observation Space
+###################################################
+"""
+The observation consists of:
+
+| Num | Observation                          | Min   | Max   | Type (Unit)                |
+|-----|--------------------------------------|-------|-------|----------------------------|
+| 0   | position in the x-direction          | -Inf  | Inf   | position (m)               |
+| 1   | position in the y-direction          | -Inf  | Inf   | position (m)               |
+| 2   | position in the z-direction          | -Inf  | Inf   | position (m)               |
+| 3   | w-component of the unicycle’s orientation | -1    | 1     | quaternion component       |
+| 4   | x-component of the unicycle’s orientation | -1    | 1     | quaternion component       |
+| 5   | y-component of the unicycle’s orientation | -1    | 1     | quaternion component       |
+| 6   | z-component of the unicycle’s orientation | -1    | 1     | quaternion component       |
+| 7   | angle of the wheel                   | -Inf  | Inf   | angle (rad)                |
+| 8   | velocity in the x-direction          | -Inf  | Inf   | velocity (m/s)             |
+| 9   | velocity in the y-direction          | -Inf  | Inf   | velocity (m/s)             |
+| 10  | velocity in the z-direction          | -Inf  | Inf   | velocity (m/s)             |
+| 11  | angular velocity about x-axis        | -Inf  | Inf   | angular velocity (rad/s)   |
+| 12  | angular velocity about y-axis        | -Inf  | Inf   | angular velocity (rad/s)   |
+| 13  | angular velocity about z-axis        | -Inf  | Inf   | angular velocity (rad/s)   |
+| 14  | angular velocity of the wheel        | -Inf  | Inf   | angular velocity (rad/s)   |
+
+The observation is a `ndarray` with shape `(15,)` where the elements correspond to the table above.
+"""
+
 # Default camera configuration
 DEFAULT_CAMERA_CONFIG = {
     "trackbodyid": 0,
