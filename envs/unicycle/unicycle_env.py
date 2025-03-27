@@ -1,4 +1,4 @@
-# student_env.py
+# unicycle_env.py
 
 import os
 from typing import Dict, Union
@@ -60,18 +60,10 @@ DEFAULT_CAMERA_CONFIG = {
     "lookat": np.array((0.0, 0.0, 1.0)),
 }
 
-class Student(MujocoEnv, utils.EzPickle):
+class Unicycle(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": ["human", "rgb_array", "depth_array"],
     }
-
-    """
-    ##########################################################################################################################
-    ##########################################################################################################################
-    ############################ Student agent ideal environment code for the Unicycle Project ###############################
-    ##########################################################################################################################
-    ##########################################################################################################################
-    """
 
     def __init__(
         self,
@@ -84,7 +76,7 @@ class Student(MujocoEnv, utils.EzPickle):
     ):
         # Unicycle XML Path
         if xml_file is None:
-            xml_file = os.path.join(os.path.dirname(__file__), "assets", "unicycle_pendulum_3d.xml")
+            xml_file = os.path.join(os.path.dirname(__file__), "assets", "unicycle_3d.xml")
 
         # Initialize EzPickle
         utils.EzPickle.__init__(self, xml_file, frame_skip, reset_noise_scale, max_steps, **kwargs)

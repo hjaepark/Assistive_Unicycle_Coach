@@ -7,16 +7,11 @@ import gymnasium as gym
 import numpy as np
 import random
 import torch
+import time
 
 import envs.unicycle as unicycle
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
-
-##########################################################################################################################
-##########################################################################################################################
-######################## Student agent ideal environment training code for the Unicycle Project ##########################
-##########################################################################################################################
-##########################################################################################################################
 
 # 1) Basic directory setup
 current_dir = os.path.dirname(
@@ -70,7 +65,7 @@ def train(env, total_timesteps=10**10):
         tensorboard_log=logs_dir
     )
 
-    eval_env = gym.make('Student-v0')
+    eval_env = gym.make('Unicycle-v0')
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=best_model_dir,
@@ -129,19 +124,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Set seeds for reproducibility
-    seed = 42
+    # seed = 42
+    seed = int(time.time()) # Time based random seed
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
 
     # Train mode
     if args.train:
-        env = gym.make('Student-v0')
+        env = gym.make('Unicycle-v0')
         train(env, total_timesteps=args.timesteps)
         env.close()
 
     # Test mode
     if args.test:
-        test_env = gym.make('Student-v0', render_mode='human')
+        test_env = gym.make('Unicycle-v0', render_mode='human')
         test(test_env, args.test)
         test_env.close()
