@@ -37,10 +37,9 @@ for d in directories:
     os.makedirs(d, exist_ok=True)
 
 # Set trained model directory to load and test
-trained_models_dir = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "trained_models"
-)
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
+trained_models_dir = os.path.join(project_root, 'trained_models')
 
 # 2) Callback for stopping training based on success count
 class TrainingStopCallback(BaseCallback):
@@ -99,7 +98,7 @@ def test(env, path_to_model):
     model = SAC.load(path_to_model)
     print(f"Loaded model from: {path_to_model}")
 
-    obs = env.reset()
+    obs, _ = env.reset()
     done = False
     truncated = False
 
@@ -109,7 +108,7 @@ def test(env, path_to_model):
             obs, reward, done, truncated, info = env.step(action)
 
             if done or truncated:
-                obs = env.reset()
+                obs, _ = env.reset()
                 done = False
                 truncated = False
 
@@ -146,5 +145,5 @@ if __name__ == '__main__':
     if args.test:
         test_env = gym.make('Unicycle-v0', render_mode='human')
         path_to_model = os.path.join(trained_models_dir, args.test)
-        test(test_env, args.test)
+        test(test_env, path_to_model)
         test_env.close()
