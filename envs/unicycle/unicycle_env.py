@@ -176,14 +176,13 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         return unicycle_euler
 
     def _calculate_reward(self, x_pos, y_pos, unicycle_euler, observation):
-        unicycle_roll, unicycle_pitch, _ = unicycle_euler
+        unicycle_roll, unicycle_pitch, unicycle_yaw = unicycle_euler
 
         # Balance reward
         balance_reward = 0.5 * (
             1.0 - 0.5 * (unicycle_roll**2 + unicycle_pitch**2)
         )
 
-        # Forward reward
         # forward_reward = 2.0 * x_pos
         forward_reward = 2.0 * (np.exp(0.1 * x_pos) - 1)
 
@@ -203,8 +202,10 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         # Penalty for excessive wheel speed
         wheel_speed_penalty = -0.05 * observation[14] ** 2
 
+        yaw_stability_reward = 1.0 * np.exp(-3 * abs(observation[13]))
+
         # Calculate total reward
-        reward = balance_reward + forward_reward + velocity_reward + tilt_penalty + wheel_speed_penalty
+        reward = balance_reward + forward_reward + velocity_reward + yaw_stability_reward + tilt_penalty + wheel_speed_penalty
 
         # Additional reward for reaching goal
         if self.goal_reached:
