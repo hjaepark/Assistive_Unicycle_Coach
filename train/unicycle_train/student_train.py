@@ -36,6 +36,12 @@ directories = [data_dir, models_dir, best_model_dir, final_model_dir, logs_dir]
 for d in directories:
     os.makedirs(d, exist_ok=True)
 
+# Set trained model directory to load and test
+trained_models_dir = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "trained_models"
+)
+
 # 2) Callback for stopping training based on success count
 class TrainingStopCallback(BaseCallback):
     def __init__(self, verbose=0):
@@ -139,5 +145,6 @@ if __name__ == '__main__':
     # Test mode
     if args.test:
         test_env = gym.make('Unicycle-v0', render_mode='human')
+        path_to_model = os.path.join(trained_models_dir, args.test)
         test(test_env, args.test)
         test_env.close()
