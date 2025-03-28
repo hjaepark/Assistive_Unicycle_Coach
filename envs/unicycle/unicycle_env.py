@@ -83,7 +83,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
 
         # Define observation and action spaces
         observation_space = Box(low=-np.inf, high=np.inf, shape=(15,), dtype=np.float64)
-        self.action_space = Box(low=-1, high=1, shape=(3,), dtype=np.float32)
+        self.action_space = Box(low=-1, high=1, shape=(4,), dtype=np.float32)
 
         # Environment variables
         self._reset_noise_scale = reset_noise_scale
@@ -184,7 +184,8 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         )
 
         # Forward reward
-        forward_reward = 2.0 * (np.exp(0.5 * x_pos) - 1)
+        # forward_reward = 2.0 * x_pos
+        forward_reward = 2.0 * (np.exp(0.1 * x_pos) - 1)
 
         # Velocity reward
         velocity_reward = observation[8]  # x-velocity

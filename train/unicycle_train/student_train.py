@@ -124,8 +124,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Set seeds for reproducibility
-    # seed = 42
-    seed = int(time.time()) # Time based random seed
+    seed = 42
+    # seed = int(time.time()) # Time based random seed
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
