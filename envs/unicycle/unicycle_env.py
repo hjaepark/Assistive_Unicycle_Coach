@@ -176,40 +176,57 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         return unicycle_euler
 
     def _calculate_reward(self, x_pos, y_pos, unicycle_euler, observation):
-        unicycle_roll, unicycle_pitch, unicycle_yaw = unicycle_euler
+        roll, pitch, yaw = unicycle_euler
+        x_vel, y_vel, z_vel = observation[8], observation[9], observation[10]
+        z_ang_vel = observation[13]
+        wheel_ang_vel = observation[14]
 
-        # Balance reward
-        balance_reward = 0.5 * (
-            1.0 - 0.5 * (unicycle_roll**2 + unicycle_pitch**2)
+        # (1) 밸런스 보상
+        #    : roll^2 + pitch^2가 작을수록 ↑
+        balance_reward = 1.0 - 0.5 * (roll**2 + pitch**2)
+        balance_reward = np.clip(balance_reward, -1.0, 1.0)
+
+        # (2) 전진 보상
+        #    : x_pos가 클수록, 혹은 x_vel이 클수록
+        #      - 너무 큰 가중치는 회전 꼼수를 부추길 수 있음
+        forward_reward = 0.5 * x_pos
+
+        # (3) 전방속도 보상 + 측면속도 페널티
+        forward_vel_reward = 1.0 * x_vel
+        lateral_vel_penalty = -0.3 * abs(y_vel)
+
+        # (4) 회전(heading) 정렬 보상
+        #     : yaw가 0에 가까울수록 보상, 멀어질수록 페널티
+        yaw_error = abs(yaw)  # 목표 yaw = 0
+        yaw_alignment_reward = np.exp(-2.0 * yaw_error)
+        
+        # (5) yaw 속도 페널티 (회전 빨리하면 패널티)
+        yaw_velocity_penalty = -0.3 * (z_ang_vel**2)
+
+        # (6) 바퀴 속도 페널티
+        wheel_speed_penalty = -0.05 * (wheel_ang_vel**2)
+
+        # (7) 크게 기울어지면 즉시 패널티(roll/pitch가 ~80° 이상이면)
+        #     이미 termination 조건에도 있지만, 보상을 추가로 깎아서
+        #     위험동작을 더욱 억제
+        tilt_penalty = 0.0
+        if abs(roll) > np.pi/3 or abs(pitch) > np.pi/3:
+            tilt_penalty = -5.0
+
+        reward = (
+            balance_reward
+            + forward_reward
+            + forward_vel_reward
+            + lateral_vel_penalty
+            + yaw_alignment_reward
+            + yaw_velocity_penalty
+            + wheel_speed_penalty
+            + tilt_penalty
         )
 
-        # forward_reward = 2.0 * x_pos
-        forward_reward = 2.0 * (np.exp(0.1 * x_pos) - 1)
-
-        # Velocity reward
-        velocity_reward = observation[8]  # x-velocity
-
-        # Penalty for excessive tilt
-        tilt_penalty = (
-            -5.0
-            if (
-                abs(unicycle_roll) > np.pi / 4 
-                or abs(unicycle_pitch) > np.pi / 4
-            )
-            else 0.0
-        )
-
-        # Penalty for excessive wheel speed
-        wheel_speed_penalty = -0.05 * observation[14] ** 2
-
-        yaw_stability_reward = 1.0 * np.exp(-3 * abs(observation[13]))
-
-        # Calculate total reward
-        reward = balance_reward + forward_reward + velocity_reward + yaw_stability_reward + tilt_penalty + wheel_speed_penalty
-
-        # Additional reward for reaching goal
+        # 목표 도달 보너스
         if self.goal_reached:
-            reward += 100
+            reward += 100.0
 
         return reward
 
