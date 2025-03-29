@@ -71,7 +71,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         frame_skip: int = 2,  # 0.005 timestep in XML * frame_skip 2 = 0.01sec in sim time
         default_camera_config: Dict[str, Union[float, int, np.ndarray]] = DEFAULT_CAMERA_CONFIG,
         reset_noise_scale: float = 0.01,
-        max_steps: int = 1000,
+        max_steps: int = 1500,
         **kwargs,
     ):
         # Unicycle XML Path
@@ -181,34 +181,30 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         z_ang_vel = observation[13]
         wheel_ang_vel = observation[14]
 
-        # (1) 밸런스 보상
-        #    : roll^2 + pitch^2가 작을수록 ↑
+        # (1) Balance Reward
         balance_reward = 1.0 - 0.5 * (roll**2 + pitch**2)
         balance_reward = np.clip(balance_reward, -1.0, 1.0)
 
-        # (2) 전진 보상
-        #    : x_pos가 클수록, 혹은 x_vel이 클수록
-        #      - 너무 큰 가중치는 회전 꼼수를 부추길 수 있음
+        # (2) Forward Reward
         forward_reward = 0.5 * x_pos
 
-        # (3) 전방속도 보상 + 측면속도 페널티
+        # (3) Forward Velocity Reward
         forward_vel_reward = 1.0 * x_vel
-        lateral_vel_penalty = -0.3 * abs(y_vel)
 
-        # (4) 회전(heading) 정렬 보상
-        #     : yaw가 0에 가까울수록 보상, 멀어질수록 페널티
-        yaw_error = abs(yaw)  # 목표 yaw = 0
+        # (4) Heading Alignment Reward
+        yaw_error = abs(yaw)
         yaw_alignment_reward = np.exp(-2.0 * yaw_error)
+
+        # (5) Lateral Velocity Penalty
+        lateral_vel_penalty = -0.3 * abs(y_vel)
         
-        # (5) yaw 속도 페널티 (회전 빨리하면 패널티)
+        # (6) Yaw Velocity Penalty
         yaw_velocity_penalty = -0.3 * (z_ang_vel**2)
 
-        # (6) 바퀴 속도 페널티
+        # (7) Wheel Speed Penalty
         wheel_speed_penalty = -0.05 * (wheel_ang_vel**2)
 
-        # (7) 크게 기울어지면 즉시 패널티(roll/pitch가 ~80° 이상이면)
-        #     이미 termination 조건에도 있지만, 보상을 추가로 깎아서
-        #     위험동작을 더욱 억제
+        # (7) Tilt Penalty
         tilt_penalty = 0.0
         if abs(roll) > np.pi/3 or abs(pitch) > np.pi/3:
             tilt_penalty = -5.0
@@ -217,14 +213,14 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             balance_reward
             + forward_reward
             + forward_vel_reward
-            + lateral_vel_penalty
             + yaw_alignment_reward
+            + lateral_vel_penalty
             + yaw_velocity_penalty
             + wheel_speed_penalty
             + tilt_penalty
         )
 
-        # 목표 도달 보너스
+        # Goal Reach Bonus
         if self.goal_reached:
             reward += 100.0
 
@@ -249,8 +245,8 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         )
 
     def _update_success_count(self, x_pos: float) -> None:
-        # Count +1 if reached 12m destination
-        if self.prev_x_pos < 12 and x_pos >= 12:
+        # Count +1 if reached 5m destination
+        if self.prev_x_pos < 5 and x_pos >= 5:
             self.num_success += 1
             self.goal_reached = True
         self.prev_x_pos = x_pos
