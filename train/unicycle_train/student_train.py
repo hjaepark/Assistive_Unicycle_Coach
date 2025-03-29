@@ -13,7 +13,9 @@ import envs.unicycle as unicycle
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 
+##########################################################################################################################
 # 1) Basic directory setup
+##########################################################################################################################
 current_dir = os.path.dirname(
     os.path.dirname(
         os.path.dirname(os.path.abspath(__file__))
@@ -23,7 +25,7 @@ data_dir = os.path.join(current_dir, "data")
 
 # Timestamp for run identification
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-run_name = f"student_{timestamp}"
+run_name = f"unicycle_student_{timestamp}"
 
 # Detailed structure for models and logs
 models_dir = os.path.join(data_dir, "models")
@@ -41,7 +43,9 @@ current_file_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 trained_models_dir = os.path.join(project_root, 'trained_models')
 
+##########################################################################################################################
 # 2) Callback for stopping training based on success count
+##########################################################################################################################
 class TrainingStopCallback(BaseCallback):
     def __init__(self, verbose=0):
         super().__init__(verbose)
@@ -59,7 +63,9 @@ class TrainingStopCallback(BaseCallback):
                     return False
         return True
 
+##########################################################################################################################
 # 3) Train function
+##########################################################################################################################
 def train(env, total_timesteps=10**10):
 
     model = SAC(
@@ -88,11 +94,13 @@ def train(env, total_timesteps=10**10):
         callback=[eval_callback, success_stop_callback]
     )
 
-    final_model_path = os.path.join(final_model_dir, f"student_{timestamp}_final")
+    final_model_path = os.path.join(final_model_dir, f"unicycle_student_{timestamp}_final")
     model.save(final_model_path)
     print(f"Training finished. Final model saved at: {final_model_path}")
 
+##########################################################################################################################
 # 4) Test function
+##########################################################################################################################
 def test(env, path_to_model):
 
     model = SAC.load(path_to_model)
@@ -120,7 +128,9 @@ def test(env, path_to_model):
     finally:
         env.close()
 
+##########################################################################################################################
 # 5) Main execution
+##########################################################################################################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train or test the student model.')
     parser.add_argument('-train', '--train', action='store_true', help='Train the model.')
@@ -129,8 +139,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Set seeds for reproducibility
-    seed = 42
-    # seed = int(time.time()) # Time based random seed
+    # seed = 42
+
+    # Time based random seed
+    seed = int(time.time())
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
