@@ -10,8 +10,10 @@ import torch
 import time
 
 import envs.unicycle as unicycle
+
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
+from stable_baselines3.common.monitor import Monitor
 from gymnasium import spaces
 
 ##########################################################################################################################
@@ -117,9 +119,9 @@ class CoachStudentFixedAlphaWrapper(gym.Wrapper):
 
         # Step the environment
         next_obs_raw, reward, done, truncated, info = self.env.step(final_action)
-        info["student_action"] = student_action  # record student action
+        info["student_action"] = student_action
         info["coach_action_prime"] = coach_action_prime
-        info["coach_action"] = coach_action  # record coach action for monitoring
+        info["coach_action"] = coach_action
 
         # Obtain the next coach action and optionally concatenate it to the next observation
         next_coach_action, _ = self.coach_model.predict(next_obs_raw, deterministic=True)
@@ -189,12 +191,21 @@ class CoachMonitor(BaseCallback):
                     self.logger.record(f"coach/prime_{action_names[i]}", val)
         return True
 
-
 ##########################################################################################################################
 # 5) Train Function
 ##########################################################################################################################
-def train(env, total_timesteps=1_000_000):
-    # Create the SAC model
+def train(env, total_timesteps=1_000_000, coach_model_path=None, alpha=0.5, include_coach_in_obs=False):
+    # (1) Create *evaluation* environment with the same wrapper
+    eval_base_env = gym.make('Unicycle-v0')
+    eval_base_env = Monitor(eval_base_env)  # Monitor wrapper for correct evaluation stats
+    eval_env = CoachStudentFixedAlphaWrapper(
+        env=eval_base_env,
+        coach_model_path=coach_model_path,
+        alpha=alpha,
+        include_coach_in_obs=include_coach_in_obs
+    )
+
+    # (2) Create the SAC model
     model = SAC(
         'MlpPolicy',
         env,
@@ -203,8 +214,7 @@ def train(env, total_timesteps=1_000_000):
         tensorboard_log=logs_dir
     )
 
-    # Evaluation environment & callback
-    eval_env = gym.make('Unicycle-v0')
+    # (3) Set up EvalCallback with the *wrapped* eval_env
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=best_model_dir,
@@ -215,13 +225,12 @@ def train(env, total_timesteps=1_000_000):
         render=False
     )
 
-    # Monitor callbacks
+    # (4) Monitor callbacks
     student_monitor = StudentMonitor()
     coach_monitor = CoachMonitor()
-
     callback_list = [eval_callback, student_monitor, coach_monitor]
 
-    # Start training
+    # (5) Start training
     model.learn(
         total_timesteps=total_timesteps,
         callback=callback_list
@@ -270,8 +279,11 @@ if __name__ == '__main__':
     parser.add_argument('-test', '--test', type=str, help='Test the model (path to model file).')
     parser.add_argument('--timesteps', type=int, default=1_000_000, help='Number of timesteps for training.')
     parser.add_argument('--alpha', type=float, default=0.5, help='Fixed alpha for coach-student action merging.')
-    parser.add_argument('--include_coach_in_obs', action='store_true',
-                        help='If set, concat coach action to the student observation.')
+    parser.add_argument('--no_coach_in_obs',
+                        action='store_false',
+                        dest='include_coach_in_obs',
+                        default=True,
+                        help='If set, do NOT include coach action in the observation. Default is to include.')
     args = parser.parse_args()
 
     # Fixed coach model filename
@@ -282,8 +294,8 @@ if __name__ == '__main__':
     if not os.path.isfile(coach_model_path):
         raise FileNotFoundError(f"Coach model file not found: {coach_model_path}")
 
-    # Set random seed (example)
-    seed = int(time.time())
+    # Fix the seed for reproducibility
+    seed = 42
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
@@ -292,7 +304,9 @@ if __name__ == '__main__':
 
     # Train mode
     if args.train:
+        # Create base env with Monitor
         base_env = gym.make('Unicycle-v0')
+        base_env = Monitor(base_env)
 
         # Wrap environment with a fixed alpha coach-student merging
         wrapped_env = CoachStudentFixedAlphaWrapper(
@@ -302,7 +316,13 @@ if __name__ == '__main__':
             include_coach_in_obs=args.include_coach_in_obs
         )
 
-        train(env=wrapped_env, total_timesteps=args.timesteps)
+        train(
+            env=wrapped_env,
+            total_timesteps=args.timesteps,
+            coach_model_path=coach_model_path,
+            alpha=args.alpha,
+            include_coach_in_obs=args.include_coach_in_obs
+        )
         wrapped_env.close()
 
     # Test mode
@@ -312,6 +332,7 @@ if __name__ == '__main__':
             print(f"[Test] Model file not found: {student_model_path}")
         else:
             test_env = gym.make('Unicycle-v0', render_mode='human')
+            test_env = Monitor(test_env)  # Monitor for consistent episode info
             test_env = CoachStudentFixedAlphaWrapper(
                 env=test_env,
                 coach_model_path=coach_model_path,
