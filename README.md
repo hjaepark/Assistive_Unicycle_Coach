@@ -1,16 +1,30 @@
-# Project Structure
+# Assistive Unicycle Coach
+
+Safe Robotics Lab, 2024-25 | Georgia Tech
+
+## Project Structure
+
+```Text
 Assistive_Unicycle_Coach/
-<br>├── data/              # Training data and saved models
-<br>├── envs/              # Environment definitions
-<br>└── train/             # Training scripts
+├── data/              # Training data and saved models
+├── envs/              # Environment definitions
+└── train/             # Training scripts
+```
 
-Download requirements with
+## Setup
 
-        pip install -r requirements.txt
+Download requirements with `pip install -r requirements.txt`
 
-# Experiment
-<br>Activate TensorBoard with
+## Experiment
 
-        tensorboard --logdir ./data/logs
+Invoke training as so: `python -m train.unicycle_train.student_train`
 
-<br> 4 modes, 4 strategies, alpha 0-1
+and human subject experiment as so: `python -m hse.experiment_runner`
+
+### Logging
+
+Activate TensorBoard with `tensorboard --logdir ./data/logs`
+
+### Parameteres
+
+4 modes, 4 strategies, alpha 0-1

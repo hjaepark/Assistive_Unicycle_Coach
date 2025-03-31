@@ -17,6 +17,9 @@ DEFAULT_CAMERA_CONFIG = {
     "lookat": np.array((0.0, 0.0, 1.0)),
 }
 
+TERM_SCALE = 2.0
+
+
 class Student(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": ["human", "rgb_array", "depth_array"],
@@ -170,7 +173,8 @@ class Student(MujocoEnv, utils.EzPickle):
         )
 
         # Penalty for excessive wheel speed
-        wheel_speed_penalty = -0.05 * observation[21] ** 2
+        # wheel_speed_penalty = -0.05 * observation[21] ** 2
+        wheel_speed_penalty = 0
 
         # Calculate total reward
         reward = balance_reward + forward_reward + velocity_reward + tilt_penalty + wheel_speed_penalty
@@ -191,15 +195,14 @@ class Student(MujocoEnv, utils.EzPickle):
             abs(y_pos) > 2.0
             or
             # Excessive unicycle tilt
-            abs(unicycle_roll) > np.pi / 3
-            or abs(unicycle_pitch) > np.pi / 3
+            abs(unicycle_roll) > np.pi / 3 * TERM_SCALE
+            or abs(unicycle_pitch) > np.pi / 3 * TERM_SCALE
             or
-            # Excessive pendulum tilt
-            abs(pendulum_roll) > np.pi / 3
-            or abs(pendulum_pitch) > np.pi / 3
-            or
-            self.goal_reached
-            or
+            # Excessive pendulum tilt # TEMPDEAC
+            # abs(pendulum_roll) > np.pi / 3 * TERM_SCALE
+            # or abs(pendulum_pitch) > np.pi / 3 * TERM_SCALE
+            # or self.goal_reached
+            # or
             # Required success count achieved
             self.num_success >= self.target_success_count
         )
