@@ -173,7 +173,8 @@ class Student(MujocoEnv, utils.EzPickle):
         )
 
         # Penalty for excessive wheel speed
-        wheel_speed_penalty = -0.05 * observation[21] ** 2
+        # wheel_speed_penalty = -0.05 * observation[21] ** 2
+        wheel_speed_penalty = 0
 
         # Calculate total reward
         reward = balance_reward + forward_reward + velocity_reward + tilt_penalty + wheel_speed_penalty
@@ -197,11 +198,11 @@ class Student(MujocoEnv, utils.EzPickle):
             abs(unicycle_roll) > np.pi / 3 * TERM_SCALE
             or abs(unicycle_pitch) > np.pi / 3 * TERM_SCALE
             or
-            # Excessive pendulum tilt
-            abs(pendulum_roll) > np.pi / 3 * TERM_SCALE
-            or abs(pendulum_pitch) > np.pi / 3 * TERM_SCALE
-            or self.goal_reached
-            or
+            # Excessive pendulum tilt # TEMPDEAC
+            # abs(pendulum_roll) > np.pi / 3 * TERM_SCALE
+            # or abs(pendulum_pitch) > np.pi / 3 * TERM_SCALE
+            # or self.goal_reached
+            # or
             # Required success count achieved
             self.num_success >= self.target_success_count
         )
