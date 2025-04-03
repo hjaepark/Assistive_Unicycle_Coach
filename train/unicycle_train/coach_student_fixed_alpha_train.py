@@ -117,6 +117,9 @@ class CoachStudentFixedAlphaWrapper(gym.Wrapper):
 # 3) Student Monitor Callback
 ##########################################################################################################################
 class StudentMonitor(BaseCallback):
+    """
+    Custom callback to record student-specific observations and actions.
+    """
     def __init__(self, verbose=0):
         super().__init__(verbose=verbose)
 
@@ -145,6 +148,9 @@ class StudentMonitor(BaseCallback):
 # 4) Coach Monitor Callback
 ##########################################################################################################################
 class CoachMonitor(BaseCallback):
+    """
+    Custom callback to record coach-specific actions.
+    """
     def __init__(self, verbose=0):
         super().__init__(verbose=verbose)
 
@@ -163,12 +169,11 @@ class CoachMonitor(BaseCallback):
         return True
 
 ##########################################################################################################################
-# 5) AlphaScheduleCallback (New)
+# 5) Alpha Schedule Callback
 ##########################################################################################################################
 class AlphaScheduleCallback(BaseCallback):
     """
     A callback that changes alpha to 0 at a specified fraction of total training steps.
-    e.g. if fraction=0.75 -> after 75% of total timesteps, alpha=0
     """
     def __init__(self, fraction=0.50, verbose=0):
         super().__init__(verbose)
@@ -206,15 +211,22 @@ class AlphaScheduleCallback(BaseCallback):
                             if hasattr(env_inst, "set_alpha"):
                                 env_inst.set_alpha(0.0)
                     else:
-                        # single env
                         if hasattr(eval_callback.model.get_env(), "set_alpha"):
                             eval_callback.model.get_env().set_alpha(0.0)
 
                 self.triggered = True
+
+        alpha_value = 0.0 if self.triggered else self.model.get_env().envs[0].alpha \
+            if hasattr(self.model.get_env(), "envs") else \
+            (self.model.get_env().alpha if hasattr(self.model.get_env(), "alpha") else None)
+
+        if alpha_value is not None:
+            self.logger.record("alpha/current_alpha", alpha_value)
+
         return True
 
 ##########################################################################################################################
-# 6) Train Function (Single learn call + AlphaScheduleCallback)
+# 6) Train Function (Single learn call + Alpha Schedule Callback)
 ##########################################################################################################################
 def train(env,
           total_timesteps=1_000_000,
@@ -222,8 +234,12 @@ def train(env,
           alpha=0.5,
           alpha_fraction=0.50,  # fraction where alpha->0
           include_coach_in_obs=False):
+    """
+    Train the SAC model by wrapping the environment with CoachStudentFixedAlphaWrapper
+    and scheduling alpha to switch to 0 at a given fraction of total training steps.
+    """
 
-    # create eval env
+    # Create eval env
     eval_base_env = gym.make('Unicycle-v0')
     eval_base_env = Monitor(eval_base_env)
     eval_env = CoachStudentFixedAlphaWrapper(
@@ -258,12 +274,12 @@ def train(env,
         fraction=alpha_fraction,
         verbose=1
     )
-    # eval_callback 접근이 필요하면 callback간 정보 공유를 세팅
+    # If we need to access eval_callback, we set up shared info across callbacks
     alpha_schedule_callback.globals = {"eval_callback": eval_callback}
 
     callback_list = [eval_callback, student_monitor, coach_monitor, alpha_schedule_callback]
 
-    # single call -> model.learn
+    # Single call -> model.learn
     model.learn(
         total_timesteps=total_timesteps,
         callback=callback_list
@@ -278,6 +294,9 @@ def train(env,
 # 7) Test Function
 ##########################################################################################################################
 def test(env, path_to_model):
+    """
+    Test the trained model in the provided environment.
+    """
     model = SAC.load(path_to_model)
     print(f"[Test] Loaded model from: {path_to_model}")
 
@@ -325,8 +344,8 @@ if __name__ == '__main__':
     if not os.path.isfile(coach_model_path):
         raise FileNotFoundError(f"Coach model file not found: {coach_model_path}")
     
-    # Time based random seed
-    #seed = int(time.time())
+    # Set random seed
+    # seed = int(time.time())
     seed = 42
     np.random.seed(seed)
     random.seed(seed)
