@@ -16,10 +16,7 @@ import envs.unicycle as unicycle
 from train.unicycle_train.wrapper.action_merging_wrapper import ActionMergeWrapper
 from train.unicycle_train.monitor_callback.student_monitor import StudentMonitor
 from train.unicycle_train.monitor_callback.coach_monitor import CoachMonitor
-from train.unicycle_train.utils.path_utils import (
-    get_logs_dir,
-    get_models_dir
-)
+from train.unicycle_train.utils.path_utils import get_logs_dir, get_models_dir
 
 def run_fixed_alpha_training(
     untrained_student_path: str,
