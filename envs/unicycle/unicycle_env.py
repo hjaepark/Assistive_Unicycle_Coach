@@ -197,7 +197,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
 
         # (5) Lateral Velocity Penalty
         lateral_vel_penalty = -0.3 * abs(y_vel)
-        
+
         # (6) Yaw Velocity Penalty
         yaw_velocity_penalty = -0.3 * (z_ang_vel**2)
 

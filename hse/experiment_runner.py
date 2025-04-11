@@ -6,6 +6,7 @@ import argparse
 import gymnasium as gym
 import numpy as np
 import random
+import dearpygui.dearpygui as dpg
 
 from envs import unicycle
 from hse.gamepad import Gamepad
@@ -15,6 +16,9 @@ from hse.gamepad import Gamepad
 ######################## Human subject experiment runner code for the Unicycle Project ###################################
 ##########################################################################################################################
 ##########################################################################################################################
+
+ENABLE_UI = True
+# ENABLE_UI = False
 
 # Experiment parameters
 DEFAULT_CAMERA_CONFIG = {
@@ -72,6 +76,28 @@ def gamepad_to_action(gamepad) -> np.ndarray:
 # 4) Test function
 def test(env):
     gamepad = Gamepad()
+    if ENABLE_UI:
+        # Initialize GUI
+        dpg.create_context()
+        dpg.create_viewport(
+            title="Unicycle Experiment Simulation UI", width=800, height=600
+        )
+
+        # Create windows and plots
+        with dpg.window(label="Actions", width=780, height=580):
+            with dpg.plot(label="Action Values", height=550):
+                dpg.add_plot_axis(dpg.mvXAxis, label="steps")
+                dpg.add_plot_axis(dpg.mvYAxis, label="action values")
+                dpg.add_line_series([], [], parent=dpg.last_item(), tag="action_plot")
+
+    # Setup data storage
+    actions = []
+    x_data = []
+    step_count = 0
+
+    # Setup and show GUI
+    dpg.setup_dearpygui()
+    dpg.show_viewport()
 
     obs = env.reset()
 
@@ -93,6 +119,17 @@ def test(env):
             #print("Observation shape:", obs.shape)
             #print("Observation:", obs)
 
+            # Store data for visualization
+            step_count += 1
+            x_data.append(step_count)
+            actions.append(action)
+
+            # Update action plot (show all 4 action dimensions)
+            for i in range(4):
+                action_values = [a[i] for a in actions[-100:]]  # Show recent actions
+                action_steps = x_data[-len(action_values) :]
+                dpg.set_value("action_plot", [action_steps, action_values])
+
             if done or truncated:
                 obs = env.reset()
                 done = False
@@ -101,10 +138,14 @@ def test(env):
             if env.render_mode == "human":
                 env.render()
 
+            # Render GUI frame
+            dpg.render_dearpygui_frame()
+
     except KeyboardInterrupt:
         print("Test interrupted (Ctrl + C).")
     finally:
         env.close()
+        dpg.destroy_context()
 
 
 # 5) Main execution
