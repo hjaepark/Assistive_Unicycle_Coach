@@ -11,7 +11,7 @@ class ActionMergeWrapper(gym.Wrapper):
     final_action = student + alpha*(coach - student).
     Obs includes [raw_obs, coach_action].
     """
-    def __init__(self, env, coach_model_path, alpha=0.5):
+    def __init__(self, env, coach_model_path, alpha=0.0):
         super().__init__(env)
         self.coach_model = SAC.load(coach_model_path, env=None)
         self.alpha = alpha

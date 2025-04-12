@@ -1,4 +1,4 @@
-# experiment_runner.py (based on student_train.py)
+# experiment_runner_coach_timestep.py (based on student_train.py)
 
 import os
 import datetime
@@ -9,7 +9,6 @@ import random
 
 from envs import unicycle
 from hse.gamepad import Gamepad
-
 from train.unicycle_train.wrapper.action_merging_wrapper import ActionMergeWrapper
 from stable_baselines3 import SAC
 
@@ -39,7 +38,7 @@ pre_trained_dir = os.path.join(current_dir, "pre_trained_models")
 
 # Timestamp for run identification
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-run_name = f"human_coach_{timestamp}"
+run_name = f"human_coach_timestep_{timestamp}"
 
 # Detailed structure for models and logs
 logs_dir = os.path.join(data_dir, "logs", run_name)
@@ -47,6 +46,23 @@ logs_dir = os.path.join(data_dir, "logs", run_name)
 # Create directories if not exist
 [os.makedirs(d, exist_ok=True) for d in [data_dir, logs_dir, pre_trained_dir]]
 
+class TimestepAlphaUpdater:
+    def __init__(self, alpha_init=1.0, alpha_final=0.0, total_timesteps=120000):
+        self.alpha_init = alpha_init
+        self.alpha_final = alpha_final
+        self.total_timesteps = total_timesteps
+        self.current_step = 0
+        self.current_alpha = alpha_init
+
+    def update_alpha(self):
+        self.current_step += 1
+        ratio = min(self.current_step / float(self.total_timesteps), 1.0)
+        self.current_alpha = self.alpha_init + ratio * (self.alpha_final - self.alpha_init)
+        return self.current_alpha
+
+    def set_alpha(self, env):
+        if hasattr(env, "set_alpha"):
+            env.set_alpha(self.current_alpha)
 
 def gamepad_to_action(gamepad) -> np.ndarray:
     # Gains
@@ -75,15 +91,17 @@ def gamepad_to_action(gamepad) -> np.ndarray:
 
 
 # 4) Test function
-def test(env, coach_model_path, alpha):
+def test(env, coach_model_path, alpha_init, alpha_final, total_timesteps):
     gamepad = Gamepad()
 
     test_env = ActionMergeWrapper(
         env=env,
         coach_model_path=coach_model_path,
-        alpha=alpha
+        alpha=alpha_init
     )
-
+    
+    alpha_updater = TimestepAlphaUpdater(alpha_init, alpha_final, total_timesteps)
+    
     obs, _ = test_env.reset()
 
     #print("Observation shape:", obs.shape)
@@ -100,17 +118,22 @@ def test(env, coach_model_path, alpha):
                 continue
 
             human_action = gamepad_to_action(gamepad_state)
+            current_alpha = alpha_updater.update_alpha()
+            alpha_updater.set_alpha(test_env)
             obs, reward, done, truncated, info = test_env.step(human_action)
-
+            print(f"Step: {alpha_updater.current_step}, Alpha: {current_alpha:.3f}")
             print(f"Human Action: {human_action}")
             print(f"Coach Action: {info['coach_action']}")
             print(f"Final Action: {human_action + info['coach_action_prime']}")
             print(f"Reward: {reward}")
+            #print("Observation shape:", obs.shape)
+            #print("Observation:", obs)
 
             if done or truncated:
                 obs, _ = test_env.reset()
                 done = False
                 truncated = False
+                #alpha_updater.current_step = 0
 
             if test_env.render_mode == "human":
                 test_env.render()
@@ -118,16 +141,19 @@ def test(env, coach_model_path, alpha):
     except KeyboardInterrupt:
         print("Test interrupted (Ctrl + C).")
     finally:
-        env.close()
+        test_env.close()
 
 
 # 5) Main execution
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Perform a human subject trial with coach assistance.")
+    parser = argparse.ArgumentParser(description="Perform a human subject trial with coach assistance (timestep based method).")
     parser.add_argument("-e", "--env", action="store_true", help="Environment to use.")
-    parser.add_argument("--timesteps", type=int, default=10**10, help="Number of timesteps.")
+    parser.add_argument(
+        "--timesteps", type=int, default=120000, help="Total timesteps for alpha decay."
+    )
     parser.add_argument("--coach_model_path", type=str, default=None, help="Path to pre-trained coach model.")
-    parser.add_argument("--alpha", type=float, default=0.5, help="Fixed alpha for action merging.")
+    parser.add_argument("--alpha_init", type=float, default=1.0, help="Initial alpha value.")
+    parser.add_argument("--alpha_final", type=float, default=0.0, help="Final alpha value.")
     args = parser.parse_args()
 
     # Set seeds for reproducibility
@@ -147,5 +173,5 @@ if __name__ == "__main__":
         frame_skip=FRAME_SKIP,
         default_camera_config=DEFAULT_CAMERA_CONFIG,
     )
-    test(base_env, args.coach_model_path, args.alpha)
+    test(base_env, args.coach_model_path, args.alpha_init, args.alpha_final, args.timesteps)
     base_env.close()
