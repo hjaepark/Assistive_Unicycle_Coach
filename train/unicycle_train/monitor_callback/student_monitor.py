@@ -18,7 +18,7 @@ class StudentMonitor(BaseCallback):
     def _on_step(self) -> bool:
         if self._logger is None:
             return True
-        infos = self.locals["infos"]  # e.g. [info]
+        infos = self.locals["infos"]
         for info in infos:
             if "reward" in info:
                 self._logger.record("student/reward", info["reward"])
