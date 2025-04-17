@@ -68,7 +68,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
     def __init__(
         self,
         xml_file: str = None,
-        frame_skip: int = 2,  # 0.005 timestep in XML * frame_skip 2 = 0.01sec in sim time
+        frame_skip: int = 1,  # 0.005 timestep in XML * frame_skip 1 = 0.005sec in sim time
         default_camera_config: Dict[str, Union[float, int, np.ndarray]] = DEFAULT_CAMERA_CONFIG,
         reset_noise_scale: float = 0.01,
         max_steps: int = 1500,

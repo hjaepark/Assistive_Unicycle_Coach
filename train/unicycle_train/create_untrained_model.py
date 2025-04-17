@@ -10,10 +10,10 @@ import torch
 import gymnasium as gym
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
-from gymnasium import spaces
 
 import envs.unicycle as unicycle
 from train.unicycle_train.utils.path_utils import get_untrained_dir
+from train.unicycle_train.wrapper.extended_observation_wrapper import ExtendedObservationWrapper
 
 def create_untrained_model(
     seed: int = 42,
@@ -37,15 +37,15 @@ def create_untrained_model(
     sde_sample_freq: int = -1,
     use_sde_at_warmup: bool = False,
     stats_window_size: int = 100,
-    tensorboard_log: str = None,
     verbose: int = 0,
-    device: str = "auto",
+    device: str = "cuda",
     _init_setup_model: bool = True
 ):
     """
     Create an untrained model with extended observation space.
     The model is initialized with default parameters and saved to the untrained_models directory.
     """
+    # Set random seeds for reproducibility
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
@@ -55,21 +55,19 @@ def create_untrained_model(
     # Create and setup environment
     base_env = gym.make("Unicycle-v0")
     base_env = Monitor(base_env)
+    env = ExtendedObservationWrapper(base_env)
     
-    # Get observation and action dimensions
-    raw_obs_dim = base_env.observation_space.shape[0]
-    action_dim = base_env.action_space.shape[0]
+    # Create directories
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_name = f"unicycle_student_{timestamp}"
     
-    # Create model with extended observation space
-    low = np.concatenate([base_env.observation_space.low,
-                         np.full((action_dim,), -1.0)])
-    high = np.concatenate([base_env.observation_space.high,
-                          np.full((action_dim,), 1.0)])
-    observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
+    untrained_dir = get_untrained_dir()
+    os.makedirs(untrained_dir, exist_ok=True)
     
+    # Create model
     model = SAC(
         "MlpPolicy",
-        base_env,
+        env,
         policy_kwargs=policy_kwargs,
         learning_rate=learning_rate,
         buffer_size=buffer_size,
@@ -90,25 +88,21 @@ def create_untrained_model(
         sde_sample_freq=sde_sample_freq,
         use_sde_at_warmup=use_sde_at_warmup,
         stats_window_size=stats_window_size,
-        tensorboard_log=tensorboard_log,
         verbose=verbose,
         device=device,
         _init_setup_model=_init_setup_model
     )
-    
-    # Modify the policy's observation space
-    model.policy.observation_space = observation_space
 
     # Save the model
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_path = os.path.join(get_untrained_dir(), f"{timestamp}.zip")
+    model_path = os.path.join(untrained_dir, f"{timestamp}.zip")
     model.save(model_path)
     print(f"Created untrained model at: {model_path}")
 
-    base_env.close()
+    env.close()
     return model_path
 
 if __name__ == "__main__":
+    # Parse command line arguments
     parser = argparse.ArgumentParser(description="Create an untrained model with extended observation space.")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--learning_rate", type=float, default=3e-4, help="Learning rate")
@@ -129,6 +123,7 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", type=int, default=0, help="Verbosity level: 0 for no output, 1 for info messages, 2 for debug messages")
     args = parser.parse_args()
 
+    # Create untrained model with command line arguments
     create_untrained_model(
         seed=args.seed,
         learning_rate=args.learning_rate,
