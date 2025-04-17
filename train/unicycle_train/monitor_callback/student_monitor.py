@@ -36,4 +36,8 @@ class StudentMonitor(BaseCallback):
                 self._logger.record("student/y_position", info["y_position"])
             if "num_success" in info:
                 self._logger.record("student/num_success", info["num_success"])
+            if "num_falls" in info:
+                self._logger.record("student/num_falls", info["num_falls"])
+            if "is_fallen" in info:
+                self._logger.record("student/is_fallen", float(info["is_fallen"]))
         return True

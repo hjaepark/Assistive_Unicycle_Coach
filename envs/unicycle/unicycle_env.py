@@ -37,10 +37,10 @@ The observation consists of:
 | 0   | position in the x-direction          | -Inf  | Inf   | position (m)               |
 | 1   | position in the y-direction          | -Inf  | Inf   | position (m)               |
 | 2   | position in the z-direction          | -Inf  | Inf   | position (m)               |
-| 3   | w-component of the unicycle’s orientation | -1    | 1     | quaternion component       |
-| 4   | x-component of the unicycle’s orientation | -1    | 1     | quaternion component       |
-| 5   | y-component of the unicycle’s orientation | -1    | 1     | quaternion component       |
-| 6   | z-component of the unicycle’s orientation | -1    | 1     | quaternion component       |
+| 3   | w-component of the unicycle's orientation | -1    | 1     | quaternion component       |
+| 4   | x-component of the unicycle's orientation | -1    | 1     | quaternion component       |
+| 5   | y-component of the unicycle's orientation | -1    | 1     | quaternion component       |
+| 6   | z-component of the unicycle's orientation | -1    | 1     | quaternion component       |
 | 7   | angle of the wheel                   | -Inf  | Inf   | angle (rad)                |
 | 8   | velocity in the x-direction          | -Inf  | Inf   | velocity (m/s)             |
 | 9   | velocity in the y-direction          | -Inf  | Inf   | velocity (m/s)             |
@@ -93,8 +93,13 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         self.num_success = 0  # Cumulative success count
         self.prev_x_pos = 0
         self.target_success_count = 1000
-        self.goal_distance = 5.0 # 5 meters
+        self.goal_distance = 5.5
+        self.success_distance = 5.0  # New: distance to count as success
         self.goal_reached = False
+
+        # Add fall counter
+        self.num_falls = 0
+        self._is_fallen = False
 
         # Initialize MujocoEnv
         MujocoEnv.__init__(
@@ -124,6 +129,11 @@ class Unicycle(MujocoEnv, utils.EzPickle):
 
         # Calculate Euler angles for unicycle
         unicycle_euler = self._get_euler_angles(observation)
+
+        # Check if unicycle has fallen
+        if not self._is_fallen and self._check_fall(unicycle_euler):
+            self.num_falls += 1
+            self._is_fallen = True
 
         # Calculate reward
         reward = self._calculate_reward(x_pos, y_pos, unicycle_euler, observation)
@@ -160,6 +170,9 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         self.prev_x_pos = 0
         self.goal_reached = False
         self.num_episodes += 1
+
+        # Reset fall state
+        self._is_fallen = False
 
         return self._get_obs()
 
@@ -201,9 +214,6 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         # (6) Yaw Velocity Penalty
         yaw_velocity_penalty = -0.3 * (z_ang_vel**2)
 
-        # (7) Wheel Speed Penalty
-        wheel_speed_penalty = -0.05 * (wheel_ang_vel**2)
-
         # (7) Tilt Penalty
         tilt_penalty = 0.0
         if abs(roll) > np.pi/3 or abs(pitch) > np.pi/3:
@@ -216,7 +226,6 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             + yaw_alignment_reward
             + lateral_vel_penalty
             + yaw_velocity_penalty
-            + wheel_speed_penalty
             + tilt_penalty
         )
 
@@ -234,19 +243,23 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             # y-axis movement limit
             abs(y_pos) > 4.0
             or
-            # Excessive unicycle tilt
-            abs(unicycle_roll) > np.pi * 4 / 9 # 80 degrees
-            or abs(unicycle_pitch) > np.pi * 4 / 9 # 80 degrees
-            or
-            self.goal_reached
+            # Reached final goal distance
+            x_pos >= self.goal_distance
             or
             # Required success count achieved
             self.num_success >= self.target_success_count
         )
 
+    def _check_fall(self, unicycle_euler):
+        unicycle_roll, unicycle_pitch, _ = unicycle_euler
+        return bool(
+            abs(unicycle_roll) > np.pi * 4 / 9  # 80 degrees
+            or abs(unicycle_pitch) > np.pi * 4 / 9  # 80 degrees
+        )
+
     def _update_success_count(self, x_pos: float) -> None:
-        # Count +1 if reached 5m destination
-        if self.prev_x_pos < 5 and x_pos >= 5:
+        # Count +1 if reached success distance (5m)
+        if self.prev_x_pos < self.success_distance and x_pos >= self.success_distance:
             self.num_success += 1
             self.goal_reached = True
         self.prev_x_pos = x_pos
@@ -265,5 +278,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             "num_steps": self.num_steps,
             "num_success": self.num_success,
             "num_episodes": self.num_episodes,
+            "num_falls": self.num_falls,
+            "is_fallen": self._is_fallen,
             "reward": reward,
         }
