@@ -38,6 +38,11 @@ def render_model(model_path: str):
                 total_reward += reward
                 steps += 1
                 
+                # Check if goal is reached and end episode immediately
+                if info.get("goal_reached", False):
+                    print(f"Goal reached at step {steps}")
+                    break
+                
                 if done or truncated:
                     print(f"Episode {episode} finished after {steps} steps")
                     print(f"Total reward: {total_reward:.2f}")

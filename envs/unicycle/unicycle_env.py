@@ -219,6 +219,9 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         if abs(roll) > np.pi/3 or abs(pitch) > np.pi/3:
             tilt_penalty = -5.0
 
+        # (8) Wheel Speed Penalty
+        wheel_speed_penalty = -0.05 * (wheel_ang_vel**2)
+
         reward = (
             balance_reward
             + forward_reward
@@ -227,6 +230,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             + lateral_vel_penalty
             + yaw_velocity_penalty
             + tilt_penalty
+            + wheel_speed_penalty
         )
 
         # Goal Reach Bonus
