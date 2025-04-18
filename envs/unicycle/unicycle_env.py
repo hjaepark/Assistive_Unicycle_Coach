@@ -220,7 +220,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             tilt_penalty = -5.0
 
         # (8) Wheel Speed Penalty
-        wheel_speed_penalty = -0.01 * (wheel_ang_vel**2)
+        wheel_speed_penalty = -0.03 * (wheel_ang_vel**2)
 
         reward = (
             balance_reward
