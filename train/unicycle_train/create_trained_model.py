@@ -27,7 +27,7 @@ class TrainingStopCallback(BaseCallback):
     """
     def __init__(
         self,
-        target_success_count: int = 500,
+        target_success_count: int = 1000,
         verbose: int = 0
     ):
         super().__init__(verbose)
@@ -92,7 +92,7 @@ def create_trained_model(
     device: str = "cuda",
     _init_setup_model: bool = True,
     total_timesteps: int = 10**7,
-    target_success_count: int = 500
+    target_success_count: int = 1000
 ):
     """
     Create and train a model with extended observation space.
@@ -214,7 +214,7 @@ if __name__ == "__main__":
     parser.add_argument("--stats_window_size", type=int, default=100, help="Window size for the rollout logging")
     parser.add_argument("--verbose", type=int, default=0, help="Verbosity level: 0 for no output, 1 for info messages, 2 for debug messages")
     parser.add_argument("--total_timesteps", type=int, default=10**7, help="Total number of timesteps to train for")
-    parser.add_argument("--target_success_count", type=int, default=500, help="Target number of successes to reach before stopping")
+    parser.add_argument("--target_success_count", type=int, default=1000, help="Target number of successes to reach before stopping")
     args = parser.parse_args()
 
     # Create and train model with command line arguments

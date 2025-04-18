@@ -1,4 +1,4 @@
-# unicycle_env.py
+# envs/unicycle/unicycle_env.py
 
 import os
 from typing import Dict, Union
@@ -92,7 +92,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         self.num_episodes = 0  # Cumulative episodes
         self.num_success = 0  # Cumulative success count
         self.prev_x_pos = 0
-        self.target_success_count = 500
+        self.target_success_count = 1000
         self.goal_distance = 5.5
         self.success_distance = 5.0  # New: distance to count as success
         self.goal_reached = False
@@ -220,7 +220,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             tilt_penalty = -5.0
 
         # (8) Wheel Speed Penalty
-        wheel_speed_penalty = -0.05 * (wheel_ang_vel**2)
+        wheel_speed_penalty = -0.01 * (wheel_ang_vel**2)
 
         reward = (
             balance_reward
