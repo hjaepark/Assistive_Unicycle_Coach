@@ -92,7 +92,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         self.num_episodes = 0  # Cumulative episodes
         self.num_success = 0  # Cumulative success count
         self.prev_x_pos = 0
-        self.target_success_count = 1000
+        self.target_success_count = 500
         self.goal_distance = 5.5
         self.success_distance = 5.0  # New: distance to count as success
         self.goal_reached = False
@@ -252,6 +252,9 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             or
             # Required success count achieved
             self.num_success >= self.target_success_count
+            or
+            # Fall condition
+            self._check_fall(unicycle_euler)
         )
 
     def _check_fall(self, unicycle_euler):
