@@ -165,7 +165,7 @@ def create_trained_model(
         eval_env,
         best_model_save_path=best_model_dir,
         log_path=logs_dir,
-        eval_freq=1000,
+        eval_freq=10000,
         deterministic=True,
         render=False
     )

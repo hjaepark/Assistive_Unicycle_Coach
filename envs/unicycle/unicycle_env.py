@@ -1,5 +1,3 @@
-# envs/unicycle/unicycle_env.py
-
 import os
 from typing import Dict, Union
 
@@ -14,14 +12,14 @@ from gymnasium.spaces import Box
 ## Action Space
 ###################################################
 """
-The agent takes a 4-element vector for actions.
+The agent takes a 4‑element vector for actions.
 
 | Num | Action                                 | Control Range | Name (in XML)           | Joint         | Gear Factor | Effective Torque (N·m)   |
 |-----|----------------------------------------|---------------|-------------------------|---------------|------------ |--------------------------|
 | 0   | Torque applied on the wheel            | -1 to 1       | wheel_motor             | wheel_joint   | 25          | -25 to 25                |
-| 1   | Roll control torque (about x-axis)     | -1 to 1       | roll_control_motor      | free_joint    | 10          | -10 to 10                |
-| 2   | Pitch control torque (about y-axis)    | -1 to 1       | pitch_control_motor     | free_joint    | 10          | -10 to 10                |
-| 3   | Yaw control torque  (about z-axis)     | -1 to 1       | yaw_control_motor       | free_joint    | 10          | -10 to 10                |
+| 1   | Roll control torque (about x‑axis)     | -1 to 1       | roll_control_motor      | free_joint    | 10          | -10 to 10                |
+| 2   | Pitch control torque (about y‑axis)    | -1 to 1       | pitch_control_motor     | free_joint    | 10          | -10 to 10                |
+| 3   | Yaw control torque  (about z‑axis)     | -1 to 1       | yaw_control_motor       | free_joint    | 10          | -10 to 10                |
 
 Solution model will take action based on the environment after student's action taken.
 """
@@ -32,25 +30,25 @@ Solution model will take action based on the environment after student's action 
 """
 The observation consists of:
 
-| Num | Observation                          | Min   | Max   | Type (Unit)                |
-|-----|--------------------------------------|-------|-------|----------------------------|
-| 0   | position in the x-direction          | -Inf  | Inf   | position (m)               |
-| 1   | position in the y-direction          | -Inf  | Inf   | position (m)               |
-| 2   | position in the z-direction          | -Inf  | Inf   | position (m)               |
-| 3   | w-component of the unicycle's orientation | -1    | 1     | quaternion component       |
-| 4   | x-component of the unicycle's orientation | -1    | 1     | quaternion component       |
-| 5   | y-component of the unicycle's orientation | -1    | 1     | quaternion component       |
-| 6   | z-component of the unicycle's orientation | -1    | 1     | quaternion component       |
-| 7   | angle of the wheel                   | -Inf  | Inf   | angle (rad)                |
-| 8   | velocity in the x-direction          | -Inf  | Inf   | velocity (m/s)             |
-| 9   | velocity in the y-direction          | -Inf  | Inf   | velocity (m/s)             |
-| 10  | velocity in the z-direction          | -Inf  | Inf   | velocity (m/s)             |
-| 11  | angular velocity about x-axis        | -Inf  | Inf   | angular velocity (rad/s)   |
-| 12  | angular velocity about y-axis        | -Inf  | Inf   | angular velocity (rad/s)   |
-| 13  | angular velocity about z-axis        | -Inf  | Inf   | angular velocity (rad/s)   |
-| 14  | angular velocity of the wheel        | -Inf  | Inf   | angular velocity (rad/s)   |
+| Num | Observation                          | Min   | Max   | Type (Unit)              |
+|-----|--------------------------------------|-------|-------|--------------------------|
+| 0   | position in the x‑direction          | -Inf  | Inf   | position (m)             |
+| 1   | position in the y‑direction          | -Inf  | Inf   | position (m)             |
+| 2   | position in the z‑direction          | -Inf  | Inf   | position (m)             |
+| 3   | w‑component of the orientation quat  | -1    | 1     | quaternion               |
+| 4   | x‑component of the orientation quat  | -1    | 1     | quaternion               |
+| 5   | y‑component of the orientation quat  | -1    | 1     | quaternion               |
+| 6   | z‑component of the orientation quat  | -1    | 1     | quaternion               |
+| 7   | angle of the wheel                   | -Inf  | Inf   | angle (rad)              |
+| 8   | velocity in the x‑direction          | -Inf  | Inf   | velocity (m/s)           |
+| 9   | velocity in the y‑direction          | -Inf  | Inf   | velocity (m/s)           |
+| 10  | velocity in the z‑direction          | -Inf  | Inf   | velocity (m/s)           |
+| 11  | angular velocity about x‑axis        | -Inf  | Inf   | angular velocity (rad/s) |
+| 12  | angular velocity about y‑axis        | -Inf  | Inf   | angular velocity (rad/s) |
+| 13  | angular velocity about z‑axis        | -Inf  | Inf   | angular velocity (rad/s) |
+| 14  | angular velocity of the wheel        | -Inf  | Inf   | angular velocity (rad/s) |
 
-The observation is a `ndarray` with shape `(15,)` where the elements correspond to the table above.
+The observation is an `ndarray` with shape `(15,)`.
 """
 
 # Default camera configuration
@@ -65,43 +63,41 @@ class Unicycle(MujocoEnv, utils.EzPickle):
         "render_modes": ["human", "rgb_array", "depth_array"],
     }
 
+    # ------------------------------------------------------------------ #
+    #                               INIT                                 #
+    # ------------------------------------------------------------------ #
     def __init__(
         self,
         xml_file: str = None,
-        frame_skip: int = 1,  # 0.005 timestep in XML * frame_skip 1 = 0.005sec in sim time
+        frame_skip: int = 1,          # 0.005 s in XML × frame_skip
         default_camera_config: Dict[str, Union[float, int, np.ndarray]] = DEFAULT_CAMERA_CONFIG,
         reset_noise_scale: float = 0.01,
         max_steps: int = 1500,
         **kwargs,
     ):
-        # Unicycle XML Path
         if xml_file is None:
             xml_file = os.path.join(os.path.dirname(__file__), "assets", "unicycle_3d.xml")
 
-        # Initialize EzPickle
         utils.EzPickle.__init__(self, xml_file, frame_skip, reset_noise_scale, max_steps, **kwargs)
 
-        # Define observation and action spaces
         observation_space = Box(low=-np.inf, high=np.inf, shape=(15,), dtype=np.float64)
         self.action_space = Box(low=-1, high=1, shape=(4,), dtype=np.float32)
 
-        # Environment variables
+        # Environment state counters
         self._reset_noise_scale = reset_noise_scale
-        self.max_steps = max_steps
-        self.num_steps = 0  # Cumulative steps
-        self.num_episodes = 0  # Cumulative episodes
-        self.num_success = 0  # Cumulative success count
-        self.prev_x_pos = 0
+        self.max_steps          = max_steps
+        self.num_steps          = 0
+        self.num_episodes       = 0
+        self.num_success        = 0
+        self.prev_x_pos         = 0.0
         self.target_success_count = 1000
-        self.goal_distance = 5.5
-        self.success_distance = 5.0  # New: distance to count as success
-        self.goal_reached = False
+        self.goal_distance      = 5.5
+        self.success_distance   = 5.0
+        self.goal_reached       = False
+        self.num_falls          = 0
+        self._is_fallen         = False
+        self.line_crossed = False       # new flag for 5.5 m
 
-        # Add fall counter
-        self.num_falls = 0
-        self._is_fallen = False
-
-        # Initialize MujocoEnv
         MujocoEnv.__init__(
             self,
             xml_file,
@@ -110,182 +106,166 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             default_camera_config=default_camera_config,
             **kwargs,
         )
-
-        # Set rendering FPS
         self.metadata["render_fps"] = int(np.round(1.0 / self.dt))
 
+    # ------------------------------------------------------------------ #
+    #                                STEP                                #
+    # ------------------------------------------------------------------ #
     def step(self, action):
-        # Perform simulation
         self.do_simulation(action, self.frame_skip)
-        self.steps += 1
+        self.steps     += 1
         self.num_steps += 1
 
-        # Get current x & y position
-        observation = self._get_obs()
-        x_pos, y_pos = observation[:2]
+        obs   = self._get_obs()
+        x_pos, y_pos = obs[:2]
 
-        # Update success count
-        self._update_success_count(x_pos)
+        euler = self._get_euler_angles(obs)
 
-        # Calculate Euler angles for unicycle
-        unicycle_euler = self._get_euler_angles(observation)
-
-        # Check if unicycle has fallen
-        if not self._is_fallen and self._check_fall(unicycle_euler):
+        # Mark fall event only once
+        if not self._is_fallen and self._check_fall(euler):
             self.num_falls += 1
             self._is_fallen = True
 
-        # Calculate reward
-        reward = self._calculate_reward(x_pos, y_pos, unicycle_euler, observation)
+        # Reward must be computed **before** prev_x_pos is updated
+        reward = self._calculate_reward(x_pos, y_pos, euler, obs)
 
-        # Check termination conditions
-        terminated = self._check_termination(x_pos, y_pos, unicycle_euler)
-        truncated = bool(self.steps >= self.max_steps)
+        # success counter / prev_x_pos update
+        self._update_success_count(x_pos)
 
-        # Collect additional information
-        info = self._get_info(x_pos, y_pos, unicycle_euler, reward)
+        terminated = self._check_termination(x_pos, y_pos, euler)
+        truncated  = bool(self.steps >= self.max_steps)
+        info       = self._get_info(x_pos, y_pos, euler, reward)
 
-        # Render if in human mode
         if self.render_mode == "human":
             self.render()
 
-        return observation, reward, terminated, truncated, info
+        return obs, reward, terminated, truncated, info
 
+    # ------------------------------------------------------------------ #
+    #                               RESET                                #
+    # ------------------------------------------------------------------ #
     def reset_model(self):
-        # Reset model
-        noise_low = -self._reset_noise_scale
-        noise_high = self._reset_noise_scale
+        noise_low, noise_high = -self._reset_noise_scale, self._reset_noise_scale
 
-        # Add noise to initial position and velocity
-        qpos = self.init_qpos + self.np_random.uniform(
-            size=self.model.nq, low=noise_low, high=noise_high
-        )
-        qvel = self.init_qvel + self.np_random.uniform(
-            size=self.model.nv, low=noise_low, high=noise_high
-        )
+        qpos = self.init_qpos + self.np_random.uniform(size=self.model.nq, low=noise_low, high=noise_high)
+        qvel = self.init_qvel + self.np_random.uniform(size=self.model.nv, low=noise_low, high=noise_high)
+
+        # Normalize quaternion to avoid invalid orientation
+        quat = qpos[3:7]
+        qpos[3:7] = quat / np.linalg.norm(quat + 1e-8)
+
         self.set_state(qpos, qvel)
 
-        # Reset episode-related variables
-        self.steps = 0
-        self.prev_x_pos = 0
+        # Reset episode counters
+        self.steps        = 0
+        self.prev_x_pos   = 0.0
         self.goal_reached = False
         self.num_episodes += 1
+        self._is_fallen   = False
 
-        # Reset fall state
-        self._is_fallen = False
+        self.line_crossed = False       # reset
+        self._prev_potential = -self.goal_distance   # start at -5.5
 
         return self._get_obs()
 
+    # ------------------------------------------------------------------ #
+    #                      OBSERVATION HELPERS                           #
+    # ------------------------------------------------------------------ #
     def _get_obs(self):
-        # Get current observation (position + velocity)
         return np.concatenate([self.data.qpos, self.data.qvel]).ravel()
 
     def _get_euler_angles(self, observation):
-        # Convert quaternions to Euler angles
-        unicycle_quat = observation[3:7]
+        quat = observation[3:7]
+        return Rotation.from_quat(np.roll(quat, -1)).as_euler("xyz")
 
-        unicycle_euler = Rotation.from_quat(np.roll(unicycle_quat, -1)).as_euler('xyz')
+    # ------------------------------------------------------------------ #
+    #                          REWARD FUNCTION                           #
+    # ------------------------------------------------------------------ #
+    def _calculate_reward(self, x_pos, y_pos, euler, obs):
+        roll, pitch, yaw = euler
+        x_vel, y_vel = obs[8], obs[9]
+        roll_vel, pitch_vel, yaw_vel = obs[11], obs[12], obs[13]
+        wheel_vel = obs[14]
 
-        return unicycle_euler
+        # ---------- 1. Upright gate ----------
+        upright = np.exp(-4.0 * (roll**2 + pitch**2))   # smoother than before
 
-    def _calculate_reward(self, x_pos, y_pos, unicycle_euler, observation):
-        roll, pitch, yaw = unicycle_euler
-        x_vel, y_vel, z_vel = observation[8], observation[9], observation[10]
-        z_ang_vel = observation[13]
-        wheel_ang_vel = observation[14]
+        # ---------- 2. Distance shaping (only before the line) ----------
+        dist_to_goal = self.goal_distance - x_pos           # >0 before line
+        if dist_to_goal > 0:
+            potential = -dist_to_goal                      # 0  →  -5.5
+            shaping_reward = 4.0 * (potential - self._prev_potential) * upright
+            self._prev_potential = potential
+        else:
+            shaping_reward = 0.0                            # after crossing
 
-        # (1) Balance Reward
-        balance_reward = 1.0 - 0.5 * (roll**2 + pitch**2)
-        balance_reward = np.clip(balance_reward, -1.0, 1.0)
+        # ---------- 3. Cruise‑speed band reward ----------
+        if 0.6 <= x_vel <= 1.2:
+            speed_reward = 0.3 * upright
+        else:
+            speed_reward = 0.0
 
-        # (2) Forward Reward
-        forward_reward = 0.5 * x_pos
+        # ---------- 4. Stability penalties ----------
+        tilt_pen   = -0.4 * (roll**2 + pitch**2)                # quadratic
+        ang_pen    = -0.02 * (roll_vel**2 + pitch_vel**2)
+        yaw_pen    = -0.02 * (yaw_vel**2 + 10.0 * yaw**2)
+        lat_pen    = -0.1  * abs(y_vel)
+        wheel_pen  = -0.005 * np.clip(wheel_vel, -15, 15)**2
 
-        # (3) Forward Velocity Reward
-        forward_vel_reward = 1.0 * x_vel
+        # ---------- 5. One‑time goal bonus ----------
+        goal_bonus = 0.0
+        if (not self.line_crossed) and (x_pos >= self.goal_distance):  
+            goal_bonus       = 100.0
+            self.line_crossed = True   # prevent double reward
 
-        # (4) Heading Alignment Reward
-        yaw_error = abs(yaw)
-        yaw_alignment_reward = np.exp(-2.0 * yaw_error)
-
-        # (5) Lateral Velocity Penalty
-        lateral_vel_penalty = -0.3 * abs(y_vel)
-        
-        # (6) Yaw Velocity Penalty
-        yaw_velocity_penalty = -0.3 * (z_ang_vel**2)
-
-        # (7) Tilt Penalty
-        tilt_penalty = 0.0
-        if abs(roll) > np.pi/3 or abs(pitch) > np.pi/3:
-            tilt_penalty = -5.0
-
-        # (8) Wheel Speed Penalty
-        wheel_speed_penalty = -0.03 * (wheel_ang_vel**2)
-
-        reward = (
-            balance_reward
-            + forward_reward
-            + forward_vel_reward
-            + yaw_alignment_reward
-            + lateral_vel_penalty
-            + yaw_velocity_penalty
-            + tilt_penalty
-            + wheel_speed_penalty
-        )
-
-        # Goal Reach Bonus
-        if self.goal_reached:
-            reward += 100.0
+        # ---------- 6. Total reward ----------
+        reward = (shaping_reward + speed_reward + goal_bonus +
+                  tilt_pen + ang_pen + yaw_pen + lat_pen + wheel_pen)
 
         return reward
 
-    def _check_termination(self, x_pos, y_pos, unicycle_euler):
-        unicycle_roll, unicycle_pitch, _ = unicycle_euler
 
-        # Check termination conditions
+    # ------------------------------------------------------------------ #
+    #                        TERMINATION LOGIC                           #
+    # ------------------------------------------------------------------ #
+    def _check_termination(self, x_pos, y_pos, euler):
         return bool(
-            # y-axis movement limit
-            abs(y_pos) > 4.0
-            or
-            # Reached final goal distance
-            x_pos >= self.goal_distance
-            or
-            # Required success count achieved
-            self.num_success >= self.target_success_count
-            or
-            # Fall condition
-            self._check_fall(unicycle_euler)
+            abs(y_pos) > 4.0 or
+            x_pos >= self.goal_distance or
+            self.num_success >= self.target_success_count or
+            self._check_fall(euler)
         )
 
-    def _check_fall(self, unicycle_euler):
-        unicycle_roll, unicycle_pitch, _ = unicycle_euler
-        return bool(
-            abs(unicycle_roll) > np.pi * 4 / 9  # 80 degrees
-            or abs(unicycle_pitch) > np.pi * 4 / 9  # 80 degrees
-        )
+    def _check_fall(self, euler):
+        roll, pitch, _ = euler
+        # Fall when roll or pitch exceeds 60 deg (π/3)
+        return abs(roll) > np.pi / 3 or abs(pitch) > np.pi / 3
 
+    # ------------------------------------------------------------------ #
+    #                       SUCCESS COUNTER                              #
+    # ------------------------------------------------------------------ #
     def _update_success_count(self, x_pos: float) -> None:
-        # Count +1 if reached success distance (5m)
-        if self.prev_x_pos < self.success_distance and x_pos >= self.success_distance:
+        if self.prev_x_pos < self.success_distance <= x_pos:
             self.num_success += 1
             self.goal_reached = True
         self.prev_x_pos = x_pos
 
-    def _get_info(self, x_pos, y_pos, unicycle_euler, reward):
-        # Collect additional information
-        unicycle_roll, unicycle_pitch, _ = unicycle_euler
-
+    # ------------------------------------------------------------------ #
+    #                              INFO                                  #
+    # ------------------------------------------------------------------ #
+    def _get_info(self, x_pos, y_pos, euler, reward):
+        roll, pitch, _ = euler
         return {
-            "unicycle_roll": unicycle_roll,
-            "unicycle_pitch": unicycle_pitch,
-            "x_position": x_pos,
-            "y_position": y_pos,
-            "goal_reached": self.goal_reached,
-            "steps": self.steps,
-            "num_steps": self.num_steps,
-            "num_success": self.num_success,
-            "num_episodes": self.num_episodes,
-            "num_falls": self.num_falls,
-            "is_fallen": self._is_fallen,
-            "reward": reward,
+            "unicycle_roll":  roll,
+            "unicycle_pitch": pitch,
+            "x_position":     x_pos,
+            "y_position":     y_pos,
+            "goal_reached":   self.goal_reached,
+            "steps":          self.steps,
+            "num_steps":      self.num_steps,
+            "num_success":    self.num_success,
+            "num_episodes":   self.num_episodes,
+            "num_falls":      self.num_falls,
+            "is_fallen":      self._is_fallen,
+            "reward":         reward,
         }
