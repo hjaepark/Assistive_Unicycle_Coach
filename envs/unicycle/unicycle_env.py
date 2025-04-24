@@ -80,7 +80,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
 
         utils.EzPickle.__init__(self, xml_file, frame_skip, reset_noise_scale, max_steps, **kwargs)
 
-        observation_space = Box(low=-np.inf, high=np.inf, shape=(15,), dtype=np.float64)
+        observation_space = Box(low=-np.inf, high=np.inf, shape=(15,), dtype=np.float32)
         self.action_space = Box(low=-1, high=1, shape=(4,), dtype=np.float32)
 
         # Environment state counters
@@ -172,7 +172,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
     #                      OBSERVATION HELPERS                           #
     # ------------------------------------------------------------------ #
     def _get_obs(self):
-        return np.concatenate([self.data.qpos, self.data.qvel]).ravel()
+        return np.concatenate([self.data.qpos, self.data.qvel]).astype(np.float32, copy=False)
 
     def _get_euler_angles(self, observation):
         quat = observation[3:7]
