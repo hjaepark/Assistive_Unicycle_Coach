@@ -26,7 +26,8 @@ class ExtendedObservationWrapper(Wrapper):
         return extended_obs, reward, terminated, truncated, info
     
     def reset(self, **kwargs):
-        obs, info = self.env.reset(**kwargs)
+        # Remove return_info from kwargs to avoid the error
+        obs = self.env.reset(**kwargs)
         # Extend observation with zeros (dummy action)
         extended_obs = np.concatenate([obs, np.zeros(self.action_dim)])
-        return extended_obs, info 
+        return extended_obs 

@@ -61,6 +61,7 @@ DEFAULT_CAMERA_CONFIG = {
 class Unicycle(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": ["human", "rgb_array", "depth_array"],
+        "render_fps": 200        
     }
 
     # ------------------------------------------------------------------ #
@@ -80,7 +81,9 @@ class Unicycle(MujocoEnv, utils.EzPickle):
 
         utils.EzPickle.__init__(self, xml_file, frame_skip, reset_noise_scale, max_steps, **kwargs)
 
-        observation_space = Box(low=-np.inf, high=np.inf, shape=(15,), dtype=np.float32)
+        obs_space = Box(low=-1e10, high=1e10, shape=(15,), dtype=np.float32)
+        self.observation_space = obs_space
+
         self.action_space = Box(low=-1, high=1, shape=(4,), dtype=np.float32)
 
         # Environment state counters
@@ -102,7 +105,7 @@ class Unicycle(MujocoEnv, utils.EzPickle):
             self,
             xml_file,
             frame_skip,
-            observation_space=observation_space,
+            observation_space=obs_space,
             default_camera_config=default_camera_config,
             **kwargs,
         )
@@ -147,8 +150,9 @@ class Unicycle(MujocoEnv, utils.EzPickle):
     def reset_model(self):
         noise_low, noise_high = -self._reset_noise_scale, self._reset_noise_scale
 
-        qpos = self.init_qpos + self.np_random.uniform(size=self.model.nq, low=noise_low, high=noise_high)
-        qvel = self.init_qvel + self.np_random.uniform(size=self.model.nv, low=noise_low, high=noise_high)
+        qpos = (self.init_qpos + self.np_random.uniform(size=self.model.nq, low=noise_low, high=noise_high)).astype(np.float32)
+
+        qvel = (self.init_qvel + self.np_random.uniform(size=self.model.nv, low=noise_low, high=noise_high)).astype(np.float32)
 
         # Normalize quaternion to avoid invalid orientation
         quat = qpos[3:7]
