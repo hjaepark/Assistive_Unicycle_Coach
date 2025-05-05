@@ -9,6 +9,8 @@ env/
 data/*
 !data/experimental_data/
 
+logs/
+
 *.egg-info/
 dist/
 build/
