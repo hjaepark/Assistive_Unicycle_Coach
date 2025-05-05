@@ -1,12 +1,5 @@
-"""render.py
-Render and evaluate a trained SAC checkpoint deterministically for N episodes.
+# train/unicycle_train/render.py
 
-Example
--------
-    python render.py \
-        --checkpoint logs/.../checkpoint_003354 \
-        --render human --episodes 3
-"""
 import argparse
 import time
 import numpy as np
@@ -17,25 +10,20 @@ from ray.rllib.algorithms.sac import SAC
 
 
 def parse_args():
-    """Parse CLI arguments."""
     parser = argparse.ArgumentParser(
-        description="Load a Unicycle SAC checkpoint and render deterministic rollouts.")
-
+        description="Load a model and render deterministic rollouts.")
     parser.add_argument(
-        "--checkpoint", required=True,
-        help="Path to the checkpoint_XXXX directory.")
-
+        "--modelpath", required=True,
+        help="Path to the model directory.")
     parser.add_argument(
         "--render", default="human",
         choices=["human", "rgb_array", "depth_array"],
         help="Gym render_mode (default: human).")
-
     parser.add_argument(
         "--episodes", type=int, default=100,
         help="Number of episodes to run (default: 100).")
-
     parser.add_argument(
-        "--max-steps", type=int, default=1500,
+        "--maxsteps", type=int, default=1500,
         help="Maximum steps per episode (default: 1500).")
 
     return parser.parse_args()
@@ -44,9 +32,6 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # ------------------------------------------------------------------ #
-    # Register custom env so RLlib can recreate it inside workers
-    # ------------------------------------------------------------------ #
     def unicycle_env_creator(cfg):
         import gymnasium as gym
         import envs.unicycle          # registers Unicycle-v0

@@ -83,7 +83,7 @@ def main() -> None:
         run_config=RunConfig(
             name=run_name,
             storage_path=logs_root,
-            stop={"timesteps_total": 3_000_000},
+            stop={"timesteps_total": 10**7},
             checkpoint_config=CheckpointConfig(
                 checkpoint_at_end           = True,
                 checkpoint_frequency        = 1,
