@@ -9,9 +9,11 @@ env/
 data/*
 !data/experimental_data/
 
+logs/
+
 *.egg-info/
 dist/
 build/
 
 .vscode/
-.idea/
+.idea/logs/

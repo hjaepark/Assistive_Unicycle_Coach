@@ -12,7 +12,7 @@
         <geom name="floor" pos="0 0 0" size="5 5 0.01" type="plane" material="checkerboard" friction="4.0 1.0 0.05"/>
         <geom name="floor_goal_right" pos="6.5 0 0" size="1.5 5 0.01" type="plane" rgba="1 0 0 1"/>
 
-
+              
         <light pos="0 0 100" dir="0 0 -1" castshadow="false"/>
 
         <!-- Unicycle Model -->

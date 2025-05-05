@@ -12,29 +12,30 @@ import time
 import envs.unicycle as unicycle
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
+from gymnasium import spaces
+from gymnasium.core import Wrapper
+from train.unicycle_train.wrapper.extended_observation_wrapper import ExtendedObservationWrapper
+from train.unicycle_train.utils.path_utils import (
+    get_models_dir,
+    get_logs_dir,
+    get_train_logs_dir
+)
 
 ##########################################################################################################################
 # 1) Basic directory setup
 ##########################################################################################################################
-current_dir = os.path.dirname(
-    os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))
-    )
-)
-data_dir = os.path.join(current_dir, "data")
-
 # Timestamp for run identification
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-run_name = f"unicycle_student_{timestamp}"
+run_name = f"unicycle_student_{timestamp}"  
 
 # Detailed structure for models and logs
-models_dir = os.path.join(data_dir, "models")
+models_dir = get_models_dir()
 best_model_dir = os.path.join(models_dir, "best_model", run_name)
 final_model_dir = os.path.join(models_dir, "final_model")
-logs_dir = os.path.join(data_dir, "logs", run_name)
+logs_dir = os.path.join(get_train_logs_dir(), run_name)
 
 # Create directories if not exist
-directories = [data_dir, models_dir, best_model_dir, final_model_dir, logs_dir]
+directories = [models_dir, best_model_dir, final_model_dir, logs_dir]
 for d in directories:
     os.makedirs(d, exist_ok=True)
 
@@ -67,6 +68,8 @@ class TrainingStopCallback(BaseCallback):
 # 3) Train function
 ##########################################################################################################################
 def train(env, total_timesteps=10**10):
+    # Wrap the environment
+    env = ExtendedObservationWrapper(env)
 
     model = SAC(
         'MlpPolicy',
@@ -76,7 +79,9 @@ def train(env, total_timesteps=10**10):
         tensorboard_log=logs_dir
     )
 
-    eval_env = gym.make('Unicycle-v0')
+    # Create evaluation environment with extended observation space
+    eval_env = ExtendedObservationWrapper(gym.make('Unicycle-v0'))
+
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=best_model_dir,
@@ -102,6 +107,8 @@ def train(env, total_timesteps=10**10):
 # 4) Test function
 ##########################################################################################################################
 def test(env, path_to_model):
+    # Wrap the environment
+    env = ExtendedObservationWrapper(env)
 
     model = SAC.load(path_to_model)
     print(f"Loaded model from: {path_to_model}")
