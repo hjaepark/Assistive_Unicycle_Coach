@@ -10,9 +10,8 @@
     <option gravity="0 0 -9.81" integrator="RK4" timestep="0.005"/>
     <worldbody>
         <geom name="floor" pos="0 0 0" size="5 5 0.01" type="plane" material="checkerboard" friction="4.0 1.0 0.05"/>
-        <geom name="floor_goal_right" pos="6.5 0 0" size="1.5 5 0.01" type="plane" rgba="1 0 0 1"/>
+        <geom name="floor_goal_right" pos="6.5 0 0" size="1.5 5 0.01" type="plane" rgba="0.5 0.5 0.98 1"/>
 
-              
         <light pos="0 0 100" dir="0 0 -1" castshadow="false"/>
 
         <!-- Unicycle Pendulum Model -->
@@ -30,10 +29,10 @@
             </body>
 
             <!-- Pendulum with sphere at top mass = 2.0 kg -->
-            <body name="pendulum" pos="0 0 0.58">
-                <joint name="pendulum_joint" type="hinge" axis="0 1 0" frictionloss="0" damping="0.9"/>
-                <geom name="rod" type="capsule" fromto="0 0 0 0 0 0.58" size="0.015" mass="1.5" rgba="0.5 0.5 0.5 1"/>
-                <geom name="sphere_mass" type="sphere" pos="0 0 0.58" size="0.06" mass="0.5" rgba=".8 .2 .2 1"/>
+            <body name="pendulum" pos="0 0 0.565">
+                <joint name="pendulum_joint" type="hinge" axis="0 1 0" frictionloss="0.5" damping="1.5"/>
+                <geom name="rod" type="capsule" fromto="0 0 0 0 0 0.3" size="0.015" mass="1.5" rgba="1 0.5 0.5 1"/>
+                <geom name="sphere_mass" type="sphere" pos="0 0 0.3" size="0.04" mass="0.3" rgba=".8 .2 .2 1"/>
             </body>
 
             <!-- Wheel mass = 1.5 kg -->
@@ -49,7 +48,7 @@
     <actuator>
         <motor name="wheel_motor" joint="wheel_joint" gear="25" ctrllimited="true" ctrlrange="-1 1"/>
         <motor name="roll_control_motor" joint="free_joint" gear="0 0 0 10 0 0" ctrllimited="true" ctrlrange="-1 1"/>
-        <motor name="pitch_control_motor" joint="free_joint" gear="0 0 0 0 10 0" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="pitch_control_motor" joint="free_joint" gear="0 0 0 0 20 0" ctrllimited="true" ctrlrange="-1 1"/>
         <motor name="yaw_control_motor" joint="free_joint" gear="0 0 0 0 0 10" ctrllimited="true" ctrlrange="-1 1"/>
     </actuator>
 </mujoco>

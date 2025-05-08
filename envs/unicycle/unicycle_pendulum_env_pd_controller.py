@@ -62,7 +62,7 @@ DEFAULT_CAMERA_CONFIG = {
 class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": ["human", "rgb_array", "depth_array"],
-        "render_fps": 200        
+        "render_fps": 200
     }
 
     # ------------------------------------------------------------------ #
@@ -71,11 +71,11 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     def __init__(
         self,
         xml_file: str = None,
-        frame_skip: int = 1,          # 0.005 s in XML × frame_skip
+        frame_skip: int = 1,          # 0.005 s in XML × frame_skip
         default_camera_config: Dict[str, Union[float, int, np.ndarray]] = DEFAULT_CAMERA_CONFIG,
         reset_noise_scale: float = 0.01,
         max_steps: int = 1500,
-        kp: float = 40.0, 
+        kp: float = 40.0,
         kd: float = 6.0,
         **kwargs,
     ):
@@ -91,18 +91,18 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         # Environment state counters
         self._reset_noise_scale = reset_noise_scale
-        self.max_steps          = max_steps
-        self.num_steps          = 0
-        self.num_episodes       = 0
-        self.num_success        = 0
-        self.prev_x_pos         = 0.0
+        self.max_steps = max_steps
+        self.num_steps = 0
+        self.num_episodes = 0
+        self.num_success = 0
+        self.prev_x_pos = 0.0
         self.target_success_count = 1000
-        self.goal_distance      = 5.5
-        self.success_distance   = 5.0
-        self.goal_reached       = False
-        self.num_falls          = 0
-        self._is_fallen         = False
-        self.line_crossed = False       # new flag for 5.5 m
+        self.goal_distance = 5.5
+        self.success_distance = 5.0
+        self.goal_reached = False
+        self.num_falls = 0
+        self._is_fallen = False
+        self.line_crossed = False
 
         self._kp = kp
         self._kd = kd
@@ -130,7 +130,12 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         roll_vel, pitch_vel, yaw_vel = obs_now[12:15]
 
         # Get action    
-        wheel_tau, pitch_tau = np.asarray(action, dtype=np.float32)
+        action_array = np.asarray(action, dtype=np.float32)
+        if len(action_array) >= 2:
+            wheel_tau, pitch_tau = action_array[:2]
+        else:
+            wheel_tau = action_array[0] if len(action_array) > 0 else 0.0
+            pitch_tau = 0.0  
 
         # PD controller
         kp, kd = self._kp, self._kd
@@ -236,9 +241,8 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             speed_reward = 0.0
 
         # ---------- 4. Stability penalties ----------
-        tilt_pen     = -0.4 * (roll**2 + pitch**2)               
-        ang_pen      = -0.02 * (roll_vel**2 + pitch_vel**2)
-        yaw_pen      = -0.02 * (yaw_vel**2 + 10.0 * yaw**2)
+        tilt_pen     = -0.4 * (pitch**2)  - 0.05 * (roll**2)               
+        ang_pen      = -0.02 * (pitch_vel**2) - 0.005 * (roll_vel**2)
         lat_pen      = -0.1  * abs(y_vel)
         wheel_pen    = -0.005 * np.clip(wheel_vel, -15, 15)**2
         pendulum_pen = (
@@ -248,13 +252,13 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         # ---------- 5. One‑time goal bonus ----------
         goal_bonus = 0.0
-        if (not self.line_crossed) and (x_pos >= self.goal_distance):  
+        if (not self.line_crossed) and (x_pos >= self.success_distance):  
             goal_bonus       = 100.0
             self.line_crossed = True   # prevent double reward
 
         # ---------- 6. Total reward ----------
         reward = (shaping_reward + speed_reward + goal_bonus +
-                  tilt_pen + ang_pen + yaw_pen + lat_pen + wheel_pen + pendulum_pen)
+                  tilt_pen + ang_pen + lat_pen + wheel_pen + pendulum_pen)
 
         return reward
 
@@ -265,7 +269,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     def _check_termination(self, x_pos, y_pos, euler):
         return bool(
             abs(y_pos) > 4.0 or
-            x_pos >= self.goal_distance or
+            x_pos >= self.success_distance or
             self.num_success >= self.target_success_count or
             self._check_fall(euler)
         )
@@ -273,7 +277,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     def _check_fall(self, euler):
         roll, pitch, _ = euler
         pendulum_ang = self.data.qpos[7]
-        # Fall when roll or pitch exceeds 60 deg (π/3) or pendulum angle exceeds 60 deg (π/3)
+        # Fall when roll or pitch exceeds 60 deg (π/3) or pendulum angle exceeds 60 deg (π/3)
         return abs(roll) > np.pi / 3 or abs(pitch) > np.pi / 3 or abs(pendulum_ang) > np.pi / 3
 
     # ------------------------------------------------------------------ #

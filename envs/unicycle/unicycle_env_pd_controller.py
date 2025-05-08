@@ -100,7 +100,7 @@ class UnicyclePD(MujocoEnv, utils.EzPickle):
         self.goal_reached       = False
         self.num_falls          = 0
         self._is_fallen         = False
-        self.line_crossed = False       # new flag for 5.5 m
+        self.line_crossed       = False
 
         self._kp = kp
         self._kd = kd
@@ -240,7 +240,7 @@ class UnicyclePD(MujocoEnv, utils.EzPickle):
 
         # ---------- 5. One‑time goal bonus ----------
         goal_bonus = 0.0
-        if (not self.line_crossed) and (x_pos >= self.goal_distance):  
+        if (not self.line_crossed) and (x_pos >= self.success_distance):  
             goal_bonus       = 100.0
             self.line_crossed = True   # prevent double reward
 
@@ -257,7 +257,7 @@ class UnicyclePD(MujocoEnv, utils.EzPickle):
     def _check_termination(self, x_pos, y_pos, euler):
         return bool(
             abs(y_pos) > 4.0 or
-            x_pos >= self.goal_distance or
+            x_pos >= self.success_distance or
             self.num_success >= self.target_success_count or
             self._check_fall(euler)
         )

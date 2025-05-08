@@ -17,11 +17,11 @@ def unicycle_env_creator(env_config):
     Gymnasium-compatible factory for the custom unicycle environment.
     """
     import gymnasium as gym
-    import envs.unicycle  # Registers Unicycle-v0
-    return gym.make("Unicycle-v0", **env_config)
+    import envs.unicycle  # Registers UnicyclePendulumPD-v0
+    return gym.make("UnicyclePendulumPD-v0", **env_config)
 
 
-tune.register_env("UnicycleRLlib", unicycle_env_creator)
+tune.register_env("UnicycleStudentRLlib", unicycle_env_creator)
 
 
 # 2) Callbacks ------------------------------------------------------------
@@ -64,7 +64,7 @@ class MetricAndStopCallback(DefaultCallbacks):
 # 3) SAC configuration ----------------------------------------------------
 cfg = (
     SACConfig()                         # still a SACConfig object
-        .environment("UnicycleRLlib")
+        .environment("UnicycleStudentRLlib")
         .framework("torch")
         .resources(num_gpus=1)
         .callbacks(MetricAndStopCallback)
