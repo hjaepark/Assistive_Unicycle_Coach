@@ -122,7 +122,7 @@ if __name__ == "__main__":
     random.seed(seed)
 
     test_env = gym.make(
-        "Student-v0",
+        "Unicycle-v0",
         render_mode="human",
         frame_skip=FRAME_SKIP,
         default_camera_config=DEFAULT_CAMERA_CONFIG,

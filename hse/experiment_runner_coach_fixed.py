@@ -35,7 +35,7 @@ current_dir = os.path.dirname(
 )
 data_dir = os.path.join(current_dir, "data")
 
-pre_trained_dir = os.path.join(current_dir, "pre_trained_models")
+pre_trained_dir = os.path.join(current_dir, "Assistive_Unicycle_Coach", "pre_trained_models")
 
 # Timestamp for run identification
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -106,7 +106,11 @@ def test(env, coach_model_path, alpha):
             print(f"Coach Action: {info['coach_action']}")
             print(f"Final Action: {human_action + info['coach_action_prime']}")
             print(f"Reward: {reward}")
+            print(f"X position: {info['x_position']:.3f}")
 
+            current_success_count = info.get("num_success", 0)
+            print(f"Success! Total Success Count: {current_success_count}")
+                  
             if done or truncated:
                 obs, _ = test_env.reset()
                 done = False
@@ -127,7 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--env", action="store_true", help="Environment to use.")
     parser.add_argument("--timesteps", type=int, default=10**10, help="Number of timesteps.")
     parser.add_argument("--coach_model_path", type=str, default=None, help="Path to pre-trained coach model.")
-    parser.add_argument("--alpha", type=float, default=0.0, help="Fixed alpha for action merging.")
+    parser.add_argument("--alpha", type=float, default=1.0, help="Fixed alpha for action merging.")
     args = parser.parse_args()
 
     # Set seeds for reproducibility
@@ -135,10 +139,9 @@ if __name__ == "__main__":
     np.random.seed(seed)
     random.seed(seed)
 
+    # Default coach model path
     if args.coach_model_path is None:
-        current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
-        default_coach = os.path.join(project_root, "pre_trained_models", "unicycle_trained.zip")
+        default_coach = os.path.join(pre_trained_dir, "unicycle_trained.zip")
         args.coach_model_path = default_coach
 
     base_env = gym.make(
