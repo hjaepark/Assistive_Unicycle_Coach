@@ -1,4 +1,4 @@
-# auto_experiments.py
+# train/unicycle_train/student/parameter_sweep.py
 # Hyper‑parameter sweep for the Unicycle SAC agent using Ray Tune
 # Compatible with Ray/RLlib 2.12.0 (legacy trainer stack)
 

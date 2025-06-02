@@ -205,7 +205,8 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     #                      OBSERVATION HELPERS                           #
     # ------------------------------------------------------------------ #
     def _get_obs(self):
-        return np.concatenate([self.data.qpos, self.data.qvel]).astype(np.float32, copy=False)
+        obs = np.concatenate([self.data.qpos, self.data.qvel])
+        return obs.astype(np.float32, copy=False)
 
     def _get_euler_angles(self, observation):
         quat = observation[3:7]
