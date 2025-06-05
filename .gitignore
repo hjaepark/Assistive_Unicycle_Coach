@@ -10,6 +10,9 @@ data/*
 !data/experimental_data/
 
 logs/
+logs_student/
+logs_coach/
+logs.zip
 
 *.egg-info/
 dist/
