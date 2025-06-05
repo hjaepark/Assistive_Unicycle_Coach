@@ -100,6 +100,10 @@ def test(env):
     dpg.show_viewport()
 
     obs = env.reset()
+
+    #print("Observation shape:", obs.shape)
+    #print("Observation:", obs)
+
     done = False
     truncated = False
 
@@ -112,6 +116,8 @@ def test(env):
 
             action = gamepad_to_action(gamepad_state)
             obs, reward, done, truncated, info = env.step(action)
+            #print("Observation shape:", obs.shape)
+            #print("Observation:", obs)
 
             # Store data for visualization
             step_count += 1

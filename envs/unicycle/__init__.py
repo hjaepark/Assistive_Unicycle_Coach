@@ -1,8 +1,8 @@
 from gymnasium.envs.registration import register
 
 register(
-    id='Unicycle-v0',
-    entry_point='envs.unicycle.unicycle_env:Unicycle',
+    id="Unicycle-v0",
+    entry_point="envs.unicycle.unicycle_env:Unicycle",
 )
 
 register(
@@ -14,3 +14,4 @@ register(
     id='UnicyclePendulumPD-v0',
     entry_point='envs.unicycle.unicycle_pendulum_env_pd_controller:UnicyclePendulumPD',
 )
+

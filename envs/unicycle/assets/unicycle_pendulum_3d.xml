@@ -36,6 +36,7 @@
             </body>
 
             <!-- Wheel mass = 1.5 kg -->
+
             <body name="wheel" pos="0 0 0">
                 <joint name="wheel_joint" type="hinge" axis="0 1 0" frictionloss="1.5" damping="0.9"/>
                 <geom type="mesh" mesh="wheel" pos="0 0 0" euler="0 0 90" mass="1.5" rgba="0.8 0.8 0.8 0.6" friction="4.0 1.0 0.05"/>
