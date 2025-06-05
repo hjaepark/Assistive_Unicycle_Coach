@@ -29,7 +29,3 @@ and human subject experiment as so: `python -m hse.experiment_runner`
 ### Logging
 
 Activate TensorBoard with `tensorboard --logdir ./data/logs`
-
-### Parameteres
-
-4 modes, 4 strategies, alpha 0-1
