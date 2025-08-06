@@ -31,7 +31,7 @@ tune.register_env("UnicycleStudentRLlib", unicycle_env_creator)
 
 # -----------------------------------------------------------------------------
 # 2. Multi‑agent wrapper (student + coach)
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------X--------------------
 
 class CoachStudentMAEnv(MultiAgentEnv):
     """Two‑agent interface in RLlib format.

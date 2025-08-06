@@ -51,8 +51,8 @@ tune.register_env(
         "train.unicycle_train.coach.action_blending_wrapper",
         fromlist=["ActionBlendingWrapper"],
     ).ActionBlendingWrapper(cfg),
-)
 
+)
 # ────────────────────────────────────────────────────────────────
 # (2)  callback factory – trajectory‑based online skill estimation
 # ────────────────────────────────────────────────────────────────
