@@ -59,7 +59,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     def __init__(
         self,
         xml_file: str = None,
-        frame_skip: int = 1,          # 0.005 s in XML × frame_skip
+        frame_skip: int = 1, # 0.005 s in XML × frame_skip
         default_camera_config: Dict[str, Union[float, int, np.ndarray]] = DEFAULT_CAMERA_CONFIG,
         reset_noise_scale: float = 0.01,
         max_steps: int = 1500,
@@ -203,7 +203,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         goal_bonus = 0.0
         if (not self.line_crossed) and (x_pos >= self.success_distance):  
             goal_bonus += 100.0
-            self.line_crossed = True   # prevent double reward
+            self.line_crossed = True # prevent double reward
 
         reward = (alive_bonus + shaping_reward + speed_reward + goal_bonus
                 + tilt_pen + ang_pen + lat_pen + wheel_pen + pendulum_pen)
@@ -234,30 +234,30 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         roll, pitch, _ = euler
         return {
             # Dynamics
-            "unicycle_roll":  roll,
+            "unicycle_roll": roll,
             "unicycle_pitch": pitch,
-            "pendulum_ang":   self.data.qpos[7],
-            "x_position":     x_pos,
-            "y_position":     y_pos,
+            "pendulum_ang": self.data.qpos[7],
+            "x_position": x_pos,
+            "y_position": y_pos,
 
             # Fixed parameters
-            "goal_distance":        self.goal_distance,
-            "success_distance":     self.success_distance,
-            "max_steps":            self.max_steps,
+            "goal_distance": self.goal_distance,
+            "success_distance": self.success_distance,
+            "max_steps": self.max_steps,
 
             # Counters
-            "num_steps":      self.num_steps,
-            "num_episodes":   self.num_episodes,
-            "num_success":    self.num_success,
-            "num_falls":      self.num_falls,
+            "num_steps": self.num_steps,
+            "num_episodes": self.num_episodes,
+            "num_success": self.num_success,
+            "num_falls": self.num_falls,
 
             # Episode state
-            "steps":          self.steps,
-            "goal_reached":   self.goal_reached,
-            "is_fallen":      self.is_fallen,
-            "line_crossed":   self.line_crossed,
+            "steps": self.steps,
+            "goal_reached": self.goal_reached,
+            "is_fallen": self.is_fallen,
+            "line_crossed": self.line_crossed,
 
-            "reward":         reward,
+            "reward": reward,
         }
 
     def reset_model(self):
