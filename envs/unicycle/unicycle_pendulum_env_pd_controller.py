@@ -10,9 +10,6 @@ from gymnasium import utils
 from gymnasium.envs.mujoco import MujocoEnv
 from gymnasium.spaces import Box
 
-###################################################
-## Action Space
-###################################################
 """
 The agent takes a 2‑element vector for actions.
 
@@ -21,12 +18,6 @@ The agent takes a 2‑element vector for actions.
 | 0   | Torque applied on the wheel            | -1 to 1       | wheel_motor             | wheel_joint   | 25          | -25 to 25                |
 | 1   | Pitch control torque (about y‑axis)    | -1 to 1       | pitch_control_motor     | free_joint    | 10          | -10 to 10                |
 
-"""
-
-###################################################
-## Observation Space
-###################################################
-"""
 The observation consists of:
 
 | Num | Observation                          | Min   | Max   | Type (Unit)              |
@@ -65,9 +56,6 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         "render_fps": 200
     }
 
-    # ------------------------------------------------------------------ #
-    #                               INIT                                 #
-    # ------------------------------------------------------------------ #
     def __init__(
         self,
         xml_file: str = None,
@@ -84,138 +72,104 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         utils.EzPickle.__init__(self, xml_file, frame_skip, reset_noise_scale, max_steps, kp, kd, **kwargs)
 
-        obs_space = Box(low=-1e10, high=1e10, shape=(17,), dtype=np.float32)
-        self.observation_space = obs_space
 
+        self.observation_space = Box(low=-1e10, high=1e10, shape=(17,), dtype=np.float32)
         self.action_space = Box(low=-1, high=1, shape=(2,), dtype=np.float32)
 
-        # Environment state counters
-        self._reset_noise_scale = reset_noise_scale
+        self.kp, self.kd = kp, kd
+        self.reset_noise_scale = reset_noise_scale
         self.max_steps = max_steps
+        self.goal_distance = 5.5
+        self.success_distance = 5.0
+        self.target_success_count = 1000
+
         self.num_steps = 0
         self.num_episodes = 0
         self.num_success = 0
-        self.prev_x_pos = 0.0
-        self.target_success_count = 1000
-        self.goal_distance = 5.5
-        self.success_distance = 5.0
-        self.goal_reached = False
         self.num_falls = 0
-        self._is_fallen = False
-        self.line_crossed = False
 
-        self._kp = kp
-        self._kd = kd
+        self.prev_x_pos = 0.0
+        self.goal_reached = False
+        self.line_crossed = False
+        self.is_fallen = False
+        self.steps = 0
+        self.prev_potential = -self.goal_distance
 
         MujocoEnv.__init__(
             self,
             xml_file,
             frame_skip,
-            observation_space=obs_space,
+            observation_space=self.observation_space,
             default_camera_config=default_camera_config,
             **kwargs,
         )
         self.metadata["render_fps"] = int(np.round(1.0 / self.dt))
 
-    # ------------------------------------------------------------------ #
-    #                                STEP                                #
-    # ------------------------------------------------------------------ #
     def step(self, action):
-        # ------------------------------------------------------------ #
-        #                      PD Controller                           #
-        # ------------------------------------------------------------ #
         # Get current state
-        obs_now = self._get_obs()
-        roll, pitch, yaw = self._get_euler_angles(obs_now)
+        obs_now = self.get_obs()
+        roll, pitch, yaw = self.get_euler_angles(obs_now)
         roll_vel, pitch_vel, yaw_vel = obs_now[12:15]
 
-        # Get action    
-        action_array = np.asarray(action, dtype=np.float32)
-        if len(action_array) >= 2:
-            wheel_tau, pitch_tau = action_array[:2]
-        else:
-            wheel_tau = action_array[0] if len(action_array) > 0 else 0.0
-            pitch_tau = 0.0  
+        # Get agent's action
+        wheel_tau, pitch_tau = self.parse_action(action)
 
-        # PD controller
-        kp, kd = self._kp, self._kd
-        roll_tau = np.clip(-(kp*roll + kd*roll_vel) / 10.0, -1.0, 1.0)
-        yaw_tau  = np.clip(-(kp*yaw  + kd*yaw_vel ) / 10.0, -1.0, 1.0)
-        full_action = np.array([wheel_tau, roll_tau, pitch_tau, yaw_tau], dtype=np.float32)
+        # Stablize with PD controller
+        roll_tau, yaw_tau = self.pd_controller(roll, roll_vel, yaw, yaw_vel)
 
-        # Now do simulation
-        self.do_simulation(full_action, self.frame_skip)
-        self.steps     += 1
+        # Do simulation for single step
+        self.do_simulation(np.array([wheel_tau, roll_tau, pitch_tau, yaw_tau], dtype=np.float32), self.frame_skip)
+        self.steps += 1
         self.num_steps += 1
 
-        obs   = self._get_obs()
+        # Reward
+        obs = self.get_obs()
         x_pos, y_pos = obs[:2]
+        euler = self.get_euler_angles(obs)
 
-        euler = self._get_euler_angles(obs)
+        self.update_fall_flag(euler)
+        reward = self.calculate_reward(x_pos, y_pos, euler, obs)
+        self.update_success_count(x_pos)
 
-        # Mark fall event only once
-        if not self._is_fallen and self._check_fall(euler):
-            self.num_falls += 1
-            self._is_fallen = True
-
-        # Reward must be computed **before** prev_x_pos is updated
-        reward = self._calculate_reward(x_pos, y_pos, euler, obs)
-
-        # success counter / prev_x_pos update
-        self._update_success_count(x_pos)
-
-        terminated = self._check_termination(x_pos, y_pos, euler)
-        truncated  = bool(self.steps >= self.max_steps)
-        info       = self._get_info(x_pos, y_pos, euler, reward)
+        # Termination
+        terminated = self.check_termination(x_pos, y_pos, euler)
+        truncated = self.steps >= self.max_steps
+        info = self.get_info(x_pos, y_pos, euler, reward)
 
         if self.render_mode == "human":
             self.render()
 
         return obs, reward, terminated, truncated, info
-
-    # ------------------------------------------------------------------ #
-    #                               RESET                                #
-    # ------------------------------------------------------------------ #
-    def reset_model(self):
-        noise_low, noise_high = -self._reset_noise_scale, self._reset_noise_scale
-
-        qpos = (self.init_qpos + self.np_random.uniform(size=self.model.nq, low=noise_low, high=noise_high)).astype(np.float32)
-
-        qvel = (self.init_qvel + self.np_random.uniform(size=self.model.nv, low=noise_low, high=noise_high)).astype(np.float32)
-
-        # Normalize quaternion to avoid invalid orientation
-        quat = qpos[3:7]
-        qpos[3:7] = quat / np.linalg.norm(quat + 1e-8)
-
-        self.set_state(qpos, qvel)
-
-        # Reset episode counters
-        self.steps        = 0
-        self.prev_x_pos   = 0.0
-        self.goal_reached = False
-        self.num_episodes += 1
-        self._is_fallen   = False
-
-        self.line_crossed = False       # reset
-        self._prev_potential = -self.goal_distance   # start at -5.5
-
-        return self._get_obs()
-
-    # ------------------------------------------------------------------ #
-    #                      OBSERVATION HELPERS                           #
-    # ------------------------------------------------------------------ #
-    def _get_obs(self):
+    
+    def get_obs(self):
         obs = np.concatenate([self.data.qpos, self.data.qvel])
         return obs.astype(np.float32, copy=False)
 
-    def _get_euler_angles(self, observation):
+    def get_euler_angles(self, observation):
         quat = observation[3:7]
         return Rotation.from_quat(np.roll(quat, -1)).as_euler("xyz")
+    
+    def parse_action(self, action):
+        a = np.asarray(action, dtype=np.float32).flatten()
+        if a.size >= 2:
+            return a[0], a[1]
+        elif a.size == 1:
+            return a[0], 0.0
+        else:
+            return 0.0, 0.0
+    
+    def pd_controller(self, roll, roll_vel, yaw, yaw_vel):
+        kp, kd = self.kp, self.kd
+        roll_tau = np.clip(-(kp*roll + kd*roll_vel) / 10.0, -1.0, 1.0)
+        yaw_tau  = np.clip(-(kp*yaw  + kd*yaw_vel ) / 10.0, -1.0, 1.0)
+        return roll_tau, yaw_tau
+    
+    def update_fall_flag(self, euler):
+        if not self.is_fallen and self.check_fall(euler):
+            self.num_falls += 1
+            self.is_fallen = True
 
-    # ------------------------------------------------------------------ #
-    #                          REWARD FUNCTION                           #
-    # ------------------------------------------------------------------ #
-    def _calculate_reward(self, x_pos, y_pos, euler, obs):
+    def calculate_reward(self, x_pos, y_pos, euler, obs):
         roll, pitch, yaw = euler
         pendulum_ang = obs[7]
         x_vel, y_vel = obs[9], obs[10]
@@ -223,90 +177,108 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         pendulum_vel = obs[15]
         wheel_vel = obs[16]
 
-        # ---------- 1. Upright gate ----------
-        upright = np.exp(-4.0 * (roll**2 + pitch**2 + pendulum_ang**2))   # smoother than before
+        alive_bonus = 0.08 
 
-        # ---------- 2. Distance shaping (only before the line) ----------
-        dist_to_goal = self.goal_distance - x_pos           # >0 before line
+        upright = np.exp(-4.0 * (roll**2 + pitch**2 + pendulum_ang**2))   
+
+        dist_to_goal = self.goal_distance - x_pos
         if dist_to_goal > 0:
-            potential = -dist_to_goal                      # 0  →  -5.5
-            shaping_reward = 4.0 * (potential - self._prev_potential) * upright
-            self._prev_potential = potential
+            potential = -dist_to_goal
+            shaping_reward = 4.0 * (potential - self.prev_potential) * upright
+            self.prev_potential = potential
         else:
-            shaping_reward = 0.0                            # after crossing
+            shaping_reward = 0.0
 
-        # ---------- 3. Cruise‑speed band reward ----------
         if 0.6 <= x_vel <= 1.2:
             speed_reward = 0.3 * upright
         else:
             speed_reward = 0.0
 
-        # ---------- 4. Stability penalties ----------
-        tilt_pen     = -0.4 * (pitch**2)  - 0.05 * (roll**2)               
-        ang_pen      = -0.02 * (pitch_vel**2) - 0.005 * (roll_vel**2)
-        lat_pen      = -0.1  * abs(y_vel)
-        wheel_pen    = -0.005 * np.clip(wheel_vel, -15, 15)**2
-        pendulum_pen = (
-            -0.3 * np.clip(pendulum_ang, -15, 15)**2
-            -0.005 * np.clip(pendulum_vel, -15, 15)**2
-        )
+        tilt_pen = -0.15 * pitch**2  - 0.02 * roll**2
+        ang_pen = -0.008 * pitch_vel**2 - 0.002 * roll_vel**2
+        lat_pen = -0.04  * abs(y_vel)
+        wheel_pen = -0.002 * np.clip(wheel_vel, -15, 15)**2
+        pendulum_pen = -0.1 * pendulum_ang**2 - 0.002 * pendulum_vel**2
 
-        # ---------- 5. One‑time goal bonus ----------
         goal_bonus = 0.0
         if (not self.line_crossed) and (x_pos >= self.success_distance):  
-            goal_bonus       = 100.0
+            goal_bonus += 100.0
             self.line_crossed = True   # prevent double reward
 
-        # ---------- 6. Total reward ----------
-        reward = (shaping_reward + speed_reward + goal_bonus +
-                  tilt_pen + ang_pen + lat_pen + wheel_pen + pendulum_pen)
+        reward = (alive_bonus + shaping_reward + speed_reward + goal_bonus
+                + tilt_pen + ang_pen + lat_pen + wheel_pen + pendulum_pen)
 
         return reward
 
-
-    # ------------------------------------------------------------------ #
-    #                        TERMINATION LOGIC                           #
-    # ------------------------------------------------------------------ #
-    def _check_termination(self, x_pos, y_pos, euler):
-        return bool(
-            abs(y_pos) > 4.0 or
-            x_pos >= self.success_distance or
-            self.num_success >= self.target_success_count or
-            self._check_fall(euler)
-        )
-
-    def _check_fall(self, euler):
-        roll, pitch, _ = euler
-        pendulum_ang = self.data.qpos[7]
-        # Fall when roll or pitch exceeds 60 deg (π/3) or pendulum angle exceeds 60 deg (π/3)
-        return abs(roll) > np.pi / 3 or abs(pitch) > np.pi / 3 or abs(pendulum_ang) > np.pi / 3
-
-    # ------------------------------------------------------------------ #
-    #                       SUCCESS COUNTER                              #
-    # ------------------------------------------------------------------ #
-    def _update_success_count(self, x_pos: float) -> None:
+    def update_success_count(self, x_pos: float) -> None:
         if self.prev_x_pos < self.success_distance <= x_pos:
             self.num_success += 1
             self.goal_reached = True
         self.prev_x_pos = x_pos
 
-    # ------------------------------------------------------------------ #
-    #                              INFO                                  #
-    # ------------------------------------------------------------------ #
-    def _get_info(self, x_pos, y_pos, euler, reward):
+    def check_termination(self, x_pos, y_pos, euler):
+        return bool(
+            abs(y_pos) > 4.0 or
+            x_pos >= self.success_distance or
+            self.num_success >= self.target_success_count or
+            self.check_fall(euler)
+        )
+
+    def check_fall(self, euler):
+        roll, pitch, _ = euler
+        pendulum_ang = self.data.qpos[7]
+        # Fall when roll or pitch exceeds 60 deg (π/3) or pendulum angle exceeds 60 deg (π/3)
+        return abs(roll) > np.pi / 3 or abs(pitch) > np.pi / 3 or abs(pendulum_ang) > np.pi / 3
+    
+    def get_info(self, x_pos, y_pos, euler, reward):
         roll, pitch, _ = euler
         return {
+            # Dynamics
             "unicycle_roll":  roll,
             "unicycle_pitch": pitch,
             "pendulum_ang":   self.data.qpos[7],
             "x_position":     x_pos,
             "y_position":     y_pos,
-            "goal_reached":   self.goal_reached,
-            "steps":          self.steps,
+
+            # Fixed parameters
+            "goal_distance":        self.goal_distance,
+            "success_distance":     self.success_distance,
+            "max_steps":            self.max_steps,
+
+            # Counters
             "num_steps":      self.num_steps,
-            "num_success":    self.num_success,
             "num_episodes":   self.num_episodes,
+            "num_success":    self.num_success,
             "num_falls":      self.num_falls,
-            "is_fallen":      self._is_fallen,
+
+            # Episode state
+            "steps":          self.steps,
+            "goal_reached":   self.goal_reached,
+            "is_fallen":      self.is_fallen,
+            "line_crossed":   self.line_crossed,
+
             "reward":         reward,
         }
+
+    def reset_model(self):
+        noise_low, noise_high = -self.reset_noise_scale, self.reset_noise_scale
+        qpos = (self.init_qpos + self.np_random.uniform(size=self.model.nq, low=noise_low, high=noise_high)).astype(np.float32)
+        qvel = (self.init_qvel + self.np_random.uniform(size=self.model.nv, low=noise_low, high=noise_high)).astype(np.float32)
+
+        # Normalize quaternion to avoid invalid orientation
+        quat = qpos[3:7]
+        qpos[3:7] = quat / (np.linalg.norm(quat) + 1e-8)
+
+        self.set_state(qpos, qvel)
+
+        # Reset episode counters
+        self.steps = 0
+        self.prev_x_pos = 0.0
+        self.goal_reached = False
+        self.num_episodes += 1
+        self.is_fallen = False
+
+        self.line_crossed = False # reset
+        self.prev_potential = -self.goal_distance # start at -5.5
+
+        return self.get_obs()
