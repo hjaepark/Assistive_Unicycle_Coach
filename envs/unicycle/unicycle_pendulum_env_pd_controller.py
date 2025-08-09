@@ -81,7 +81,6 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         self.max_steps = max_steps
         self.goal_distance = 5.5
         self.success_distance = 5.0
-        self.target_success_count = 1000
 
         self.num_steps = 0
         self.num_episodes = 0
@@ -163,7 +162,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         roll_tau = np.clip(-(kp*roll + kd*roll_vel) / 10.0, -1.0, 1.0)
         yaw_tau  = np.clip(-(kp*yaw  + kd*yaw_vel ) / 10.0, -1.0, 1.0)
         return roll_tau, yaw_tau
-    
+
     def update_fall_flag(self, euler):
         if not self.is_fallen and self.check_fall(euler):
             self.num_falls += 1
@@ -220,7 +219,6 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         return bool(
             abs(y_pos) > 4.0 or
             x_pos >= self.success_distance or
-            self.num_success >= self.target_success_count or
             self.check_fall(euler)
         )
 
@@ -229,7 +227,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         pendulum_ang = self.data.qpos[7]
         # Fall when roll or pitch exceeds 60 deg (π/3) or pendulum angle exceeds 60 deg (π/3)
         return abs(roll) > np.pi / 3 or abs(pitch) > np.pi / 3 or abs(pendulum_ang) > np.pi / 3
-    
+
     def get_info(self, x_pos, y_pos, euler, reward):
         roll, pitch, _ = euler
         return {
