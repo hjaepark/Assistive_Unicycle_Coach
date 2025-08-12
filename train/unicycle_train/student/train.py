@@ -1,12 +1,11 @@
-# train/unicycle_train/student/train.py
-
+# train/unicycle_train/student/train.py 개선안
 
 import datetime
 from typing import Any, Dict
 
 import ray
 from ray import tune
-from ray.air import CheckpointConfig, RunConfig
+from ray.tune import RunConfig, CheckpointConfig
 from ray.tune.stopper import FunctionStopper
 from ray.tune.logger import TBXLoggerCallback
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
@@ -15,113 +14,164 @@ from ray.rllib.algorithms.sac import SACConfig
 from train.unicycle_train import path as P
 
 def unicycle_env_creator(env_config: Dict[str, Any] | None = None):
-    import gymnasium as gym, envs.unicycle 
+    import gymnasium as gym, envs.unicycle
     env_config = env_config or {}
-    return gym.make("UnicyclePendulumPD-v0", **env_config)
+    env = gym.make("UnicyclePendulumPD-v0", **env_config)
+    return env
 
 tune.register_env("UnicycleStudentRLlib", unicycle_env_creator)
 
-# Training evaluation & early termination configuration
+# Training configuration
 EVALUATION_INTERVAL = 20
 EVALUATION_EPISODES = 200
-REQUIRED_SUCCESSES_PER_EVALUATION = 187 # ≈ 93.5% success rate. Lower confidence bound ≥ 0.90.
+REQUIRED_SUCCESS_RATE = 0.935  # 93.5% success rate
 REQUIRED_CONSECUTIVE_PASSES = 2
-MIN_EVALUATION_EPISODES = 200
-MAXIMUM_TIMESTEPS = 10_000_000 # Maximum number of total timesteps.
-
-EVALUATION_ENV_CONFIG = {
-    "reset_noise_scale": 0.01,
-    "kp": 40.0,
-    "kd": 6.0,
-}
+MAXIMUM_TIMESTEPS = 10_000_000
 
 class MetricsCallback(DefaultCallbacks):
-    def on_episode_end(self, *, episode, metrics_logger=None, env_runner=None, **__):
-        info = episode.get_infos(-1) or {}
-        success_flag = 1 if info.get("goal_reached", False) else 0
-        x_final = float(info.get("x_position", 0.0))
-        y_final = float(info.get("y_position", 0.0))
-        num_success_global = int(info.get("num_success", 0))
+    def on_episode_end(self, *, episode, env_runner=None, metrics_logger=None, **kwargs):
+        if hasattr(episode, 'get_infos'):
+            info = episode.get_infos(-1) or {}
+        else:
+            info = {}
+        
+        if metrics_logger and info:
+            metrics_logger.log_value("success", float(info.get("goal_reached", False)))
+            metrics_logger.log_value("x_final", info.get("x_position", 0.0))
+            metrics_logger.log_value("y_final", info.get("y_position", 0.0))
+            metrics_logger.log_value("fall", float(info.get("is_fallen", False)))
 
-        if metrics_logger:
-            metrics_logger.log_value(("custom_metrics", "success_flag"), success_flag, reduce="mean")
-            metrics_logger.log_value(("custom_metrics", "x_final"), x_final, reduce="mean")
-            metrics_logger.log_value(("custom_metrics", "y_final"), y_final, reduce="mean")
-            metrics_logger.log_value(("custom_metrics", "num_success_global"), num_success_global, reduce="max")
-
-certificate_state = {"consecutive_passes": 0}
+    def on_train_result(self, *, algorithm, result, **kwargs):
+        iteration = result["training_iteration"]
+        
+        if iteration % 5 == 0:
+            episode_return = result.get("env_runners", {}).get("episode_return_mean", 0.0)
+            total_steps = result.get("num_env_steps_sampled_lifetime", 0)
+            
+            success_mean = result.get("env_runners", {}).get("success_mean", 0.0)
+            fall_mean = result.get("env_runners", {}).get("fall_mean", 0.0)
+            
+            print(f"[Iter {iteration:3d}] "
+                  f"Return: {episode_return:7.1f} | "
+                  f"Success: {success_mean:5.1%} | "
+                  f"Fall: {fall_mean:5.1%} | "
+                  f"Steps: {total_steps:,}")
 
 def stopper(_, result: Dict[str, Any]) -> bool:
-    evaluation = result.get("evaluation", {}) or {}
-    custom_metrics = evaluation.get("custom_metrics", {}) or {}
-    success_mean = custom_metrics.get("success_flag_mean", None)
-    num_episodes = int(evaluation.get("num_episodes", 0))
-
-    if success_mean is not None and num_episodes >= MIN_EVALUATION_EPISODES:
-        successes = int(round(success_mean * num_episodes))
-        passed = successes >= REQUIRED_SUCCESSES_PER_EVALUATION
-        certificate_state["consecutive_passes"] = (certificate_state["consecutive_passes"] + 1) if passed else 0
-        print(f"[STOP] successes={successes}/{num_episodes}  passed={passed}  "
-              f"streak={certificate_state['consecutive_passes']}/{REQUIRED_CONSECUTIVE_PASSES}")
+    eval_results = result.get("evaluation", {}).get("env_runners", {})
+    success_rate = eval_results.get("success_mean", 0.0)
+    episode_return = eval_results.get("episode_return_mean", 0.0)
     
-    reached_max_timesteps = int(result.get("timesteps_total", 0)) >= MAXIMUM_TIMESTEPS
-    return (certificate_state["consecutive_passes"] >= REQUIRED_CONSECUTIVE_PASSES) or reached_max_timesteps
-
-stopper = FunctionStopper(stopper)
-
-sac_cfg = (
-    SACConfig()
-    .environment("UnicycleStudentRLlib")
-    .framework("torch")
-    .resources(num_gpus=1)
-    .callbacks(MetricsCallback)
-    .evaluation(
-        evaluation_interval=EVALUATION_INTERVAL,
-        evaluation_duration=EVALUATION_EPISODES,
-        evaluation_duration_unit="episodes",
-        evaluation_config={"explore": False, "env_config": EVALUATION_ENV_CONFIG},
+    if success_rate >= REQUIRED_SUCCESS_RATE:
+        certificate_state["consecutive_passes"] += 1
+    else:
+        certificate_state["consecutive_passes"] = 0
+    
+    certificate_state["best_success_rate"] = max(
+        certificate_state["best_success_rate"], 
+        success_rate
     )
-).to_dict()
+    
+    total_steps = result.get("num_env_steps_sampled_lifetime", 0)
+    
+    print(f"[Evaluation] Success Rate: {success_rate:.1%} | "
+          f"Episode Return: {episode_return:.1f} | "
+          f"Consecutive Passes: {certificate_state['consecutive_passes']}/{REQUIRED_CONSECUTIVE_PASSES} | "
+          f"Steps: {total_steps:,}/{MAXIMUM_TIMESTEPS:,}")
+    
+    return (certificate_state["consecutive_passes"] >= REQUIRED_CONSECUTIVE_PASSES or 
+            total_steps >= MAXIMUM_TIMESTEPS)
 
+certificate_state = {"consecutive_passes": 0, "best_success_rate": 0.0}
 
-def main() -> None:
+def main():
     ray.shutdown()
     ray.init()
-
-    logs_root = P.LOGS_STUDENT_DIR
-    run_name = f"unicycle_student_{datetime.datetime.now():%Y%m%d_%H%M%S}"
-
+    
+    config = (
+        SACConfig()
+        .environment(
+            env="UnicycleStudentRLlib",
+            env_config={"reset_noise_scale": 0.01, "kp": 40.0, "kd": 6.0}
+        )
+        .framework("torch")
+        .training(
+            # SAC specific parameters
+            twin_q=True,
+            q_model_config={"fcnet_hiddens": [256, 256]},
+            policy_model_config={"fcnet_hiddens": [256, 256]},
+            tau=0.005,
+            initial_alpha=0.2,
+            target_entropy="auto",
+            n_step=1,
+            replay_buffer_config={
+                "capacity": 131072,
+                "prioritized_replay_alpha": 0.0,
+                "prioritized_replay_beta": 0.4,
+            },
+            train_batch_size=512,
+            target_network_update_freq=1,
+            # Learning rates
+            actor_lr=1e-3,
+            critic_lr=1e-3,
+            alpha_lr=1e-3,
+            gamma=0.99,
+        )
+        .env_runners(
+            num_env_runners=12,
+            num_envs_per_env_runner=1,
+        )
+        .learners(
+            num_learners=1,
+            num_gpus_per_learner=1,
+            num_cpus_per_learner=4,
+        )
+        .evaluation(
+            evaluation_interval=EVALUATION_INTERVAL,
+            evaluation_duration=EVALUATION_EPISODES,
+            evaluation_duration_unit="episodes",
+            evaluation_num_env_runners=4,
+            evaluation_parallel_to_training=True,
+            evaluation_config={
+                "explore": False,
+                "env_config": {"reset_noise_scale": 0.01, "kp": 40.0, "kd": 6.0}
+            },
+        )
+        .callbacks(MetricsCallback)
+        .debugging(seed=42)
+    )
+    
     tuner = tune.Tuner(
         "SAC",
-        param_space=sac_cfg,
+        param_space=config.to_dict(),
         run_config=RunConfig(
-            name=run_name,
-            storage_path=str(logs_root),
-            stop=stopper,
+            name=f"unicycle_{datetime.datetime.now():%Y%m%d_%H%M%S}",
+            storage_path=str(P.LOGS_STUDENT_DIR),
+            stop=FunctionStopper(stopper),
             callbacks=[TBXLoggerCallback()],
             checkpoint_config=CheckpointConfig(
                 checkpoint_at_end=True,
-                checkpoint_frequency=5,
+                checkpoint_frequency=10,
                 num_to_keep=3,
-                checkpoint_score_attribute="episode_reward_mean",
+                checkpoint_score_attribute="evaluation/env_runners/episode_return_mean",
                 checkpoint_score_order="max",
             ),
         ),
     )
+    
     results = tuner.fit()
-
-    best_result   = results.get_best_result(metric="episode_reward_mean", mode="max")
-    latest_result = results.get_best_result(metric="training_iteration", mode="max")
-
-    best_checkpoint   = best_result.checkpoint
-    latest_checkpoint = latest_result.checkpoint
-
-    destination_root = P.EXPERT_MODEL_DIR
-    destination_root.mkdir(parents=True, exist_ok=True)
-
-    stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    best_checkpoint.to_directory(destination_root / f"best_{stamp}")
-    latest_checkpoint.to_directory(destination_root / f"latest_{stamp}")
+    
+    best_result = results.get_best_result(
+        metric="evaluation/env_runners/episode_return_mean", 
+        mode="max"
+    )
+    
+    if best_result and best_result.checkpoint:
+        save_path = P.EXPERT_MODEL_DIR / f"best_{datetime.datetime.now():%Y%m%d_%H%M%S}"
+        save_path.mkdir(parents=True, exist_ok=True)
+        best_result.checkpoint.to_directory(str(save_path))
+        print(f"Best model saved to: {save_path}")
+        print(f"Success Rate: {certificate_state['best_success_rate']:.1%}")
 
 if __name__ == "__main__":
     main()
