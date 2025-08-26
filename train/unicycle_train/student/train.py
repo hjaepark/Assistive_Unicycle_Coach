@@ -13,6 +13,8 @@ from ray.rllib.utils.metrics import (
     NUM_ENV_STEPS_SAMPLED_LIFETIME,
     NUM_EPISODES_LIFETIME,
 )
+from ray.tune.stopper import CombinedStopper, MaximumIterationStopper
+from train.unicycle_train.evaluate import SuccessCallback, WilsonSuccessStopper
 
 import gymnasium as gym
 import envs.unicycle
@@ -50,37 +52,44 @@ def main():
         "env": "UnicyclePendulumPD-v0",
         "env_config": {},
         "framework": "torch",
-        "evaluation_interval": 5,
-        "evaluation_duration": 5,
+        "callbacks": SuccessCallback,
+        "evaluation_interval": 20,
+        "evaluation_duration": 100,
         "evaluation_duration_unit": "episodes",
         "evaluation_num_env_runners": 1,
         "evaluation_parallel_to_training": True,
+        "evaluation_config": {"explore": False},
     }
 
     checkpoint_config = CheckpointConfig(
-        checkpoint_frequency=10,
+        checkpoint_frequency=50,
         checkpoint_at_end=True,
         num_to_keep=1,
-        checkpoint_score_attribute="env_runners/episode_return_mean",
+        checkpoint_score_attribute="evaluation/env_runners/success_rate",
         checkpoint_score_order="max",
+    )
+
+    stopper = CombinedStopper(
+        WilsonSuccessStopper(min_lb=0.90, consec=1, max_iters=2000),
+        MaximumIterationStopper(2000),
     )
 
     analysis = tune.run(
         "SAC",
         config=config,
-        stop={"training_iteration": 50},
+        stop=stopper,
         storage_path=str(run_dir),
         checkpoint_config=checkpoint_config,
         verbose=1,
     )
 
     best_trial = analysis.get_best_trial(
-        metric="env_runners/episode_return_mean",
+        metric="evaluation/env_runners/success_rate",
         mode="max"
     )
 
     if best_trial:
-        print(f"\n [info] Best reward: {best_trial.last_result['env_runners']['episode_return_mean']:.2f}")
+        print(f"\n[info] Best reward: {best_trial.last_result['evaluation']['env_runners']['episode_return_mean']:.2f}")
         print(f"[info] Checkpoint path: {best_trial.checkpoint.path}")
         if best_trial.checkpoint:
             import shutil
