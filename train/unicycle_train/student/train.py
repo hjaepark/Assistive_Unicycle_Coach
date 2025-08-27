@@ -1,5 +1,8 @@
+# train/unicycle_train/student/train.py
+
 from typing import Any, Dict
 from pathlib import Path
+import shutil
 
 import ray
 from ray import tune
@@ -48,19 +51,6 @@ def main():
 
     tune.register_env("UnicyclePendulumPD-v0", unicycle_env_creator)
 
-    config = {
-        "env": "UnicyclePendulumPD-v0",
-        "env_config": {},
-        "framework": "torch",
-        "callbacks": SuccessCallback,
-        "evaluation_interval": 20,
-        "evaluation_duration": 100,
-        "evaluation_duration_unit": "episodes",
-        "evaluation_num_env_runners": 1,
-        "evaluation_parallel_to_training": True,
-        "evaluation_config": {"explore": False},
-    }
-
     checkpoint_config = CheckpointConfig(
         checkpoint_frequency=50,
         checkpoint_at_end=True,
@@ -74,31 +64,68 @@ def main():
         MaximumIterationStopper(2000),
     )
 
-    analysis = tune.run(
+    cfg = (
+        SACConfig()
+        .framework("torch")  
+        .environment("UnicyclePendulumPD-v0", env_config={})
+        .callbacks(SuccessCallback)
+        .env_runners(
+            num_env_runners=4,
+            num_envs_per_env_runner=2,
+            rollout_fragment_length=200,
+        )
+        .training(
+            train_batch_size=8192,
+            learning_starts=5000,
+            replay_buffer_config={
+                "capacity": 1_000_000,
+                "batch_size": 256,
+                "prioritized_replay": False,
+            },
+            tau=0.005,
+            gamma=0.99,
+            target_entropy="auto",
+            policy_model_config={"fcnet_hiddens": [256, 256]},
+            q_model_config={"fcnet_hiddens": [256, 256]},
+        )
+        .learners(num_learners=1, num_gpus_per_learner=1)
+        .evaluation(
+            evaluation_interval=20,
+            evaluation_duration=100,
+            evaluation_duration_unit="episodes",
+            evaluation_parallel_to_training=True,
+            evaluation_num_env_runners=1,
+            evaluation_config={"explore": False},
+        )
+    )
+
+    tuner = tune.Tuner(
         "SAC",
-        config=config,
-        stop=stopper,
-        storage_path=str(run_dir),
-        checkpoint_config=checkpoint_config,
-        verbose=1,
+        run_config=tune.RunConfig(
+            storage_path=str(run_dir),
+            checkpoint_config=checkpoint_config,
+            stop=stopper,
+            verbose=1,
+        ),
+        param_space=cfg.to_dict(),
     )
+    result_grid = tuner.fit()
 
-    best_trial = analysis.get_best_trial(
+    best_result = result_grid.get_best_result(
         metric="evaluation/env_runners/success_rate",
-        mode="max"
+        mode="max",
     )
 
-    if best_trial:
-        print(f"\n[info] Best reward: {best_trial.last_result['evaluation']['env_runners']['episode_return_mean']:.2f}")
-        print(f"[info] Checkpoint path: {best_trial.checkpoint.path}")
-        if best_trial.checkpoint:
-            import shutil
-            best_model_path = run_dir / "best_model"
-            if best_model_path.exists():
-                shutil.rmtree(best_model_path)
-            shutil.copytree(best_trial.checkpoint.path, best_model_path)
-            print(f"[info] Best model copied to: {best_model_path}")
-            
+    eval_envr = (best_result.metrics or {}).get("evaluation", {}).get("env_runners", {})
+    mean_ret = eval_envr.get("episode_return_mean", float("nan"))
+    print(f"\n[info] Best reward: {mean_ret:.2f}")
+
+    if best_result.checkpoint:
+        best_model_path = run_dir / "best_model"
+        if best_model_path.exists():
+            shutil.rmtree(best_model_path)
+        best_result.checkpoint.to_directory(best_model_path.as_posix())
+        print(f"[info] Best model copied to: {best_model_path}")
     ray.shutdown()
 
 if __name__ == "__main__":
