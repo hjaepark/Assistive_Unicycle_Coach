@@ -4,6 +4,11 @@ from typing import Any, Dict
 from pathlib import Path
 import shutil
 
+import os
+import random
+import torch
+import numpy as np
+
 import ray
 from ray import tune
 from ray.air import CheckpointConfig
@@ -44,8 +49,18 @@ def next_run_dir(base: Path) -> Path:
     return rd
 
 def main():
+    SEED = 42
+    os.environ["PYTHONHASHSEED"] = str(SEED)
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(SEED)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
     ray.init()
-    
+
     run_dir = next_run_dir(P.LOGS_STUDENT_DIR)
     print(f"[info] run_dir: {run_dir}")
 
@@ -64,11 +79,17 @@ def main():
         MaximumIterationStopper(2000),
     )
 
+    try:
+        NUM_GPUS = 1 if torch.cuda.is_available() else 0
+    except Exception:
+        NUM_GPUS = 0
+
     cfg = (
         SACConfig()
         .framework("torch")  
         .environment("UnicyclePendulumPD-v0", env_config={})
         .callbacks(SuccessCallback)
+        .debugging(seed=SEED)
         .env_runners(
             num_env_runners=4,
             num_envs_per_env_runner=2,
@@ -88,14 +109,16 @@ def main():
             policy_model_config={"fcnet_hiddens": [256, 256]},
             q_model_config={"fcnet_hiddens": [256, 256]},
         )
-        .learners(num_learners=1, num_gpus_per_learner=1)
+        .learners(num_learners=1, num_gpus_per_learner=NUM_GPUS)
         .evaluation(
             evaluation_interval=20,
             evaluation_duration=100,
             evaluation_duration_unit="episodes",
             evaluation_parallel_to_training=True,
             evaluation_num_env_runners=1,
-            evaluation_config={"explore": False},
+            evaluation_config={"explore": False,
+                               "seed": None,
+                               "env_config": {},},
         )
     )
 
