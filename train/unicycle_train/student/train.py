@@ -74,7 +74,7 @@ def main():
         checkpoint_frequency=50,
         checkpoint_at_end=True,
         num_to_keep=1,
-        checkpoint_score_attribute="evaluation/env_runners/success_rate",
+        checkpoint_score_attribute="evaluation/env_runners/success",
         checkpoint_score_order="max",
     )
 
@@ -95,22 +95,27 @@ def main():
         .framework("torch")  
         .environment("UnicyclePendulumPD-v0", env_config={})
         .callbacks(SuccessCallback)
-        .debugging(seed=SEED)
+        .debugging(seed=SEED, log_level="ERROR", log_sys_usage=False)
         .env_runners(
-            num_env_runners=4,
-            num_envs_per_env_runner=2,
-            rollout_fragment_length=200,
+            num_env_runners=8,
+            num_envs_per_env_runner=4,
+            rollout_fragment_length=400,
         )
         .training(
             train_batch_size=8192,
             replay_buffer_config={
                 "capacity": 1_000_000,
                 "batch_size": 256,
-                "prioritized_replay": False,
+                "prioritized_replay": True,
+                "alpha": 0.6,
+                "beta": 0.4,
             },
             tau=0.005,
             gamma=0.99,
             target_entropy="auto",
+            actor_lr=3e-4,
+            critic_lr=3e-4,
+            alpha_lr=3e-4,
             policy_model_config={"fcnet_hiddens": [256, 256]},
             q_model_config={"fcnet_hiddens": [256, 256]},
         )
@@ -128,6 +133,13 @@ def main():
     )
 
     cfg.num_steps_sampled_before_learning_starts = 5000
+    cfg.observation_filter = "MeanStdFilter"
+    cfg.clip_actions = True
+    cfg.log_gradients = False
+    cfg.log_sys_usage = False
+    cfg.log_level = "ERROR"
+    cfg.always_attach_evaluation_results = True
+
 
     tuner = tune.Tuner(
         "SAC",
@@ -142,7 +154,7 @@ def main():
     result_grid = tuner.fit()
 
     best_result = result_grid.get_best_result(
-        metric="evaluation/env_runners/success_rate",
+        metric="evaluation/env_runners/success",
         mode="max",
     )
 

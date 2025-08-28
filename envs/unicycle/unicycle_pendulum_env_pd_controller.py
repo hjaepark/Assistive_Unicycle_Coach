@@ -4,7 +4,6 @@ import os
 from typing import Any, Dict, Union
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from gymnasium import utils
 from gymnasium.envs.mujoco import MujocoEnv
@@ -227,10 +226,29 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     def _get_obs(self) -> np.ndarray:
         return self.get_obs()
     
+    def quat_to_euler(qwxyz: np.ndarray) -> np.ndarray:
+        w, x, y, z = float(qwxyz[0]), float(qwxyz[1]), float(qwxyz[2]), float(qwxyz[3])
+        
+        # Roll (x)
+        t0 = 2.0 * (w * x + y * z)
+        t1 = 1.0 - 2.0 * (x * x + y * y)
+        roll = np.arctan2(t0, t1)
+
+        # Pitch (y)
+        t2 = 2.0 * (w * y - z * x)
+        t2 = np.clip(t2, -1.0, 1.0)
+        pitch = np.arcsin(t2)
+
+        # Yaw (z)
+        t3 = 2.0 * (w * z + x * y)
+        t4 = 1.0 - 2.0 * (y * y + z * z)
+        yaw = np.arctan2(t3, t4)
+
+        return np.array([roll, pitch, yaw], dtype=np.float32)
+    
     def get_euler_angles(self, observation: np.ndarray) -> np.ndarray:
-        quat_wxyz = observation[3:7]  # MuJoCo: (w, x, y, z)
-        quat_xyzw = np.roll(quat_wxyz, -1)  # SciPy:  (x, y, z, w)
-        return Rotation.from_quat(quat_xyzw).as_euler("xyz")
+        quat_wxyz = observation[3:7]
+        return self.quat_to_euler(quat_wxyz)
 
     def calculate_reward(
         self, x_pos: float, y_pos: float, euler: np.ndarray, obs: np.ndarray
@@ -249,18 +267,20 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         # 1) Upright gate
         upright = np.exp(-4.0 * (roll**2 + pitch**2 + pendulum_ang**2))
+        upright_bonus = 0.1 * np.exp(-2.0 * (roll**2 + pitch**2 + pendulum_ang**2))
 
         # 2) Potential-based shaping
         dist_to_goal = self.goal_distance - x_pos
         if dist_to_goal > 0.0:
             potential = -dist_to_goal
-            shaping_reward = 4.0 * (potential - self.prev_potential) * upright
+            shaping_reward = 4.0 * (potential - self.prev_potential)
             self.prev_potential = potential
         else:
             shaping_reward = 0.0
 
         # 3) Speed-band bonus
-        speed_reward = 0.3 * upright if (0.6 <= x_vel <= 1.2) else 0.0
+        v_target, sigma = 0.8, 0.4
+        speed_reward = 0.3 * np.exp(-0.5 * ((x_vel - v_target) / sigma) ** 2)
 
         # 4) Lateral centering bonus (continuous)
         lat_bonus = 0.2 * np.exp(-2.0 * y_pos**2) * upright  # Bonus for staying near center
@@ -274,6 +294,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             -0.3   * (np.clip(pendulum_ang, -15.0, 15.0) ** 2)
             -0.005 * (np.clip(pendulum_vel, -15.0, 15.0) ** 2)
         )
+        alive_bonus = 0.01 if not self.is_fallen else 0.0
 
         # 6) Goal bonus
         goal_bonus = 0.0
@@ -283,10 +304,12 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         # 7) Final reward
         reward = shaping_reward + speed_reward + lat_bonus + goal_bonus \
-                 + tilt_pen + ang_pen + lat_vel_pen + wheel_pen + pend_pen
+                 + tilt_pen + ang_pen + lat_vel_pen + wheel_pen + pend_pen \
+                 + alive_bonus + upright_bonus
 
         comps = {
             "upright": float(upright),
+            "upright_bonus": float(upright_bonus),
             "shaping": float(shaping_reward),
             "speed_reward": float(speed_reward),
             "lat_bonus": float(lat_bonus),
@@ -296,6 +319,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             "wheel_pen": float(wheel_pen),
             "pendulum_pen": float(pend_pen),
             "goal_bonus": float(goal_bonus),
+            "alive_bonus": float(alive_bonus),
             "dist_to_goal": float(dist_to_goal),
         }
         return float(reward), comps
