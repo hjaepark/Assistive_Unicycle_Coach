@@ -21,8 +21,8 @@ from ray.rllib.utils.metrics import (
     NUM_ENV_STEPS_SAMPLED_LIFETIME,
     NUM_EPISODES_LIFETIME,
 )
-from ray.tune.stopper import CombinedStopper, MaximumIterationStopper
-from train.unicycle_train.evaluate import SuccessCallback, WilsonSuccessStopper
+from ray.tune.stopper import CombinedStopper
+from train.unicycle_train.evaluate import SuccessCallback, EvalSuccessStopper
 
 import gymnasium as gym
 import envs.unicycle
@@ -59,6 +59,10 @@ def main():
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
+    TARGET_SUCCESS_RATE = 0.95
+    EVAL_INTERVAL = 20
+    EVAL_DURATION = 100
+
     ray.init()
 
     run_dir = next_run_dir(P.LOGS_STUDENT_DIR)
@@ -75,8 +79,10 @@ def main():
     )
 
     stopper = CombinedStopper(
-        WilsonSuccessStopper(min_lb=0.90, consec=1, max_iters=2000),
-        MaximumIterationStopper(2000),
+        EvalSuccessStopper(
+            target_success_rate=TARGET_SUCCESS_RATE,
+            minimum_number_of_episodes=EVAL_DURATION,
+        )
     )
 
     try:
@@ -111,8 +117,8 @@ def main():
         )
         .learners(num_learners=1, num_gpus_per_learner=NUM_GPUS)
         .evaluation(
-            evaluation_interval=20,
-            evaluation_duration=100,
+            evaluation_interval=EVAL_INTERVAL,
+            evaluation_duration=EVAL_DURATION,
             evaluation_duration_unit="episodes",
             evaluation_parallel_to_training=True,
             evaluation_num_env_runners=1,

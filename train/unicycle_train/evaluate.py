@@ -1,77 +1,69 @@
 # train/unicycle_train/evaluate.py
 
-import math
+from typing import Any, Dict, Optional
+
 from ray.rllib.callbacks.callbacks import RLlibCallback
+from ray.rllib.env.env_runner import EnvRunner
 from ray.tune.stopper import Stopper
 
-# Wilson 95% Confidence Interval
-def wilson_ci(k: int, n: int, z: float = 1.96):
-    if n <= 0:
-        return 0.0, 0.0, 1.0
-    p = k / n
-    denom = 1.0 + (z*z)/n
-    center = p + (z*z)/(2*n)
-    rad = z * math.sqrt((p*(1-p) + (z*z)/(4*n)) / n)
-    lb = (center - rad) / denom
-    ub = (center + rad) / denom
-    return p, max(0.0, lb), min(1.0, ub)
+
+def get_last_info_from_episode(episode) -> Dict[str, Any]:
+    agent_ids = list(episode.get_agents())
+    first_agent_id = agent_ids[0] if agent_ids else None
+    return episode.last_info_for(first_agent_id) if first_agent_id is not None else {}
+
 
 class SuccessCallback(RLlibCallback):
+    def on_episode_end(
+        self,
+        *,
+        env_runner: EnvRunner,
+        episode,
+        env_index: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        info: Dict[str, Any] = get_last_info_from_episode(episode)
+        episode.custom_metrics["success"] = 1.0 if bool(info.get("goal_reached", False)) else 0.0
 
-    def on_episode_created(self, *, episode, **kwargs):
-        episode.custom_data["reached"] = False
-        episode.custom_data["fell"] = False
+    def on_train_result(self, *, algorithm, result: Dict[str, Any], **kwargs) -> None:
+        if ("custom_metrics" in result) and ("success_mean" in result["custom_metrics"]):
+            training_success_mean = float(result["custom_metrics"]["success_mean"])
+            result.setdefault("env_runners", {})["success_rate"] = training_success_mean
 
-    def on_episode_step(self, *, episode, **kwargs):
-        info = None
-        try:
-            info = episode.get_infos(-1)
-        except Exception:
-            info = None
-        if isinstance(info, dict) and info:
-            if info.get("goal_reached", False):
-                episode.custom_data["reached"] = True
-            if info.get("is_fallen", False):
-                episode.custom_data["fell"] = True
-
-    def on_episode_end(self, *, episode, metrics_logger, **kwargs):
-        reached = bool(episode.custom_data.get("reached", False))
-        fell = bool(episode.custom_data.get("fell", False))
-        success = 1.0 if (reached and not fell) else 0.0
-
-        metrics_logger.log_value("success_rate", success, reduce="mean")
+        if "evaluation" in result:
+            evaluation_block: Dict[str, Any] = result["evaluation"]
+            if ("custom_metrics" in evaluation_block) and ("success_mean" in evaluation_block["custom_metrics"]):
+                evaluation_success_mean = float(evaluation_block["custom_metrics"]["success_mean"])
+                evaluation_block.setdefault("env_runners", {})["success_rate"] = evaluation_success_mean
 
 
-    def on_evaluate_end(self, *, evaluation_metrics, **kwargs):
-        envr = evaluation_metrics.setdefault("env_runners", {})
-        p = float(envr.get("success_rate", 0.0))
-        n = int(envr.get("num_episodes", 0))
-        k = int(round(p * n))
-        envr["success_n"] = n
-        _, lb, ub = wilson_ci(k, n)
-        envr["success_ci_lb"] = lb
-        envr["success_ci_ub"] = ub
+class EvalSuccessStopper(Stopper):
+    def __init__(
+        self,
+        target_success_rate: float,
+        minimum_number_of_episodes: int,
+    ):
+        self.target_success_rate = float(target_success_rate)
+        self.minimum_number_of_episodes = int(minimum_number_of_episodes)
 
-class WilsonSuccessStopper(Stopper):
-    def __init__(self, min_lb: float = 0.90, consec: int = 2, max_iters: int = 2000):
-        self.min_lb = float(min_lb)
-        self.consec = int(consec)
-        self.max_iters = int(max_iters)
-        self.streak = {}
-
-    def __call__(self, trial_id, result):
-        if result.get("training_iteration", 0) >= self.max_iters:
-            return True
-        
-        envr = result.get("evaluation", {}).get("env_runners", {})
-        lb = envr.get("success_ci_lb")
-        n  = envr.get("success_n")
-        if lb is None or not n:
+    def __call__(self, trial_id: str, result: Dict[str, Any]) -> bool:
+        if "evaluation" not in result:
             return False
-        passed = float(lb) >= self.min_lb
-        s = self.streak.get(trial_id, 0)
-        self.streak[trial_id] = s + 1 if passed else 0
-        return self.streak[trial_id] >= self.consec
 
-    def stop_all(self):
+        evaluation_block: Dict[str, Any] = result["evaluation"]
+
+        if ("custom_metrics" not in evaluation_block) or ("success_mean" not in evaluation_block["custom_metrics"]):
+            return False
+        if ("env_runners" not in evaluation_block) or ("num_episodes" not in evaluation_block["env_runners"]):
+            return False
+
+        evaluation_success_rate = float(evaluation_block["custom_metrics"]["success_mean"])
+        evaluation_number_of_episodes = int(evaluation_block["env_runners"]["num_episodes"])
+
+        return (
+            evaluation_number_of_episodes >= self.minimum_number_of_episodes
+            and evaluation_success_rate >= self.target_success_rate
+        )
+
+    def stop_all(self) -> bool:
         return False
