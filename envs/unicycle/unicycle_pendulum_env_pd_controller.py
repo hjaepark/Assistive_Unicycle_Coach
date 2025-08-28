@@ -159,11 +159,13 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         x_pos, y_pos = float(obs[0]), float(obs[1])
         euler = self.get_euler_angles(obs)  # (roll, pitch, yaw)
 
-        if not self.is_fallen and self._check_fall(euler):
+        if not self.is_fallen and self.check_fall(euler):
             self.num_falls += 1
             self.is_fallen = True
 
         reward, rcomps = self.calculate_reward(x_pos, y_pos, euler, obs)
+
+        self.ep_return += reward
 
         self.update_success_count(x_pos)
 
@@ -175,6 +177,17 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         truncated = bool(self.max_steps and self.steps >= self.max_steps)
 
         info = self.get_info(x_pos, y_pos, euler, reward, rcomps)
+
+        if terminated or truncated:
+            print(
+                f"[iter {self.num_episodes}] "
+                f"[steps {self.steps}] "
+                f"[episodes {self.num_episodes}] "
+                f"[reward {self._ep_return:.2f}] "
+                f"[success count {self.num_success}] "
+                f"[x distance {info.get('dist_to_goal', self.goal_distance - x_pos):.2f}]",
+                flush=True
+            )
 
         if self.render_mode == "human":
             self.render()
@@ -208,6 +221,9 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         # Potential shaping init (based on actual starting position)
         x0 = float(qpos[0])
         self.prev_potential = -(self.goal_distance - x0)
+
+        # For logging
+        self.ep_return = 0.0
 
         return self.get_obs()
 
@@ -287,7 +303,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         }
         return float(reward), comps
 
-    def _check_fall(self, euler: np.ndarray) -> bool:
+    def check_fall(self, euler: np.ndarray) -> bool:
         roll, pitch, _ = euler
         pendulum_ang = float(self.data.qpos[7])
         limit = np.pi / 3.0  # 60 deg
