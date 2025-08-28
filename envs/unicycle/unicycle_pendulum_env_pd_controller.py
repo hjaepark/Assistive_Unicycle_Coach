@@ -92,8 +92,14 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         )
 
         # Spaces
-        observation_space = Box(low=-1e10, high=1e10, shape=(17,), dtype=np.float32)
-        action_space = Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
+        obs_low  = np.full((17,), -1e10, dtype=np.float32)
+        obs_high = np.full((17,),  1e10, dtype=np.float32)
+        observation_space = Box(low=obs_low, high=obs_high, dtype=np.float32)
+
+        action_low  = np.array([-1.0, -1.0], dtype=np.float32)
+        action_high = np.array([ 1.0,  1.0], dtype=np.float32)
+        action_space = Box(low=action_low, high=action_high, dtype=np.float32)
+
         self.observation_space = observation_space
         self.action_space = action_space
 
@@ -121,6 +127,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         self.line_crossed = False
         self.is_fallen = False
         self.prev_potential = None  # Will be initialized in reset_model
+        self.ep_return = 0.0
 
         # Init MuJoCo
         MujocoEnv.__init__(
@@ -138,7 +145,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         roll, pitch, yaw = self.get_euler_angles(obs_now)
         roll_vel, pitch_vel, yaw_vel = obs_now[12:15]
 
-        a = np.asarray(action, dtype=np.float32)
+        a = np.asarray(action, dtype=np.float32).ravel()
         if a.size >= 2:
             wheel_tau, pitch_tau = float(a[0]), float(a[1])
         else:
@@ -147,7 +154,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         # PD torques for roll & yaw
         roll_tau = np.clip(-(self._kp * roll + self._kd * roll_vel) / 10.0, -1.0, 1.0)
-        yaw_tau  = np.clip(-(self._kp * yaw  + self._kd * yaw_vel ) / 10.0, -1.0, 1.0)
+        yaw_tau  = np.clip(-(self._kp * yaw  + self._kd * yaw_vel) / 10.0, -1.0, 1.0)
 
         full_action = np.array([wheel_tau, roll_tau, pitch_tau, yaw_tau], dtype=np.float32)
 
@@ -206,6 +213,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         self.is_fallen = False
         self.line_crossed = False
         self.num_episodes += 1
+        self.ep_return = 0.0
 
         # Potential shaping init (based on actual starting position)
         x0 = float(qpos[0])
@@ -216,6 +224,9 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     def get_obs(self) -> np.ndarray:
         return np.concatenate([self.data.qpos, self.data.qvel]).astype(np.float32, copy=False)
 
+    def _get_obs(self) -> np.ndarray:
+        return self.get_obs()
+    
     def get_euler_angles(self, observation: np.ndarray) -> np.ndarray:
         quat_wxyz = observation[3:7]  # MuJoCo: (w, x, y, z)
         quat_xyzw = np.roll(quat_wxyz, -1)  # SciPy:  (x, y, z, w)
@@ -328,6 +339,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
             # Reward
             "reward": float(reward),
+            "episode_return": float(self.ep_return),
         }
         if rcomps:
             info.update(rcomps)
