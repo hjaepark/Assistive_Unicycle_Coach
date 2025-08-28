@@ -1,4 +1,4 @@
-# envs/unicycle/unicycle_env_pd_controller.py
+# envs/unicycle/unicycle_pendulum_env_pd_controller.py
 
 import os
 from typing import Any, Dict, Union
@@ -226,9 +226,10 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     def _get_obs(self) -> np.ndarray:
         return self.get_obs()
     
-    def quat_to_euler(qwxyz: np.ndarray) -> np.ndarray:
-        w, x, y, z = float(qwxyz[0]), float(qwxyz[1]), float(qwxyz[2]), float(qwxyz[3])
-        
+    def get_euler_angles(self, observation: np.ndarray) -> np.ndarray:
+        # MuJoCo qpos[3:7] = (w, x, y, z)
+        w, x, y, z = map(float, observation[3:7])
+
         # Roll (x)
         t0 = 2.0 * (w * x + y * z)
         t1 = 1.0 - 2.0 * (x * x + y * y)
@@ -245,10 +246,6 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         yaw = np.arctan2(t3, t4)
 
         return np.array([roll, pitch, yaw], dtype=np.float32)
-    
-    def get_euler_angles(self, observation: np.ndarray) -> np.ndarray:
-        quat_wxyz = observation[3:7]
-        return self.quat_to_euler(quat_wxyz)
 
     def calculate_reward(
         self, x_pos: float, y_pos: float, euler: np.ndarray, obs: np.ndarray
