@@ -178,17 +178,6 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         info = self.get_info(x_pos, y_pos, euler, reward, rcomps)
 
-        if terminated or truncated:
-            print(
-                f"[iter {self.num_episodes}] "
-                f"[steps {self.steps}] "
-                f"[episodes {self.num_episodes}] "
-                f"[reward {self._ep_return:.2f}] "
-                f"[success count {self.num_success}] "
-                f"[x distance {info.get('dist_to_goal', self.goal_distance - x_pos):.2f}]",
-                flush=True
-            )
-
         if self.render_mode == "human":
             self.render()
 
@@ -221,9 +210,6 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         # Potential shaping init (based on actual starting position)
         x0 = float(qpos[0])
         self.prev_potential = -(self.goal_distance - x0)
-
-        # For logging
-        self.ep_return = 0.0
 
         return self.get_obs()
 
