@@ -103,7 +103,6 @@ def main():
         )
         .training(
             train_batch_size=8192,
-            learning_starts=5000,
             replay_buffer_config={
                 "capacity": 1_000_000,
                 "batch_size": 256,
@@ -127,6 +126,8 @@ def main():
                                "env_config": {},},
         )
     )
+
+    cfg.num_steps_sampled_before_learning_starts = 5000
 
     tuner = tune.Tuner(
         "SAC",
