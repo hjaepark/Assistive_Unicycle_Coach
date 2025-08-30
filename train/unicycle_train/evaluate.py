@@ -49,10 +49,19 @@ class SuccessCallback(RLlibCallback):
         success = 1.0 if bool(info.get("goal_reached", False)) else 0.0
         fallen = 1.0 if bool(info.get("is_fallen", False)) else 0.0
         final_x = float(info.get("x_position", 0.0))
+        final_y = float(info.get("y_position", 0.0))
+        final_yaw = float(info.get("unicycle_yaw", 0.0))
 
         metrics_logger.log_value("success", success)
         metrics_logger.log_value("is_fallen", fallen)
         metrics_logger.log_value("final_x_position", final_x)
+        metrics_logger.log_value("final_y_position", final_y)
+        metrics_logger.log_value("final_yaw", final_yaw)
+
+        for k in ["reward_shaping", "reward_alive_bonus", "reward_goal_bonus", "reward_fall_penalty"]:
+            v = info.get(k, None)
+            if v is not None:
+                metrics_logger.log_value(k, float(v))
 
     def on_train_result(self, *, algorithm, result: Dict[str, Any], **kwargs) -> None:
         envr = result.get(ENV_RUNNER_RESULTS, {})
@@ -63,6 +72,8 @@ class SuccessCallback(RLlibCallback):
         steps_lifetime = int(envr.get("num_env_steps_sampled_lifetime", 0))
 
         final_x_mean = _extract_mean(envr, "final_x_position", fallback=cm_fallback)
+        final_y_mean = _extract_mean(envr, "final_y_position", fallback=cm_fallback)
+        final_yaw_mean = _extract_mean(envr, "final_yaw", fallback=cm_fallback)
         success_rate = 100.0 * _extract_mean(envr, "success", fallback=cm_fallback)
         fall_rate = 100.0 * _extract_mean(envr, "is_fallen", fallback=cm_fallback)
 
@@ -71,7 +82,9 @@ class SuccessCallback(RLlibCallback):
             f"\n[Training] Iteration: {iteration} | "
             f"Episodes: {episodes_lifetime} | Steps: {steps_lifetime:,} | "
             f"Episode_Reward: {episode_return_mean:.2f} | "
-            f"Final_X_Distance: {final_x_mean:.2f}m | "
+            f"Final_X_Position: {final_x_mean:.2f}m | "
+            f"Final_Y_Position: {final_y_mean:.2f}m | "
+            f"Final_Yaw_Angle: {final_yaw_mean:+.3f} rad | "
             f"Success_Rate: {success_rate:.1f}% | Fall_Rate: {fall_rate:.1f}%"
         )
 
@@ -89,7 +102,7 @@ class SuccessCallback(RLlibCallback):
             print(
                 f"[Evaluation] Episodes: {eval_episodes} | "
                 f"Episode_Reward: {eval_return_mean:.2f} | "
-                f"Final_X_Distance: {eval_final_x_mean:.2f}m | "
+                f"Final_X_Position: {eval_final_x_mean:.2f}m | "
                 f"Success_Rate: {eval_success_rate:.1f}% | "
                 f"Fall_Rate: {eval_fall_rate:.1f}%"
             )

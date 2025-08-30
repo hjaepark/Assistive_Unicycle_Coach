@@ -30,7 +30,6 @@ from train.unicycle_train import path as P
 
 def unicycle_env_creator(env_config: Dict[str, Any] | None = None):
     import envs.unicycle
-
     env_config = env_config or {}
     env = gym.make("UnicyclePendulumPD-v0", **env_config)
     return env
@@ -56,9 +55,8 @@ def main():
     torch.manual_seed(SEED)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(SEED)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
 
+    # Evaluation configuration
     TARGET_SUCCESS_RATE = 0.95
     EVAL_INTERVAL = 20
     EVAL_DURATION = 100
@@ -85,6 +83,7 @@ def main():
         )
     )
 
+    # Check GPU availability
     try:
         NUM_GPUS = 1 if torch.cuda.is_available() else 0
     except Exception:
@@ -93,29 +92,27 @@ def main():
     cfg = (
         SACConfig()
         .framework("torch")  
-        .environment("UnicyclePendulumPD-v0", env_config={})
+        .environment(
+            "UnicyclePendulumPD-v0",
+            env_config={}
+        )
         .callbacks(SuccessCallback)
-        .debugging(seed=SEED, log_level="ERROR", log_sys_usage=False)
+        .debugging(seed=SEED)
         .env_runners(
-            num_env_runners=8,
-            num_envs_per_env_runner=4,
-            rollout_fragment_length=400,
+            num_env_runners=1,
+            num_envs_per_env_runner=1,
+            rollout_fragment_length=256,
+            batch_mode="complete_episodes",
         )
         .training(
-            train_batch_size=8192,
+            train_batch_size=256,
             replay_buffer_config={
-                "capacity": 1_000_000,
-                "batch_size": 256,
-                "prioritized_replay": True,
-                "alpha": 0.6,
-                "beta": 0.4,
+                "type": "EpisodeReplayBuffer",
+                "capacity": 100_000,
             },
-            tau=0.005,
             gamma=0.99,
-            target_entropy="auto",
             actor_lr=3e-4,
             critic_lr=3e-4,
-            alpha_lr=3e-4,
             policy_model_config={"fcnet_hiddens": [256, 256]},
             q_model_config={"fcnet_hiddens": [256, 256]},
         )
@@ -132,14 +129,11 @@ def main():
         )
     )
 
-    cfg.num_steps_sampled_before_learning_starts = 5000
+    cfg.num_steps_sampled_before_learning_starts = 1000
     cfg.observation_filter = "MeanStdFilter"
     cfg.clip_actions = True
     cfg.log_gradients = False
-    cfg.log_sys_usage = False
-    cfg.log_level = "ERROR"
     cfg.always_attach_evaluation_results = True
-
 
     tuner = tune.Tuner(
         "SAC",
@@ -158,9 +152,9 @@ def main():
         mode="max",
     )
 
-    eval_envr = (best_result.metrics or {}).get("evaluation", {}).get("env_runners", {})
-    mean_ret = eval_envr.get("episode_return_mean", float("nan"))
-    print(f"\n[info] Best reward: {mean_ret:.2f}")
+    evalulation_envrunners = (best_result.metrics or {}).get("evaluation", {}).get("env_runners", {})
+    mean_return = evalulation_envrunners.get("episode_return_mean", float("nan"))
+    print(f"\n[info] Best reward: {mean_return:.2f}")
 
     if best_result.checkpoint:
         best_model_path = run_dir / "best_model"

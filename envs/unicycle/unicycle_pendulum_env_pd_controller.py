@@ -118,7 +118,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         default_weights = {
             "shaping": 25.0, "alive_bonus": 0.02,
-            "goal_bonus": 200.0, "fall_penalty": -10.0
+            "goal_bonus": 100.0, "fall_penalty": -5.0
         }
         if reward_weights:
             default_weights.update(reward_weights)
@@ -259,7 +259,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         alive_bonus = self.reward_weight_alive_bonus if not self.is_fallen else 0.0
         roll, pitch, _ = euler
         pendulum_ang = float(obs[7])
-        upright = np.exp(-4.0 * (roll**2 + pitch**2 + pendulum_ang**2))
+        upright = np.exp(-1.0 * (roll**2 + pitch**2 + pendulum_ang**2))
 
         dist_to_target = self.shaping_target_x - x_pos
         potential = -dist_to_target
@@ -299,7 +299,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
     def get_info(
         self, x_pos: float, y_pos: float, euler: np.ndarray, reward: float, rcomps: Dict[str, float] | None = None
     ) -> Dict[str, Any]:
-        roll, pitch, _ = euler
+        roll, pitch, yaw = euler
         info: Dict[str, Any] = {
             # Task state
             "x_position": x_pos,
@@ -312,6 +312,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             # Attitude
             "unicycle_roll": roll,
             "unicycle_pitch": pitch,
+            "unicycle_yaw": yaw,
             "pendulum_ang": float(self.data.qpos[7]),
 
             # Episode stats
