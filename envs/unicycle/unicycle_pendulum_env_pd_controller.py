@@ -39,8 +39,10 @@ The observation consists of:
 | 14  | angular velocity about z‑axis        | -Inf  | Inf   | angular velocity (rad/s) |
 | 15  | angular velocity of the pendulum     | -Inf  | Inf   | angular velocity (rad/s) |
 | 16  | angular velocity of the wheel        | -Inf  | Inf   | angular velocity (rad/s) |
+| 17  | PD roll torque (about x‑axis)        | -1    | 1     | normalized torque        |
+| 18  | PD yaw torque (about z‑axis)         | -1    | 1     | normalized torque        |
 
-The observation is an `ndarray` with shape `(17,)`.
+The observation is an `ndarray` with shape `(19,)`.
 """
 
 # Default camera configuration
@@ -63,14 +65,10 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         default_camera_config: Dict[str, Union[float, int, np.ndarray]] = DEFAULT_CAMERA_CONFIG,
         reset_noise_scale: float = 0.01,
         max_steps: int = 1500,
-
-        # PD stabilizer gains
         kp: float = 40.0,
         kd: float = 6.0,
-
-        # Task / termination
-        goal_x: float = 5.0,
-        track_half_width: float = 4.0,
+        finish_line_x: float = 5.0,
+        reward_weights: Dict[str, float] | None = None,
         **kwargs,
     ):
         if xml_file is None:
@@ -86,28 +84,20 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             max_steps,
             kp,
             kd,
-            goal_x,
-            track_half_width,
+            finish_line_x,
         )
 
         # Spaces
-        obs_low  = np.full((17,), -1e10, dtype=np.float32)
-        obs_high = np.full((17,),  1e10, dtype=np.float32)
+        obs_low  = np.full((19,), -1e10, dtype=np.float32)
+        obs_high = np.full((19,), 1e10, dtype=np.float32)
         observation_space = Box(low=obs_low, high=obs_high, dtype=np.float32)
-
-        action_low  = np.array([-1.0, -1.0], dtype=np.float32)
-        action_high = np.array([ 1.0,  1.0], dtype=np.float32)
-        action_space = Box(low=action_low, high=action_high, dtype=np.float32)
-
         self.observation_space = observation_space
-        self.action_space = action_space
 
         # Episode / task state
         self._reset_noise_scale = float(reset_noise_scale)
         self.max_steps = int(max_steps)
-        self.goal_x = float(goal_x)
-        self.goal_distance = self.goal_x + 0.5  # To prevent agent from stopping right before the line
-        self.track_half_width = float(track_half_width)
+        self.finish_line_x = float(finish_line_x)
+        self.shaping_target_x = self.finish_line_x + 0.5  # To prevent agent from stopping right before the line
 
         # PD gains
         self._kp = float(kp)
@@ -120,13 +110,23 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         self.num_success = 0
         self.num_falls = 0
 
-        # Flags & internals
         self.prev_x_pos = 0.0
         self.goal_reached = False
         self.line_crossed = False
         self.is_fallen = False
-        self.prev_potential = None  # Will be initialized in reset_model
         self.ep_return = 0.0
+
+        default_weights = {
+            "shaping": 25.0, "alive_bonus": 0.02,
+            "goal_bonus": 200.0, "fall_penalty": -10.0
+        }
+        if reward_weights:
+            default_weights.update(reward_weights)
+
+        self.reward_weight_shaping = default_weights["shaping"]
+        self.reward_weight_alive_bonus = default_weights["alive_bonus"]
+        self.reward_weight_goal_bonus = default_weights["goal_bonus"]
+        self.reward_weight_fall_penalty = default_weights["fall_penalty"]
 
         # Init MuJoCo
         MujocoEnv.__init__(
@@ -139,10 +139,14 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         )
         self.metadata["render_fps"] = int(np.round(1.0 / self.dt))
 
+        self.action_space = Box(
+            low=np.array([-1.0, -1.0], dtype=np.float32),
+            high=np.array([1.0, 1.0], dtype=np.float32),
+            dtype=np.float32
+        )
+
     def step(self, action: np.ndarray):
-        obs_now = self.get_obs()
-        roll, pitch, yaw = self.get_euler_angles(obs_now)
-        roll_vel, pitch_vel, yaw_vel = obs_now[12:15]
+        current_base_obs = np.concatenate([self.data.qpos, self.data.qvel]).astype(np.float32, copy=False)
 
         a = np.asarray(action, dtype=np.float32).ravel()
         if a.size >= 2:
@@ -151,10 +155,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             wheel_tau = float(a[0]) if a.size > 0 else 0.0
             pitch_tau = 0.0
 
-        # PD torques for roll & yaw
-        roll_tau = np.clip(-(self._kp * roll + self._kd * roll_vel) / 10.0, -1.0, 1.0)
-        yaw_tau  = np.clip(-(self._kp * yaw  + self._kd * yaw_vel) / 10.0, -1.0, 1.0)
-
+        roll_tau, yaw_tau = self.calculate_pd_torques(current_base_obs)
         full_action = np.array([wheel_tau, roll_tau, pitch_tau, yaw_tau], dtype=np.float32)
 
         self.do_simulation(full_action, self.frame_skip)
@@ -163,22 +164,19 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         obs = self.get_obs()
         x_pos, y_pos = float(obs[0]), float(obs[1])
-        euler = self.get_euler_angles(obs)  # (roll, pitch, yaw)
+        euler = self.get_euler_angles(obs)
 
         if not self.is_fallen and self.check_fall(euler):
             self.num_falls += 1
             self.is_fallen = True
 
         reward, rcomps = self.calculate_reward(x_pos, y_pos, euler, obs)
-
         self.ep_return += reward
-
         self.update_success_count(x_pos)
 
         terminated = bool(
             self.is_fallen
-            or abs(y_pos) > self.track_half_width
-            or x_pos >= self.goal_x
+            or x_pos >= self.finish_line_x
         )
         truncated = bool(self.max_steps and self.steps >= self.max_steps)
 
@@ -216,109 +214,74 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
         # Potential shaping init (based on actual starting position)
         x0 = float(qpos[0])
-        self.prev_potential = -(self.goal_distance - x0)
+        self.prev_potential = -(self.shaping_target_x - x0)
 
         return self.get_obs()
 
+    """ External Use """
     def get_obs(self) -> np.ndarray:
-        return np.concatenate([self.data.qpos, self.data.qvel]).astype(np.float32, copy=False)
+        base_obs = np.concatenate([self.data.qpos, self.data.qvel]).astype(np.float32, copy=False)
+        pd_torques = self.calculate_pd_torques(base_obs)
+        return np.concatenate([base_obs, pd_torques])
 
+    """ Internal Use """
     def _get_obs(self) -> np.ndarray:
         return self.get_obs()
     
     def get_euler_angles(self, observation: np.ndarray) -> np.ndarray:
         # MuJoCo qpos[3:7] = (w, x, y, z)
         w, x, y, z = map(float, observation[3:7])
-
-        # Roll (x)
         t0 = 2.0 * (w * x + y * z)
         t1 = 1.0 - 2.0 * (x * x + y * y)
         roll = np.arctan2(t0, t1)
-
-        # Pitch (y)
         t2 = 2.0 * (w * y - z * x)
         t2 = np.clip(t2, -1.0, 1.0)
         pitch = np.arcsin(t2)
-
-        # Yaw (z)
         t3 = 2.0 * (w * z + x * y)
         t4 = 1.0 - 2.0 * (y * y + z * z)
         yaw = np.arctan2(t3, t4)
 
         return np.array([roll, pitch, yaw], dtype=np.float32)
+    
+    def calculate_pd_torques(self, observation: np.ndarray) -> np.ndarray:
+        roll, _, yaw = self.get_euler_angles(observation)
+        roll_vel, _, yaw_vel = observation[12:15]
+
+        roll_tau = np.clip(-(self._kp * roll + self._kd * roll_vel) / 10.0, -1.0, 1.0)
+        yaw_tau = np.clip(-(self._kp * yaw  + self._kd * yaw_vel) / 10.0, -1.0, 1.0)
+        
+        return np.array([roll_tau, yaw_tau], dtype=np.float32)
 
     def calculate_reward(
         self, x_pos: float, y_pos: float, euler: np.ndarray, obs: np.ndarray
     ) -> tuple[float, Dict[str, float]]:
-
-        roll, pitch, yaw = euler
-
-        pendulum_ang = float(obs[7])
-        x_vel = float(obs[9])
-        y_vel = float(obs[10])
-        roll_vel  = float(obs[12])
-        pitch_vel = float(obs[13])
-        yaw_vel   = float(obs[14])
-        pendulum_vel = float(obs[15])
-        wheel_vel    = float(obs[16])
-
-        # 1) Upright gate
-        upright = np.exp(-4.0 * (roll**2 + pitch**2 + pendulum_ang**2))
-        upright_bonus = 0.1 * np.exp(-2.0 * (roll**2 + pitch**2 + pendulum_ang**2))
-
-        # 2) Potential-based shaping
-        dist_to_goal = self.goal_distance - x_pos
-        if dist_to_goal > 0.0:
-            potential = -dist_to_goal
-            shaping_reward = 4.0 * (potential - self.prev_potential)
-            self.prev_potential = potential
-        else:
-            shaping_reward = 0.0
-
-        # 3) Speed-band bonus
-        v_target, sigma = 0.8, 0.4
-        speed_reward = 0.3 * np.exp(-0.5 * ((x_vel - v_target) / sigma) ** 2)
-
-        # 4) Lateral centering bonus (continuous)
-        lat_bonus = 0.2 * np.exp(-2.0 * y_pos**2) * upright  # Bonus for staying near center
         
-        # 5) Penalties
-        tilt_pen  = -0.4  * (pitch**2)  - 0.05 * (roll**2)
-        ang_pen = -0.02 * (pitch_vel**2) - 0.005 * (roll_vel**2)
-        lat_vel_pen = -0.05 * abs(y_vel)  # Penalty for lateral velocity
-        wheel_pen = -0.005 * (np.clip(wheel_vel, -15.0, 15.0) ** 2)
-        pend_pen = (
-            -0.3   * (np.clip(pendulum_ang, -15.0, 15.0) ** 2)
-            -0.005 * (np.clip(pendulum_vel, -15.0, 15.0) ** 2)
-        )
-        alive_bonus = 0.01 if not self.is_fallen else 0.0
+        alive_bonus = self.reward_weight_alive_bonus if not self.is_fallen else 0.0
+        roll, pitch, _ = euler
+        pendulum_ang = float(obs[7])
+        upright = np.exp(-4.0 * (roll**2 + pitch**2 + pendulum_ang**2))
 
-        # 6) Goal bonus
+        dist_to_target = self.shaping_target_x - x_pos
+        potential = -dist_to_target
+        shaping_reward = self.reward_weight_shaping * (potential - self.prev_potential)
+        self.prev_potential = potential
+        shaping_reward *= upright
+
         goal_bonus = 0.0
-        if (not self.line_crossed) and (x_pos >= self.goal_x):
-            goal_bonus = 100.0
+        if not self.line_crossed and x_pos >= self.finish_line_x:
+            goal_bonus = self.reward_weight_goal_bonus
             self.line_crossed = True
 
-        # 7) Final reward
-        reward = shaping_reward + speed_reward + lat_bonus + goal_bonus \
-                 + tilt_pen + ang_pen + lat_vel_pen + wheel_pen + pend_pen \
-                 + alive_bonus + upright_bonus
+        fall_penalty = self.reward_weight_fall_penalty if self.is_fallen else 0.0
+        reward = shaping_reward + alive_bonus + goal_bonus + fall_penalty
 
         comps = {
-            "upright": float(upright),
-            "upright_bonus": float(upright_bonus),
-            "shaping": float(shaping_reward),
-            "speed_reward": float(speed_reward),
-            "lat_bonus": float(lat_bonus),
-            "tilt_pen": float(tilt_pen),
-            "ang_pen": float(ang_pen),
-            "lat_vel_pen": float(lat_vel_pen),
-            "wheel_pen": float(wheel_pen),
-            "pendulum_pen": float(pend_pen),
-            "goal_bonus": float(goal_bonus),
-            "alive_bonus": float(alive_bonus),
-            "dist_to_goal": float(dist_to_goal),
+            "reward_shaping": shaping_reward,
+            "reward_alive_bonus": alive_bonus,
+            "reward_goal_bonus": goal_bonus,
+            "reward_fall_penalty": fall_penalty,
         }
+
         return float(reward), comps
 
     def check_fall(self, euler: np.ndarray) -> bool:
@@ -328,7 +291,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         return (abs(roll) > limit) or (abs(pitch) > limit) or (abs(pendulum_ang) > limit)
 
     def update_success_count(self, x_pos: float) -> None:
-        if self.prev_x_pos < self.goal_x <= x_pos:
+        if self.prev_x_pos < self.finish_line_x <= x_pos:
             self.num_success += 1
             self.goal_reached = True
         self.prev_x_pos = x_pos
@@ -341,9 +304,10 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             # Task state
             "x_position": x_pos,
             "y_position": y_pos,
-            "goal_x": float(self.goal_x),
-            "goal_distance": float(self.goal_distance),
+            "finish_line_x": float(self.finish_line_x),
+            "shaping_target_x": float(self.shaping_target_x),
             "goal_reached": self.goal_reached,
+            "is_fallen": self.is_fallen,
 
             # Attitude
             "unicycle_roll": roll,
@@ -351,12 +315,11 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             "pendulum_ang": float(self.data.qpos[7]),
 
             # Episode stats
-            "steps": self.steps,
-            "num_steps": self.num_steps,
-            "num_success": self.num_success,
+            "steps": self.steps, # In episode step count
+            "num_steps": self.num_steps, # Total step count
             "num_episodes": self.num_episodes,
+            "num_success": self.num_success,
             "num_falls": self.num_falls,
-            "is_fallen": self.is_fallen,
 
             # Reward
             "reward": float(reward),
