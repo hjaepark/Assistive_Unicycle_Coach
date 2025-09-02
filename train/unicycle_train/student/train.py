@@ -11,22 +11,15 @@ import numpy as np
 
 import ray
 from ray import tune
-from ray.air import CheckpointConfig
+from ray.tune import CheckpointConfig
 from ray.rllib.algorithms.sac import SACConfig
-from ray.rllib.utils.metrics import (
-    ENV_RUNNER_RESULTS,
-    EPISODE_RETURN_MEAN,
-    EPISODE_RETURN_MIN,
-    EPISODE_RETURN_MAX,
-    NUM_ENV_STEPS_SAMPLED_LIFETIME,
-    NUM_EPISODES_LIFETIME,
-)
-from ray.tune.stopper import CombinedStopper
+from ray.tune.stopper import Stopper, CombinedStopper
 from train.unicycle_train.evaluate import SuccessCallback, EvalSuccessStopper
 
 import gymnasium as gym
 import envs.unicycle
 from train.unicycle_train import path as P
+
 
 def unicycle_env_creator(env_config: Dict[str, Any] | None = None):
     import envs.unicycle
@@ -56,7 +49,6 @@ def main():
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(SEED)
 
-    # Evaluation configuration
     TARGET_SUCCESS_RATE = 0.95
     EVAL_INTERVAL = 20
     EVAL_DURATION = 100
@@ -72,7 +64,7 @@ def main():
         checkpoint_frequency=50,
         checkpoint_at_end=True,
         num_to_keep=1,
-        checkpoint_score_attribute="evaluation/env_runners/success",
+        checkpoint_score_attribute="evaluation/custom_metrics/success_mean",
         checkpoint_score_order="max",
     )
 
@@ -83,7 +75,6 @@ def main():
         )
     )
 
-    # Check GPU availability
     try:
         NUM_GPUS = 1 if torch.cuda.is_available() else 0
     except Exception:
@@ -91,6 +82,10 @@ def main():
 
     cfg = (
         SACConfig()
+        .api_stack(
+            enable_rl_module_and_learner=False,
+            enable_env_runner_and_connector_v2=False
+        )
         .framework("torch")  
         .environment(
             "UnicyclePendulumPD-v0",
@@ -101,38 +96,35 @@ def main():
         .env_runners(
             num_env_runners=1,
             num_envs_per_env_runner=1,
-            rollout_fragment_length=256,
-            batch_mode="complete_episodes",
+            rollout_fragment_length=1500,
         )
         .training(
-            train_batch_size=256,
+            train_batch_size=2048,
             replay_buffer_config={
-                "type": "EpisodeReplayBuffer",
-                "capacity": 100_000,
+                "type": "MultiAgentReplayBuffer",
+                "capacity": 20_000,
             },
             gamma=0.99,
             actor_lr=3e-4,
             critic_lr=3e-4,
             policy_model_config={"fcnet_hiddens": [256, 256]},
             q_model_config={"fcnet_hiddens": [256, 256]},
+            num_steps_sampled_before_learning_starts=2048,
         )
-        .learners(num_learners=1, num_gpus_per_learner=NUM_GPUS)
+        .resources(num_gpus=NUM_GPUS)
         .evaluation(
             evaluation_interval=EVAL_INTERVAL,
             evaluation_duration=EVAL_DURATION,
             evaluation_duration_unit="episodes",
-            evaluation_parallel_to_training=True,
+            evaluation_parallel_to_training=False,
             evaluation_num_env_runners=1,
-            evaluation_config={"explore": False,
-                               "seed": None,
-                               "env_config": {},},
+            evaluation_config={"explore": False},
         )
     )
-
-    cfg.num_steps_sampled_before_learning_starts = 1000
-    cfg.observation_filter = "MeanStdFilter"
+    
+    cfg.min_sample_timesteps_per_iteration = 1500
+    cfg.observation_filter = "NoFilter"
     cfg.clip_actions = True
-    cfg.log_gradients = False
     cfg.always_attach_evaluation_results = True
 
     tuner = tune.Tuner(
@@ -146,14 +138,13 @@ def main():
         param_space=cfg.to_dict(),
     )
     result_grid = tuner.fit()
-
+    
     best_result = result_grid.get_best_result(
-        metric="evaluation/env_runners/success",
+        metric="evaluation/custom_metrics/success_mean",
         mode="max",
     )
 
-    evalulation_envrunners = (best_result.metrics or {}).get("evaluation", {}).get("env_runners", {})
-    mean_return = evalulation_envrunners.get("episode_return_mean", float("nan"))
+    mean_return = (best_result.metrics or {}).get("evaluation", {}).get("episode_reward_mean", float("nan"))
     print(f"\n[info] Best reward: {mean_return:.2f}")
 
     if best_result.checkpoint:
@@ -166,3 +157,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

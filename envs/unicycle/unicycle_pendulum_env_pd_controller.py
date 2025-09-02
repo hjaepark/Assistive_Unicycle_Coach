@@ -185,6 +185,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         if self.render_mode == "human":
             self.render()
 
+        obs = self.get_obs().astype(np.float32, copy=False)
         return obs, float(reward), terminated, truncated, info
 
     def reset_model(self):
@@ -216,7 +217,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         x0 = float(qpos[0])
         self.prev_potential = -(self.shaping_target_x - x0)
 
-        return self.get_obs()
+        return self.get_obs().astype(np.float32, copy=False)
 
     """ External Use """
     def get_obs(self) -> np.ndarray:
