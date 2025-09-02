@@ -102,7 +102,7 @@ def main():
             train_batch_size=2048,
             replay_buffer_config={
                 "type": "MultiAgentReplayBuffer",
-                "capacity": 20_000,
+                "capacity": 1_000_000,
             },
             gamma=0.99,
             actor_lr=3e-4,
@@ -121,11 +121,7 @@ def main():
             evaluation_config={"explore": False},
         )
     )
-    
     cfg.min_sample_timesteps_per_iteration = 1500
-    cfg.observation_filter = "NoFilter"
-    cfg.clip_actions = True
-    cfg.always_attach_evaluation_results = True
 
     tuner = tune.Tuner(
         "SAC",
