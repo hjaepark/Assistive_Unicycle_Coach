@@ -110,9 +110,13 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         self.ep_return = 0.0
         
         default_weights = {
-            "progress": 35.0, "progress_exp_k": 0.30,
-            "posture": 0.05, "pendulum": 0.5,
-            "alive_bonus": 0.02, "goal_bonus": 100.0, "fall_penalty": -2.0
+            "progress": 10.0, 
+            "progress_exp_k": 0.05,
+            "posture": 0.10, 
+            "pendulum": 0.50,
+            "alive_bonus": 0.005, 
+            "goal_bonus": 50.0, 
+            "fall_penalty": -10.0
         }
         if reward_weights:
             default_weights.update(reward_weights)
@@ -283,6 +287,11 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
 
     def get_info(self, x_pos: float, y_pos: float, euler: np.ndarray, reward: float, rcomps: Dict[str, float] | None = None) -> Dict[str, Any]:
         roll, pitch, yaw = euler
+
+        obs_now = self.get_obs().astype(np.float32, copy=False)
+        obs_cols = {f"obs_{i}": float(obs_now[i]) for i in range(obs_now.shape[0])}
+        sim_timestamp = float(self.data.time)
+
         info: Dict[str, Any] = {
             "x_position": x_pos, 
             "y_position": y_pos, 
@@ -300,7 +309,10 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             "num_falls": self.num_falls,
             "reward": float(reward), 
             "episode_return": float(self.ep_return),
+            "timestamp": sim_timestamp,
         }
+        info.update(obs_cols)
+        
         if rcomps:
             info.update(rcomps)
         return info
