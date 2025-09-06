@@ -1,31 +1,22 @@
 # train/unicycle_train/student/train.py
 
-from typing import Any, Dict
+from typing import Any, Dict, Callable
 from pathlib import Path
-import shutil
-
 import os
 import random
 import torch
 import numpy as np
 
-import ray
-from ray import tune
-from ray.tune import CheckpointConfig
-from ray.rllib.algorithms.sac import SACConfig
-from ray.tune.stopper import Stopper, CombinedStopper
-from train.unicycle_train.evaluate import SuccessCallback, EvalSuccessStopper
+from stable_baselines3 import SAC
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.utils import set_random_seed as sb3_set_seed
+
+from train.unicycle_train.evaluate import EvalCallBack
 
 import gymnasium as gym
 import envs.unicycle
 from train.unicycle_train import path as P
-
-
-def unicycle_env_creator(env_config: Dict[str, Any] | None = None):
-    import envs.unicycle
-    env_config = env_config or {}
-    env = gym.make("UnicyclePendulumPD-v0", **env_config)
-    return env
 
 def next_run_dir(base: Path) -> Path:
     base.mkdir(parents=True, exist_ok=True)
@@ -40,117 +31,139 @@ def next_run_dir(base: Path) -> Path:
     rd.mkdir(parents=True, exist_ok=False)
     return rd
 
+def make_train_env(log_dir: Path, seed: int):
+    base_env = gym.make("UnicyclePendulumPD-v0")
+
+    # Save data to CSV
+    obs_dim = int(np.prod(base_env.observation_space.shape))
+    obs_keys = tuple(f"obs_{i}" for i in range(obs_dim))
+    extra_keys = (
+        "timestamp",
+        "num_steps",
+        "num_episodes",
+        "unicycle_roll", 
+        "unicycle_pitch", 
+        "unicycle_yaw", 
+        "pendulum_ang",
+        "num_success", 
+        "num_falls",
+        "reward", 
+        "goal_reached",
+        "is_fallen", 
+    )
+    env = Monitor(
+        base_env,
+        filename=str(log_dir / "monitor.csv"),
+        info_keywords=obs_keys + extra_keys,
+    )
+
+    env.reset(seed=seed)
+    env.action_space.seed(seed)
+    env.observation_space.seed(seed)
+
+    return env
+
+def make_eval_env() -> gym.Env:
+    return gym.make("UnicyclePendulumPD-v0")
+
+class LoggingCallback(BaseCallback):
+    """Log metrics in real-time as episodes complete"""
+    
+    def __init__(self, verbose=0):
+        super().__init__(verbose)
+        
+    def _on_step(self) -> bool:
+        # Check if any episode ended
+        if len(self.locals.get("dones", [])) > 0:
+            for i, done in enumerate(self.locals["dones"]):
+                if done:
+                    info = self.locals["infos"][i]
+                    
+                    # Log everything immediately when episode ends
+                    if "episode" in info:
+                        self.logger.record("train/episode_reward", info["episode"]["r"])
+                        self.logger.record("train/episode_length", info["episode"]["l"])
+                    
+                    # Log all custom metrics
+                    if "unicycle_roll" in info:
+                        self.logger.record("train/unicycle_roll", info["unicycle_roll"])
+                    if "unicycle_pitch" in info:
+                        self.logger.record("train/unicycle_pitch", info["unicycle_pitch"])
+                    if "unicycle_yaw" in info:
+                        self.logger.record("train/unicycle_yaw", info["unicycle_yaw"])
+                    if "pendulum_ang" in info:
+                        self.logger.record("train/pendulum_ang", info["pendulum_ang"])
+                    if "x_position" in info:
+                        self.logger.record("train/final_x_position", info["x_position"])
+                    if "y_position" in info:
+                        self.logger.record("train/final_y_position", info["y_position"])
+                    if "goal_reached" in info:
+                        self.logger.record("train/goal_reached", float(info["goal_reached"]))
+                    if "is_fallen" in info:
+                        self.logger.record("train/is_fallen", float(info["is_fallen"]))
+                    
+                    self.logger.dump(self.num_timesteps)
+        
+        return True
+
 def main():
-    SEED = 42
-    os.environ["PYTHONHASHSEED"] = str(SEED)
-    random.seed(SEED)
-    np.random.seed(SEED)
-    torch.manual_seed(SEED)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(SEED)
+    def gen_seed() -> int:
+        return int.from_bytes(os.urandom(4), "little")
+    SEED = gen_seed()
+    sb3_set_seed(SEED)
 
+
+    # Evaluation settings
     TARGET_SUCCESS_RATE = 0.95
-    EVAL_INTERVAL = 20
+    EVAL_INTERVAL = 50_000
     EVAL_DURATION = 100
-
-    ray.init()
+    REQUIRE_CONSECUTIVE = 3
 
     run_dir = next_run_dir(P.LOGS_STUDENT_DIR)
-    print(f"[info] run_dir: {run_dir}")
+    tensorboard_dir = run_dir / "tensorboard"
+    checkpoint_dir = run_dir / "models"
+    tensorboard_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "seed.txt").write_text(f"{SEED}\n")
+    print(f"[info] run_dir: {run_dir} | seed={SEED}")
 
-    tune.register_env("UnicyclePendulumPD-v0", unicycle_env_creator)
+    env = make_train_env(run_dir, SEED)
 
-    checkpoint_config = CheckpointConfig(
-        checkpoint_frequency=50,
-        checkpoint_at_end=True,
-        num_to_keep=1,
-        checkpoint_score_attribute="evaluation/custom_metrics/success_mean",
-        checkpoint_score_order="max",
+    model = SAC(
+        "MlpPolicy",
+        env,
+        device="cpu",
+        verbose=1,
+        seed=SEED,
+        tensorboard_log=str(tensorboard_dir),
+    )
+    model.set_random_seed(SEED)
+
+    logging_callback = LoggingCallback(verbose=0)
+
+    evaluation_callback = EvalCallBack(
+        make_env_fn=make_eval_env,
+        eval_interval_steps=EVAL_INTERVAL,
+        n_eval_episodes=EVAL_DURATION,
+        target_success_rate=TARGET_SUCCESS_RATE,
+        best_model_path=str(checkpoint_dir / "best_model"),
+        deterministic=True,
+        seed=None,                       
+        verbose=1,
+        require_consecutive=REQUIRE_CONSECUTIVE,
     )
 
-    stopper = CombinedStopper(
-        EvalSuccessStopper(
-            target_success_rate=TARGET_SUCCESS_RATE,
-            minimum_number_of_episodes=EVAL_DURATION,
-        )
-    )
+    callbacks = [logging_callback, evaluation_callback]
 
-    try:
-        NUM_GPUS = 1 if torch.cuda.is_available() else 0
-    except Exception:
-        NUM_GPUS = 0
+    TOTAL_TIMESTEPS = int(1e9)
+    print(f"[info] Training Initiated (maximum timesteps: {TOTAL_TIMESTEPS:,})")
+    model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=callbacks, progress_bar=True)
 
-    cfg = (
-        SACConfig()
-        .api_stack(
-            enable_rl_module_and_learner=False,
-            enable_env_runner_and_connector_v2=False
-        )
-        .framework("torch")  
-        .environment(
-            "UnicyclePendulumPD-v0",
-            env_config={}
-        )
-        .callbacks(SuccessCallback)
-        .debugging(seed=SEED)
-        .env_runners(
-            num_env_runners=1,
-            num_envs_per_env_runner=1,
-            rollout_fragment_length=1500,
-        )
-        .training(
-            train_batch_size=2048,
-            replay_buffer_config={
-                "type": "MultiAgentReplayBuffer",
-                "capacity": 1_000_000,
-            },
-            gamma=0.99,
-            actor_lr=3e-4,
-            critic_lr=3e-4,
-            policy_model_config={"fcnet_hiddens": [256, 256]},
-            q_model_config={"fcnet_hiddens": [256, 256]},
-            num_steps_sampled_before_learning_starts=2048,
-        )
-        .resources(num_gpus=NUM_GPUS)
-        .evaluation(
-            evaluation_interval=EVAL_INTERVAL,
-            evaluation_duration=EVAL_DURATION,
-            evaluation_duration_unit="episodes",
-            evaluation_parallel_to_training=False,
-            evaluation_num_env_runners=1,
-            evaluation_config={"explore": False},
-        )
-    )
-    cfg.min_sample_timesteps_per_iteration = 1500
+    model_path = checkpoint_dir / "student_agent"
+    model.save(model_path.as_posix())
+    print(f"[info] Model saved to: {model_path}")
 
-    tuner = tune.Tuner(
-        "SAC",
-        run_config=tune.RunConfig(
-            storage_path=str(run_dir),
-            checkpoint_config=checkpoint_config,
-            stop=stopper,
-            verbose=1,
-        ),
-        param_space=cfg.to_dict(),
-    )
-    result_grid = tuner.fit()
-    
-    best_result = result_grid.get_best_result(
-        metric="evaluation/custom_metrics/success_mean",
-        mode="max",
-    )
-
-    mean_return = (best_result.metrics or {}).get("evaluation", {}).get("episode_reward_mean", float("nan"))
-    print(f"\n[info] Best reward: {mean_return:.2f}")
-
-    if best_result.checkpoint:
-        best_model_path = run_dir / "best_model"
-        if best_model_path.exists():
-            shutil.rmtree(best_model_path)
-        best_result.checkpoint.to_directory(best_model_path.as_posix())
-        print(f"[info] Best model copied to: {best_model_path}")
-    ray.shutdown()
+    env.close()
 
 if __name__ == "__main__":
     main()
-
