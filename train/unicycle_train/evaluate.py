@@ -53,21 +53,15 @@ def eval_once(
     mean = lambda a: float(np.mean(a)) if len(a) else float("nan")
     return {
         "episode_reward_mean": mean(rewards),
-        "success_mean":        mean(success),
-        "fall_mean":           mean(fall),
+        "success_mean": mean(success),
+        "fall_mean": mean(fall),
         "final_x_position_mean": mean(final_xs),
         "final_y_position_mean": mean(final_ys),
-        "final_yaw_mean":        mean(final_yaws),
+        "final_yaw_mean": mean(final_yaws),
     }
 
 
 class EvalCallBack(BaseCallback):
-    """
-    - eval_interval_steps마다 eval_once() 실행
-    - success_mean >= target_success_rate 이면 조기 종료
-    - 최고 성능 갱신 시 best_model_path로 저장
-    - 텐서보드에 eval/* 스칼라 로깅
-    """
     def __init__(
         self,
         make_env_fn: Optional[Callable[[], gym.Env]] = None,
@@ -79,6 +73,7 @@ class EvalCallBack(BaseCallback):
         deterministic: bool = True,
         seed: Optional[int] = None,
         verbose: int = 1,
+        require_consecutive: int = 1,
     ):
         super().__init__(verbose=verbose)
         self.make_env_fn = make_env_fn
@@ -89,16 +84,16 @@ class EvalCallBack(BaseCallback):
         self.best_model_path = str(best_model_path) if best_model_path is not None else None
         self.deterministic = bool(deterministic)
         self.seed = seed
+        self.require_consecutive = int(require_consecutive)
+        self._success_streak = 0
 
         self._last_eval_step = 0
         self._best_success = -1.0
 
     def _on_step(self) -> bool:
-        # 아직 평가 주기가 안 됐으면 계속 학습
         if (self.num_timesteps - self._last_eval_step) < self.eval_interval_steps:
             return True
 
-        # 평가 실행
         m = eval_once(
             model=self.model,
             make_env_fn=self.make_env_fn,
@@ -108,7 +103,6 @@ class EvalCallBack(BaseCallback):
             deterministic=self.deterministic,
         )
 
-        # 콘솔 요약
         if self.verbose:
             print(
                 f"[Eval] steps={self.num_timesteps:,} | eps={self.n_eval_episodes} | "
@@ -116,16 +110,14 @@ class EvalCallBack(BaseCallback):
                 f"success={m['success_mean']*100:.1f}% | fall={m['fall_mean']*100:.1f}%"
             )
 
-        # 텐서보드 로깅
         self.logger.record("eval/episode_reward_mean", m["episode_reward_mean"])
-        self.logger.record("eval/success_mean",        m["success_mean"])
-        self.logger.record("eval/fall_mean",           m["fall_mean"])
+        self.logger.record("eval/success_mean", m["success_mean"])
+        self.logger.record("eval/fall_mean", m["fall_mean"])
         self.logger.record("eval/final_x_position_mean", m["final_x_position_mean"])
         self.logger.record("eval/final_y_position_mean", m["final_y_position_mean"])
-        self.logger.record("eval/final_yaw_mean",        m["final_yaw_mean"])
+        self.logger.record("eval/final_yaw_mean", m["final_yaw_mean"])
         self.logger.dump(self.num_timesteps)
 
-        # 베스트 모델 저장
         if self.best_model_path and m["success_mean"] > self._best_success:
             self.model.save(self.best_model_path)
             self._best_success = m["success_mean"]
@@ -135,15 +127,20 @@ class EvalCallBack(BaseCallback):
 
         self._last_eval_step = self.num_timesteps
 
-        # 조기 종료 조건
         if m["success_mean"] >= self.target_success_rate:
+            self._success_streak += 1
+        else:
+            self._success_streak = 0
+
+        if self._success_streak >= self.require_consecutive:
             if self.verbose:
                 print("\n" + "=" * 80)
-                print("[Training Complete] Target success rate reached")
+                print("[Training Complete] Target success rate reached "
+                    f"{self._success_streak} consecutive time(s)")
                 print(f"Final Success Rate: {m['success_mean']*100:.1f}% "
-                      f"(Target: {self.target_success_rate*100:.0f}%)")
+                    f"(Target: {self.target_success_rate*100:.0f}%)")
                 print(f"Timesteps: {self.num_timesteps:,}")
                 print("=" * 80 + "\n")
-            return False  # 학습 중단
+            return False
 
         return True
