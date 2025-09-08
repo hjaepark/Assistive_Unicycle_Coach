@@ -61,7 +61,7 @@ def compute_mse(returns_by_run: Dict[str, List[float]], G_max: float, k: int) ->
 
     return float(np.mean(errs)) if errs else float("inf")
 
-def offline_result(log_root: Path, k_candidates: Sequence[int] = range(5, 11)) -> Tuple[Config, dict]:
+def precompute(log_root: Path, k_candidates: Sequence[int] = range(5, 11)) -> Tuple[Config, dict]:
     """
     Determine (k, G_max) from multiple runs under logs_root.
 
@@ -91,4 +91,29 @@ def offline_result(log_root: Path, k_candidates: Sequence[int] = range(5, 11)) -
     return cfg, info
 
 
+class MovingRewardBasedEstimator:
+    """
+    Compute estimation during runtime.
+    theta^(t) = clip( (1/k) * sum_{i=t-k}^{t-1} r_i / G_max, clip_low, clip_high )
+    """
+    def __init__(self, cfg: Config):
+        self.k = int(cfg.k)
+        self.G_max = float(cfg.G_max)
+        self.clip_low = cfg.clip_low
+        self.clip_high = cfg.clip_high
+        self.reset()
 
+    def reset(self):
+        self.buf = []
+        self.sum = 0.0
+        self.t = 0
+
+    def update(self, G_t: float) -> float:
+        self.t += 1
+        self.buf.append(G_t); self.sum += G_t
+        if len(self.buf) > self.k:
+            self.sum -= self.buf.pop(0)
+        k_t = self.t if self.t < self.k else self.k
+        avg = self.sum / k_t if k_t > 0 else 0.0
+        s = (avg / self.G_max) if self.G_max > 0 else 0.0
+        return max(self.clip_low, min(self.clip_high, s))
