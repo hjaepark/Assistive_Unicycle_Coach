@@ -1,4 +1,4 @@
-# train/unicycle_train/coach/estimators/moving_reward_based.py
+# train/unicycle_train/coach/estimators/moving_average_reward_based.py
 
 from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
@@ -91,10 +91,10 @@ def precompute(log_root: Path, k_candidates: Sequence[int] = range(5, 11)) -> Tu
     return cfg, info
 
 
-class MovingRewardBasedEstimator:
+class MovingAverageRewardBasedEstimator:
     """
     Compute estimation during runtime.
-    theta^(t) = clip( (1/k) * sum_{i=t-k}^{t-1} r_i / G_max, clip_low, clip_high )
+    theta^(t) = clip( (1/k) * sum_{i=t-k+1}^{t} r_i / G_max, clip_low, clip_high )
     """
     def __init__(self, cfg: Config):
         self.k = int(cfg.k)
