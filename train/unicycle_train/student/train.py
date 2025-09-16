@@ -119,7 +119,7 @@ class LoggingCallback(BaseCallback):
         
         return True
 class SkillEstimatorCallback(BaseCallback):
-    def __init__(self, estimator, log_prefix="skill_MARB", verbose=0):
+    def __init__(self, estimator, log_prefix="skill/MARB", verbose=0):
         super().__init__(verbose)
         self.estimator = estimator
         self.log_prefix = log_prefix
@@ -194,11 +194,12 @@ def main():
         est_name = args.estimator or "MARB"
         if est_name == "MARB":
             cfg, info = precompute(P.DATA_STUDENT_DIR, k_candidates=range(5, 11))
-            print(f"[skill] MARB: k={cfg.k}, G_max={cfg.G_max} (runs={info['runs']})")
+            print(f"[skill] MARB: k={cfg.k}, G_min={info['G_min']}, G_max={info['G_max']} (runs={info['runs']})")
             (run_dir / "skill_estimation_MARB.json").write_text(json.dumps({
                 "estimator": "MARB",
                 "k": cfg.k,
-                "G_max": cfg.G_max,
+                "G_min": info["G_min"],
+                "G_max": info["G_max"],
                 "runs": info["runs"],
             }, indent=2))
             est = MovingAverageRewardBasedEstimator(cfg)
