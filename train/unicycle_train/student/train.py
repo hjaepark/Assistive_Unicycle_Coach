@@ -3,11 +3,9 @@
 from typing import Any, Dict, Callable
 from pathlib import Path
 import os
-import argparse
 import random
 import torch
 import numpy as np
-import json
 
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import BaseCallback
@@ -19,17 +17,6 @@ from train.unicycle_train.evaluate import EvalCallBack
 import gymnasium as gym
 import envs.unicycle
 from train.unicycle_train import path as P
-
-from train.unicycle_train.coach.estimators.moving_average_reward_based import (
-    precompute, Config, MovingAverageRewardBasedEstimator
-)
-
-def build_arg_parser():
-    p = argparse.ArgumentParser()
-    p.add_argument("--use-skill-estimator", action="store_true", help="Activate skill estimator")
-    p.add_argument("--estimator", choices=["MARB"], default=None, help="Estimator type")
-
-    return p
 
 def next_run_dir(base: Path) -> Path:
     base.mkdir(parents=True, exist_ok=True)
@@ -118,28 +105,8 @@ class LoggingCallback(BaseCallback):
                     self.logger.dump(self.num_timesteps)
         
         return True
-class SkillEstimatorCallback(BaseCallback):
-    def __init__(self, estimator, log_prefix="skill/MARB", verbose=0):
-        super().__init__(verbose)
-        self.estimator = estimator
-        self.log_prefix = log_prefix
-
-    def _on_step(self) -> bool:
-        for done, info in zip(self.locals.get("dones", []), self.locals.get("infos", [])):
-            if not done:
-                continue
-            ep = info.get("episode")
-            if ep and "r" in ep:
-                G_t = float(ep["r"])
-                theta = self.estimator.update(G_t)
-                self.logger.record(f"{self.log_prefix}/theta_hat", theta)
-                self.logger.record(f"{self.log_prefix}/G_t", G_t)
-                self.logger.dump(self.num_timesteps)
-        return True
 
 def main():
-    args = build_arg_parser().parse_args() 
-
     def gen_seed() -> int:
         return int.from_bytes(os.urandom(4), "little")
     SEED = gen_seed()
@@ -187,25 +154,6 @@ def main():
     )
 
     callbacks = [logging_callback, evaluation_callback]
-
-
-    """Estimator Setup"""
-    if args.use_skill_estimator:
-        est_name = args.estimator or "MARB"
-        if est_name == "MARB":
-            cfg, info = precompute(P.DATA_STUDENT_DIR, k_candidates=range(5, 11))
-            print(f"[skill] MARB: k={cfg.k}, G_min={info['G_min']}, G_max={info['G_max']} (runs={info['runs']})")
-            (run_dir / "skill_estimation_MARB.json").write_text(json.dumps({
-                "estimator": "MARB",
-                "k": cfg.k,
-                "G_min": info["G_min"],
-                "G_max": info["G_max"],
-                "runs": info["runs"],
-            }, indent=2))
-            est = MovingAverageRewardBasedEstimator(cfg)
-            callbacks.append(SkillEstimatorCallback(est, log_prefix="skill/MARB"))
-        else:
-            raise ValueError(f"Unknown estimator: {est_name}")
 
     TOTAL_TIMESTEPS = int(1e9)
     print(f"[info] Training Initiated (maximum timesteps: {TOTAL_TIMESTEPS:,})")

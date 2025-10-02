@@ -68,6 +68,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         kd: float = 6.0,
         finish_line_x: float = 5.0,
         reward_weights: Dict[str, float] | None = None,
+        full_obs_in_info: bool = False,
         **kwargs,
     ):
         if xml_file is None:
@@ -86,6 +87,8 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             finish_line_x,
             reward_weights,
         )
+
+        self.full_obs_in_info = full_obs_in_info
 
         obs_low  = np.full((19,), -1e10, dtype=np.float32)
         obs_high = np.full((19,), 1e10, dtype=np.float32)
@@ -333,4 +336,8 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         
         if rcomps:
             info.update(rcomps)
+
+        if self.full_obs_in_info:
+            info['full_obs'] = obs_now
+
         return info
