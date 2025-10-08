@@ -1,0 +1,326 @@
+# train/unicycle_train/cotraining/train.py
+
+from typing import Any, Dict, Callable
+from pathlib import Path
+import os
+import argparse
+import torch
+import numpy as np
+import json
+
+from stable_baselines3 import SAC
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.utils import set_random_seed as sb3_set_seed
+
+from train.unicycle_train.evaluate import EvalCallBack
+
+import gymnasium as gym
+import envs.unicycle
+from train.unicycle_train import path as P
+
+# Coach imports
+from train.unicycle_train.coach.coach_wrapper import CoachWrapper
+from train.unicycle_train.coach.coach_agent import CoachAgent
+from train.unicycle_train.coach.estimators.marb_estimator import (
+    MARBConfig, MovingAverageRewardBasedEstimator, precompute_params
+)
+
+
+def build_arg_parser():
+    p = argparse.ArgumentParser()
+    p.add_argument("--estimator", choices=["MARB", "manual"], default="MARB",
+                   help="Estimator type for skill level")
+    p.add_argument("--manual-skill", type=float, default=0.0,
+                   help="Manual skill level if estimator=manual")
+    p.add_argument("--coach-update-freq", type=int, default=1,
+                   help="Update coach every N episodes")
+    p.add_argument("--coach-gradient-steps", type=int, default=10,
+                   help="Gradient steps per coach update")
+    p.add_argument("--coach-learning-starts", type=int, default=1000,
+                   help="Minimum buffer size before coach training")
+    return p
+
+
+def next_run_dir(base: Path) -> Path:
+    base.mkdir(parents=True, exist_ok=True)
+    nums = []
+    for d in base.iterdir():
+        if d.is_dir() and d.name.startswith("run"):
+            s = d.name[3:]
+            if s.isdigit():
+                nums.append(int(s))
+    n = (max(nums) + 1) if nums else 1
+    rd = base / f"run{n}"
+    rd.mkdir(parents=True, exist_ok=False)
+    return rd
+
+
+def make_train_env_with_coach(log_dir: Path, seed: int, coach_agent, estimator):
+    """Create training environment with coach wrapper"""
+    base_env = gym.make("UnicyclePendulumPD-v0", full_obs_in_info=True)
+    
+    # 1. Monitor wrapper (adds info["episode"])
+    obs_dim = int(np.prod(base_env.observation_space.shape))
+    obs_keys = tuple(f"obs_{i}" for i in range(obs_dim))
+    extra_keys = (
+        "timestamp", "num_steps", "num_episodes",
+        "unicycle_roll", "unicycle_pitch", "unicycle_yaw", "pendulum_ang",
+        "num_success", "num_falls", "reward", "goal_reached", "is_fallen",
+    )
+    
+    monitored_env = Monitor(
+        base_env,
+        filename=str(log_dir / "monitor.csv"),
+        info_keywords=obs_keys + extra_keys,
+    )
+    
+    # 2. Coach wrapper (on top of Monitor)
+    env = CoachWrapper(
+        monitored_env,
+        coach_agent=coach_agent,
+        estimator=estimator
+    )
+    
+    env.reset(seed=seed)
+    env.action_space.seed(seed)
+    env.observation_space.seed(seed)
+    
+    return env
+
+
+def make_eval_env() -> gym.Env:
+    """Evaluation environment without coach"""
+    return gym.make("UnicyclePendulumPD-v0")
+
+
+class StudentLoggingCallback(BaseCallback):
+    """Log student metrics"""
+    
+    def __init__(self, verbose=0):
+        super().__init__(verbose)
+        
+    def _on_step(self) -> bool:
+        if len(self.locals.get("dones", [])) > 0:
+            for i, done in enumerate(self.locals["dones"]):
+                if done:
+                    info = self.locals["infos"][i]
+                    
+                    # Student episode metrics
+                    if "episode" in info:
+                        self.logger.record("student/rollout/reward", info["episode"]["r"])
+                        self.logger.record("student/rollout/length", info["episode"]["l"])
+                    
+                    # Coach rollout metrics (from CoachWrapper)
+                    if "rollout/coach_reward_mean" in info:
+                        self.logger.record("coach/rollout/reward_mean", 
+                                         info["rollout/coach_reward_mean"])
+                        self.logger.record("coach/rollout/reward_sum", 
+                                         info["rollout/coach_reward_sum"])
+                        self.logger.record("coach/rollout/weight_assist_mean", 
+                                         info["rollout/weight_assist_mean"])
+                        self.logger.record("coach/rollout/weight_assist_std", 
+                                         info["rollout/weight_assist_std"])
+                        self.logger.record("coach/rollout/coach_action_norm_mean", 
+                                         info["rollout/coach_action_norm_mean"])
+                        self.logger.record("coach/rollout/skill_level", 
+                                         info["rollout/skill_level"])
+                    
+                    # Environment metrics
+                    if "goal_reached" in info:
+                        self.logger.record("student/rollout/goal_reached", 
+                                         float(info["goal_reached"]))
+                    if "is_fallen" in info:
+                        self.logger.record("student/rollout/is_fallen", 
+                                         float(info["is_fallen"]))
+                    
+                    self.logger.dump(self.num_timesteps)
+        
+        return True
+
+
+class CoachTrainingCallback(BaseCallback):
+    """Periodically train the coach"""
+    
+    def __init__(self, 
+                 coach_wrapper,
+                 update_freq=1,
+                 gradient_steps=10,
+                 learning_starts=1000,
+                 verbose=0):
+        super().__init__(verbose)
+        self.coach_wrapper = coach_wrapper
+        self.update_freq = update_freq
+        self.gradient_steps = gradient_steps
+        self.learning_starts = learning_starts
+        self.episode_count = 0
+        
+    def _on_step(self) -> bool:
+        # Check if episode ended
+        if len(self.locals.get("dones", [])) > 0:
+            for done in self.locals["dones"]:
+                if done:
+                    self.episode_count += 1
+                    
+                    # Update coach every N episodes
+                    if self.episode_count % self.update_freq == 0:
+                        coach_logs = self.coach_wrapper.update_coach(
+                            n_gradient_steps=self.gradient_steps,
+                            learning_starts=self.learning_starts
+                        )
+                        
+                        # Log coach training metrics
+                        if coach_logs:
+                            for key, value in coach_logs.items():
+                                self.logger.record(f"coach/{key}", value)
+                            
+                            self.logger.dump(self.num_timesteps)
+        
+        return True
+
+
+def main():
+    args = build_arg_parser().parse_args()
+    
+    # Generate seed
+    def gen_seed() -> int:
+        return int.from_bytes(os.urandom(4), "little")
+    SEED = gen_seed()
+    sb3_set_seed(SEED)
+    
+    # Settings
+    TARGET_SUCCESS_RATE = 0.95
+    EVAL_INTERVAL = 50_000
+    EVAL_DURATION = 100
+    REQUIRE_CONSECUTIVE = 3
+    
+    # Setup directories
+    run_dir = next_run_dir(P.LOGS_COTRAINING_DIR)  # New directory for cotraining
+    tensorboard_dir = run_dir / "tensorboard"
+    checkpoint_dir = run_dir / "models"
+    tensorboard_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "seed.txt").write_text(f"{SEED}\n")
+    
+    print(f"[info] run_dir: {run_dir} | seed={SEED}")
+    print(f"[info] Estimator: {args.estimator}")
+    print(f"[info] Coach update freq: {args.coach_update_freq} episodes")
+    
+    # Initialize coach agent
+    coach = CoachAgent(
+        obs_dim=20,  # 19 + 1 (skill level)
+        action_dim=2,
+        auto_alpha=True,
+        device="cpu"
+    )
+    print("[info] Coach agent initialized")
+    
+    # Initialize estimator
+    if args.estimator == "MARB":
+        # Precompute MARB parameters from existing student data
+        marb_cfg, info = precompute_params(
+            P.DATA_STUDENT_DIR, 
+            k_candidates=range(5, 11)
+        )
+        print(f"[info] MARB: k={marb_cfg.k}, G_min={info['G_min']:.2f}, "
+              f"G_max={info['G_max']:.2f} (runs={info['runs']})")
+        
+        # Save config
+        (run_dir / "estimator_config.json").write_text(json.dumps({
+            "estimator": "MARB",
+            "k": marb_cfg.k,
+            "G_min": info["G_min"],
+            "G_max": info["G_max"],
+            "runs": info["runs"]
+        }, indent=2))
+        
+        estimator = MovingAverageRewardBasedEstimator(marb_cfg)
+    
+    elif args.estimator == "manual":
+        # Manual skill level (no estimator)
+        class ManualEstimator:
+            def __init__(self, skill):
+                self.skill = skill
+            def update(self, episode_return):
+                return self.skill
+        
+        estimator = ManualEstimator(args.manual_skill)
+        print(f"[info] Manual skill level: {args.manual_skill}")
+    
+    else:
+        raise ValueError(f"Unknown estimator: {args.estimator}")
+    
+    # Create training environment with coach
+    env = make_train_env_with_coach(run_dir, SEED, coach, estimator)
+    print("[info] Training environment with coach created")
+    
+    # Initialize student agent (SB3 SAC)
+    model = SAC(
+        "MlpPolicy",
+        env,
+        device="cpu",
+        verbose=1,
+        seed=SEED,
+        tensorboard_log=str(tensorboard_dir),
+    )
+    model.set_random_seed(SEED)
+    print("[info] Student agent (SB3 SAC) initialized")
+    
+    # Setup callbacks
+    student_logging_callback = StudentLoggingCallback(verbose=0)
+    
+    coach_training_callback = CoachTrainingCallback(
+        coach_wrapper=env,
+        update_freq=args.coach_update_freq,
+        gradient_steps=args.coach_gradient_steps,
+        learning_starts=args.coach_learning_starts,
+        verbose=1
+    )
+    
+    evaluation_callback = EvalCallBack(
+        make_env_fn=make_eval_env,  # Eval without coach
+        eval_interval_steps=EVAL_INTERVAL,
+        n_eval_episodes=EVAL_DURATION,
+        target_success_rate=TARGET_SUCCESS_RATE,
+        best_model_path=str(checkpoint_dir / "best_student_model"),
+        deterministic=True,
+        seed=None,
+        verbose=1,
+        require_consecutive=REQUIRE_CONSECUTIVE,
+    )
+    
+    callbacks = [
+        student_logging_callback,
+        coach_training_callback,
+        evaluation_callback
+    ]
+    
+    # Train
+    TOTAL_TIMESTEPS = int(1e9)
+    print(f"[info] Training initiated (maximum timesteps: {TOTAL_TIMESTEPS:,})")
+    model.learn(
+        total_timesteps=TOTAL_TIMESTEPS,
+        callback=callbacks,
+        progress_bar=True
+    )
+    
+    # Save models
+    student_model_path = checkpoint_dir / "student_agent"
+    model.save(student_model_path.as_posix())
+    print(f"[info] Student model saved to: {student_model_path}")
+    
+    # Save coach model
+    coach_model_path = checkpoint_dir / "coach_agent.pth"
+    torch.save({
+        'actor': coach.actor.state_dict(),
+        'critic1': coach.critic1.state_dict(),
+        'critic2': coach.critic2.state_dict(),
+    }, coach_model_path)
+    print(f"[info] Coach model saved to: {coach_model_path}")
+    
+    env.close()
+    print("[info] Training completed")
+
+
+if __name__ == "__main__":
+    main()
