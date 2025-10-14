@@ -12,19 +12,19 @@ import numpy as np
 class CoachReplayBuffer:
     def __init__(self, capacity=100_000):
         self.capacity = capacity
-        self.obs_dim = 20 # 20D (19D + skill 1D)
+        self.obs_dim = 22  # 19 + 1 + 2 ← Changed from 20
         self.action_dim = 2
         self.buffer = {
             "obs": np.zeros((capacity, self.obs_dim), dtype=np.float32),
             "action": np.zeros((capacity, self.action_dim), dtype=np.float32),
             "reward": np.zeros(capacity, dtype=np.float32),
             "next_obs": np.zeros((capacity, self.obs_dim), dtype=np.float32),
-            "done": np.zeros(capacity, dtype=bool), 
+            "done": np.zeros(capacity, dtype=bool),
             "weight_assist": np.zeros(capacity, dtype=np.float32),
         }
         self.ptr = 0
         self.size = 0
-        
+    
     def add(self, obs, action, reward, next_obs, done, weight_assist):
         assert obs.shape == (self.obs_dim,), f"obs {obs.shape} != {(self.obs_dim,)}"
         assert next_obs.shape == (self.obs_dim,), f"next_obs {next_obs.shape} != {(self.obs_dim,)}"

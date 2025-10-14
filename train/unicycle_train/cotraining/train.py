@@ -25,6 +25,7 @@ from train.unicycle_train.coach.coach_agent import CoachAgent
 from train.unicycle_train.coach.estimators.marb_estimator import (
     MARBConfig, MovingAverageRewardBasedEstimator, precompute_params
 )
+from train.unicycle_train.coach.coach_config import CoachRewardConfig
 
 
 def build_arg_parser():
@@ -56,7 +57,7 @@ def next_run_dir(base: Path) -> Path:
     return rd
 
 
-def make_train_env_with_coach(log_dir: Path, seed: int, coach_agent, estimator):
+def make_train_env_with_coach(log_dir: Path, seed: int, coach_agent, estimator, reward_config: CoachRewardConfig = None):
     """Create training environment with coach wrapper"""
     base_env = gym.make("UnicyclePendulumPD-v0", full_obs_in_info=True)
     
@@ -79,7 +80,8 @@ def make_train_env_with_coach(log_dir: Path, seed: int, coach_agent, estimator):
     env = CoachWrapper(
         monitored_env,
         coach_agent=coach_agent,
-        estimator=estimator
+        estimator=estimator,
+        reward_config=reward_config
     )
     
     env.reset(seed=seed)
@@ -208,7 +210,7 @@ def main():
     
     # Initialize coach agent
     coach = CoachAgent(
-        obs_dim=20,  # 19 + 1 (skill level)
+        obs_dim=22,
         action_dim=2,
         auto_alpha=True,
         device="cpu"
@@ -250,8 +252,42 @@ def main():
     else:
         raise ValueError(f"Unknown estimator: {args.estimator}")
     
+    # Initialize coach reward config
+    reward_config = CoachRewardConfig(
+        # Start with all components enabled
+        use_safety=True,
+        use_improvement=True,
+        use_energy_penalty=True,
+        use_usage_penalty=True,
+        use_responsibility=True,
+        
+        # Default hyperparameters (tune later)
+        c_safe=0.5,
+        beta_u=2.0,
+        beta_p=0.05,
+        lambda_E=0.5,
+        lambda_W0=0.02,
+        rho=2.0,
+        p=1.0,
+        c_fall=10.0,
+        b_goal=5.0,
+    )
+    
+    # Save config
+    (run_dir / "coach_reward_config.json").write_text(
+        json.dumps(reward_config.__dict__, indent=2, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
+    )
+    
+    # Initialize coach agent (22D now)
+    coach = CoachAgent(
+        obs_dim=22,  # ← Changed from 20
+        action_dim=2,
+        auto_alpha=True,
+        device="cpu"
+    )
+
     # Create training environment with coach
-    env = make_train_env_with_coach(run_dir, SEED, coach, estimator)
+    env = make_train_env_with_coach(run_dir, SEED, coach, estimator, reward_config)
     print("[info] Training environment with coach created")
     
     # Initialize student agent (SB3 SAC)

@@ -23,7 +23,7 @@ class CoachCritic(nn.Module):
 
 
 class CoachAgent:
-    def __init__(self, obs_dim=20, action_dim=2, lr=3e-4, gamma=0.99, 
+    def __init__(self, obs_dim=22, action_dim=2, lr=3e-4, gamma=0.99, 
                  tau=0.005, alpha=0.2, auto_alpha=True, device="cuda"):
         self.device = torch.device(device)
 
