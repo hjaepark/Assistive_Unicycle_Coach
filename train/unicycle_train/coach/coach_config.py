@@ -12,20 +12,20 @@ class CoachRewardConfig:
     c_safe: float = 0.5
     
     use_improvement: bool = True
-    beta_u: float = 2.0 # upright improvement weight
-    beta_p: float = 0.05 # progress improvement weight
+    beta_u: float = 0.5      # 2.0 → 0.5
+    beta_p: float = 0.01     # 0.05 → 0.01
 
     use_energy_penalty: bool = True
-    lambda_E: float = 0.5 # energy penalty coefficient
+    lambda_E: float = 2.0    # 0.5 → 2.0
 
     use_usage_penalty: bool = True
-    lambda_W0: float = 0.02 # base usage penalty
-    rho: float = 2.0 # skill scaling exponent
-    p: float = 1.0 # usage penalty power
+    lambda_W0: float = 0.2   # 0.02 → 0.2
+    rho: float = 2.0
+    p: float = 2.0           # 1.0 → 2.0
 
     use_responsibility: bool = True
-    c_fall: float = 10.0 # fall penalty
-    b_goal: float = 5.0 # goal bonus
+    c_fall: float = 10.0
+    b_goal: float = 5.0
     
     # EMA for responsibility tracking
     resp_ema_alpha: float = 0.1

@@ -2,7 +2,6 @@
 
 import numpy as np
 import copy
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,11 +9,9 @@ from torch.optim import Adam
 
 from train.unicycle_train.coach.coach_policy import CoachPolicy, mlp
 
-# Q-function approximation network
 class CoachCritic(nn.Module):
     def __init__(self, obs_dim, action_dim):
         super().__init__()
-        # obs + action + weight_assist(1-dim) input
         self.q = mlp(obs_dim + action_dim + 1, [256, 256], out_dim=1)
     
     def forward(self, obs, act, weight_assist):
@@ -37,8 +34,6 @@ class CoachAgent:
         self.target_critic1 = copy.deepcopy(self.critic1).to(self.device)
         self.target_critic2 = copy.deepcopy(self.critic2).to(self.device)
 
-        # Freeze target critics (no gradients) & set evaluation mode
-        # Ensure target networks are not updated by optimizer
         for p in self.target_critic1.parameters():
             p.requires_grad = False
         for p in self.target_critic2.parameters():
@@ -54,19 +49,27 @@ class CoachAgent:
         self.gamma = gamma
         self.tau = tau
         
-        # Temperature (entropy coefficient) auto-tuning
+        # Temperature (entropy coefficient) auto-tuning - SEPARATE for action & weight!
         self.auto_alpha = auto_alpha
         if auto_alpha:
-            # Target entropy heuristic: -dim(A)
-            # We only count the action dimension, not weight_assist
-            # because weight is sigmoid-bounded and has naturally lower entropy
-            self.target_entropy = -float(action_dim) # -2.0
-            self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-            self.alpha_optimizer = Adam([self.log_alpha], lr=lr)
+            # Target entropy for action (2D)
+            self.target_entropy_a = -float(action_dim)  # -2.0
+            
+            # Target entropy for weight (1D) - smaller!
+            self.target_entropy_w = -0.2
+            
+            # Separate temperature parameters
+            self.log_alpha_a = torch.zeros(1, requires_grad=True, device=self.device)
+            self.log_alpha_w = torch.zeros(1, requires_grad=True, device=self.device)
+            
+            self.alpha_opt_a = Adam([self.log_alpha_a], lr=lr)
+            self.alpha_opt_w = Adam([self.log_alpha_w], lr=lr)
         else:
-            self.log_alpha = torch.tensor([np.log(alpha)], device=self.device)
+            self.log_alpha_a = torch.tensor([np.log(alpha)], device=self.device)
+            self.log_alpha_w = torch.tensor([np.log(alpha)], device=self.device)
 
-        self.alpha = self.log_alpha.exp().item()
+        self.alpha_a = self.log_alpha_a.exp().item()
+        self.alpha_w = self.log_alpha_w.exp().item()
 
     @torch.no_grad()
     def predict(self, obs_np, deterministic=False):
@@ -82,10 +85,10 @@ class CoachAgent:
 
         # Compute target Q-value
         with torch.no_grad():
-            a2, logp2, g2 = self.actor.sample(next_obs)
-            q1_t = self.target_critic1(next_obs, a2, g2)
-            q2_t = self.target_critic2(next_obs, a2, g2)
-            q_tgt = torch.min(q1_t, q2_t) - self.alpha * logp2
+            a2, logp_a2, w2, logp_w2 = self.actor.sample(next_obs)
+            q1_t = self.target_critic1(next_obs, a2, w2)
+            q2_t = self.target_critic2(next_obs, a2, w2)
+            q_tgt = torch.min(q1_t, q2_t) - self.alpha_a * logp_a2 - self.alpha_w * logp_w2
             backup = reward + (1 - done) * self.gamma * q_tgt
 
         # Update critics
@@ -97,26 +100,38 @@ class CoachAgent:
         self.critic_opt.step()
 
         # Update actor
-        a_pi, logp_pi, g_pi = self.actor.sample(obs)
-        q1_pi = self.critic1(obs, a_pi, g_pi)
-        q2_pi = self.critic2(obs, a_pi, g_pi)
+        a_pi, logp_a_pi, w_pi, logp_w_pi = self.actor.sample(obs)
+        q1_pi = self.critic1(obs, a_pi, w_pi)
+        q2_pi = self.critic2(obs, a_pi, w_pi)
         q_pi = torch.min(q1_pi, q2_pi)
-        actor_loss = (self.alpha * logp_pi - q_pi).mean()
+        
+        # Actor loss with SEPARATE temperatures
+        actor_loss = (self.alpha_a * logp_a_pi + self.alpha_w * logp_w_pi - q_pi).mean()
+        
         self.actor_opt.zero_grad(set_to_none=True)
         actor_loss.backward()
         self.actor_opt.step()
 
-        # Update temperature (entropy coefficient)
-        alpha_loss = None
+        # Update temperatures (entropy coefficients)
+        alpha_loss_a = None
+        alpha_loss_w = None
+        
         if self.auto_alpha:
-            # Entropy should be close to target_entropy
-            alpha_loss = -(self.log_alpha * (logp_pi + self.target_entropy).detach()).mean()
-            self.alpha_optimizer.zero_grad(set_to_none=True)
-            alpha_loss.backward()
-            self.alpha_optimizer.step()
-            self.alpha = self.log_alpha.exp().item()
+            # Action temperature
+            alpha_loss_a = -(self.log_alpha_a * (logp_a_pi + self.target_entropy_a).detach()).mean()
+            self.alpha_opt_a.zero_grad(set_to_none=True)
+            alpha_loss_a.backward()
+            self.alpha_opt_a.step()
+            self.alpha_a = self.log_alpha_a.exp().item()
+            
+            # Weight temperature
+            alpha_loss_w = -(self.log_alpha_w * (logp_w_pi + self.target_entropy_w).detach()).mean()
+            self.alpha_opt_w.zero_grad(set_to_none=True)
+            alpha_loss_w.backward()
+            self.alpha_opt_w.step()
+            self.alpha_w = self.log_alpha_w.exp().item()
 
-        # Soft update target critics (polyak averaging)
+        # Soft update target critics
         with torch.no_grad():
             for tp, p in zip(self.target_critic1.parameters(), self.critic1.parameters()):
                 tp.data.mul_(1 - self.tau).add_(self.tau * p.data)
@@ -129,11 +144,14 @@ class CoachAgent:
             "train/q_mean": float(q_pi.mean().item()),
             "train/q1_mean": float(q1.mean().item()),
             "train/q2_mean": float(q2.mean().item()),
-            "train/logp_pi": float(logp_pi.mean().item()),
-            "train/weight_assist_mean": float(g_pi.mean().item()),
+            "train/logp_a_pi": float(logp_a_pi.mean().item()),
+            "train/logp_w_pi": float(logp_w_pi.mean().item()),
+            "train/weight_assist_mean": float(w_pi.mean().item()),
             "train/action_norm": float(a_pi.norm(dim=-1).mean().item()),
-            "train/alpha": float(self.alpha),
-            "train/alpha_loss": float(alpha_loss.item()) if alpha_loss else 0.0,
+            "train/alpha_a": float(self.alpha_a),
+            "train/alpha_w": float(self.alpha_w),
+            "train/alpha_loss_a": float(alpha_loss_a.item()) if alpha_loss_a else 0.0,
+            "train/alpha_loss_w": float(alpha_loss_w.item()) if alpha_loss_w else 0.0,
         }
 
     def update_from_buffer(self, buffer, n_gradient_steps=10, batch_size=256):
@@ -146,10 +164,8 @@ class CoachAgent:
                     logs[k] = []
                 logs[k].append(float(v))
         
-        # Average over all gradient steps
         logs = {k: np.mean(v) for k, v in logs.items()}
         
-        # Add buffer statistics
         buffer_stats = buffer.get_statistics()
         logs.update(buffer_stats)
         

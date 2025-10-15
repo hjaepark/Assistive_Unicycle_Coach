@@ -123,8 +123,8 @@ class StudentLoggingCallback(BaseCallback):
                                          info["rollout/weight_assist_mean"])
                         self.logger.record("coach/rollout/weight_assist_std", 
                                          info["rollout/weight_assist_std"])
-                        self.logger.record("coach/rollout/coach_action_norm_mean", 
-                                         info["rollout/coach_action_norm_mean"])
+                        self.logger.record("coach/rollout/effective_intervention_norm_mean",
+                                         info["rollout/effective_intervention_norm_mean"])
                         self.logger.record("coach/rollout/skill_level", 
                                          info["rollout/skill_level"])
                     
