@@ -7,32 +7,22 @@ import numpy as np
 class CoachRewardConfig:
     """Coach reward function configuration"""
     
-    # Main component weights
-    use_safety: bool = True
-    c_safe: float = 0.5
+    # Component toggles
+    use_safety: bool
+    use_improvement: bool
+    use_energy_penalty: bool
+    use_usage_penalty: bool
+    use_responsibility: bool
     
-    use_improvement: bool = True
-    beta_u: float = 0.5      # 2.0 → 0.5
-    beta_p: float = 0.01     # 0.05 → 0.01
-
-    use_energy_penalty: bool = True
-    lambda_E: float = 2.0    # 0.5 → 2.0
-
-    use_usage_penalty: bool = True
-    lambda_W0: float = 0.2   # 0.02 → 0.2
-    rho: float = 2.0
-    p: float = 2.0           # 1.0 → 2.0
-
-    use_responsibility: bool = True
-    c_fall: float = 10.0
-    b_goal: float = 5.0
-    
-    # EMA for responsibility tracking
-    resp_ema_alpha: float = 0.1
-    
-    # Kappa (assistance scaling)
-    kappa: np.ndarray = None
-    
-    def __post_init__(self):
-        if self.kappa is None:
-            self.kappa = np.array([0.3, 0.3], dtype=np.float32)
+    # Hyperparameters
+    c_safe: float
+    beta_u: float
+    beta_p: float
+    lambda_E: float
+    lambda_W0: float
+    rho: float
+    p: float
+    c_fall: float
+    b_goal: float
+    resp_ema_alpha: float
+    kappa: np.ndarray

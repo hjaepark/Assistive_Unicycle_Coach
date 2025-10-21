@@ -1,0 +1,67 @@
+# train/unicycle_train/cotraining/configs/default.yaml
+
+# Experiment metadata
+experiment:
+  name: "baseline"
+  description: "Default configuration"
+
+# Training settings
+training:
+  total_timesteps: 400000
+  seed: null # auto-generate
+  allow_early_stopping: false
+  eval_interval: 50000
+  eval_episodes: 100
+  target_success_rate: 0.95
+  require_consecutive: 3
+
+# Student agent settings (Fixed)
+student:
+  learning_rate: 0.0003
+  buffer_size: 1000000
+  learning_starts: 10000
+  batch_size: 256
+  tau: 0.005
+  gamma: 0.99
+
+# Coach agent settings (Tuning target)
+coach:
+  obs_dim: 22
+  action_dim: 2
+  learning_rate: 0.0003 # Tune required
+  gamma: 0.99 # Tune required
+  tau: 0.005 # Tune required
+  auto_alpha: true
+  device: "cpu"
+  
+  # Training schedule (Tuning target)
+  update_freq: 1 # Tune required
+  gradient_steps: 10 # Tune required
+  learning_starts: 1000
+
+# Skill estimator (Fixed, until different skill estimators are developed & implemented)
+estimator:
+  type: "MARB"
+  manual_skill_level: 0.0
+
+# Coach reward function
+reward:
+  # Component toggles
+  use_safety: true
+  use_improvement: true
+  use_energy_penalty: true
+  use_usage_penalty: true
+  use_responsibility: true
+  
+  # Hyperparameters (Tuning targets)
+  c_safe: 0.5 # Tune required
+  beta_u: 2.0 # Tune required
+  beta_p: 0.05 # Tune required
+  lambda_E: 0.5 # Tune required
+  lambda_W0: 0.02 # Tune required
+  rho: 2.0 # Tune required
+  p: 1.0 # Tune required
+  c_fall: 10.0 # Tune required
+  b_goal: 5.0 # Tune required
+  resp_ema_alpha: 0.1 # Tune required
+  kappa: [0.3, 0.3] # Tune required

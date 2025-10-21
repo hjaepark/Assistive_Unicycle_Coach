@@ -53,7 +53,7 @@ class CoachWrapper(gym.Wrapper):
         return obs, info
 
     def step(self, student_action):
-        # 0. Pass through if no coach
+        # 0) Pass through if no coach
         if self.coach_agent is None:
             return self.env.step(student_action)
         

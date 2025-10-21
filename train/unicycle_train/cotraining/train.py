@@ -27,19 +27,15 @@ from train.unicycle_train.coach.estimators.marb_estimator import (
 )
 from train.unicycle_train.coach.coach_config import CoachRewardConfig
 
+from train.unicycle_train.cotraining.config_loader import load_config, save_config
 
 def build_arg_parser():
     p = argparse.ArgumentParser()
-    p.add_argument("--estimator", choices=["MARB", "manual"], default="MARB",
-                   help="Estimator type for skill level")
-    p.add_argument("--manual-skill", type=float, default=0.0,
-                   help="Manual skill level if estimator=manual")
-    p.add_argument("--coach-update-freq", type=int, default=1,
-                   help="Update coach every N episodes")
-    p.add_argument("--coach-gradient-steps", type=int, default=10,
-                   help="Gradient steps per coach update")
-    p.add_argument("--coach-learning-starts", type=int, default=1000,
-                   help="Minimum buffer size before coach training")
+    p.add_argument("--config", type=str, 
+                   default="train/unicycle_train/cotraining/configs/default.yaml",
+                   help="Path to config YAML file")
+    p.add_argument("--name", type=str, help="Override experiment name")
+    p.add_argument("--seed", type=int, help="Override seed")
     return p
 
 
@@ -58,7 +54,7 @@ def next_run_dir(base: Path) -> Path:
 
 
 def make_train_env_with_coach(log_dir: Path, seed: int, coach_agent, estimator, reward_config: CoachRewardConfig = None):
-    """Create training environment with coach wrapper"""
+    # Create training environment with coach wrapper
     base_env = gym.make("UnicyclePendulumPD-v0", full_obs_in_info=True)
     
     # 1. Monitor wrapper (adds info["episode"])
@@ -92,12 +88,12 @@ def make_train_env_with_coach(log_dir: Path, seed: int, coach_agent, estimator, 
 
 
 def make_eval_env() -> gym.Env:
-    """Evaluation environment without coach"""
+    # Evaluation environment without coach
     return gym.make("UnicyclePendulumPD-v0")
 
 
 class StudentLoggingCallback(BaseCallback):
-    """Log student metrics"""
+    # Log student metrics
     
     def __init__(self, verbose=0):
         super().__init__(verbose)
@@ -142,7 +138,7 @@ class StudentLoggingCallback(BaseCallback):
 
 
 class CoachTrainingCallback(BaseCallback):
-    """Periodically train the coach"""
+    # Periodically train the coach
     
     def __init__(self, 
                  coach_wrapper,
@@ -183,18 +179,23 @@ class CoachTrainingCallback(BaseCallback):
 
 def main():
     args = build_arg_parser().parse_args()
+
+    # Load config
+    config = load_config(args.config)
+    print(f"[info] Loaded config from: {args.config}")
     
-    # Generate seed
-    def gen_seed() -> int:
-        return int.from_bytes(os.urandom(4), "little")
-    SEED = gen_seed()
+    # Apply overrides
+    if args.name:
+        config['experiment']['name'] = args.name
+    if args.seed:
+        config['training']['seed'] = args.seed
+    
+    # Generate seed if not specified
+    if config['training']['seed'] is None:
+        config['training']['seed'] = int.from_bytes(os.urandom(4), "little")
+    
+    SEED = config['training']['seed']
     sb3_set_seed(SEED)
-    
-    # Settings
-    TARGET_SUCCESS_RATE = 0.95
-    EVAL_INTERVAL = 50_000
-    EVAL_DURATION = 100
-    REQUIRE_CONSECUTIVE = 3
     
     # Setup directories
     run_dir = next_run_dir(P.LOGS_COTRAINING_DIR)  # New directory for cotraining
@@ -202,98 +203,77 @@ def main():
     checkpoint_dir = run_dir / "models"
     tensorboard_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    save_config(config, str(run_dir / "config.yaml"))
     (run_dir / "seed.txt").write_text(f"{SEED}\n")
     
-    print(f"[info] run_dir: {run_dir} | seed={SEED}")
-    print(f"[info] Estimator: {args.estimator}")
-    print(f"[info] Coach update freq: {args.coach_update_freq} episodes")
+    print(f"[info] Experiment: {config['experiment']['name']}")
+    print(f"[info] Run dir: {run_dir}")
+    print(f"[info] Seed: {SEED}")
+    print(f"[info] Total timesteps: {config['training']['total_timesteps']:,}")
+    print(f"[info] Early stopping: {config['training']['allow_early_stopping']}")
     
     # Initialize coach agent
     coach = CoachAgent(
-        obs_dim=22,
-        action_dim=2,
-        auto_alpha=True,
-        device="cpu"
+        obs_dim=config['coach']['obs_dim'],
+        action_dim=config['coach']['action_dim'],
+        lr=config['coach']['learning_rate'],
+        gamma=config['coach']['gamma'],
+        tau=config['coach']['tau'],
+        auto_alpha=config['coach']['auto_alpha'],
+        device=config['coach']['device']
     )
     print("[info] Coach agent initialized")
     
     # Initialize estimator
-    if args.estimator == "MARB":
-        # Precompute MARB parameters from existing student data
-        marb_cfg, info = precompute_params(
-            P.DATA_STUDENT_DIR, 
-            k_candidates=range(5, 11)
-        )
-        print(f"[info] MARB: k={marb_cfg.k}, G_min={info['G_min']:.2f}, "
-              f"G_max={info['G_max']:.2f} (runs={info['runs']})")
-        
-        # Save config
-        (run_dir / "estimator_config.json").write_text(json.dumps({
-            "estimator": "MARB",
-            "k": marb_cfg.k,
-            "G_min": info["G_min"],
-            "G_max": info["G_max"],
-            "runs": info["runs"]
-        }, indent=2))
-        
+    if config['estimator']['type'] == "MARB":
+        marb_cfg, info = precompute_params(P.DATA_STUDENT_DIR, k_candidates=range(5, 11))
+        print(f"[info] MARB: k={marb_cfg.k}, G_min={info['G_min']:.2f}, G_max={info['G_max']:.2f}")
         estimator = MovingAverageRewardBasedEstimator(marb_cfg)
-    
-    elif args.estimator == "manual":
-        # Manual skill level (no estimator)
+    elif config['estimator']['type'] == "manual":
         class ManualEstimator:
             def __init__(self, skill):
                 self.skill = skill
             def update(self, episode_return):
                 return self.skill
-        
-        estimator = ManualEstimator(args.manual_skill)
-        print(f"[info] Manual skill level: {args.manual_skill}")
-    
+        estimator = ManualEstimator(config['estimator']['manual_skill_level'])
     else:
-        raise ValueError(f"Unknown estimator: {args.estimator}")
+        raise ValueError(f"Unknown estimator: {config['estimator']['type']}")
     
-    # Initialize coach reward config
+    # Initialize reward config from YAML
     reward_config = CoachRewardConfig(
-        # Start with all components enabled
-        use_safety=True,
-        use_improvement=True,
-        use_energy_penalty=True,
-        use_usage_penalty=True,
-        use_responsibility=True,
-        
-        # Default hyperparameters (tune later)
-        c_safe=0.5,
-        beta_u=2.0,
-        beta_p=0.05,
-        lambda_E=0.5,
-        lambda_W0=0.02,
-        rho=2.0,
-        p=1.0,
-        c_fall=10.0,
-        b_goal=5.0,
-    )
-    
-    # Save config
-    (run_dir / "coach_reward_config.json").write_text(
-        json.dumps(reward_config.__dict__, indent=2, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
-    )
-    
-    # Initialize coach agent (22D now)
-    coach = CoachAgent(
-        obs_dim=22,  # ← Changed from 20
-        action_dim=2,
-        auto_alpha=True,
-        device="cpu"
+        use_safety=config['reward']['use_safety'],
+        use_improvement=config['reward']['use_improvement'],
+        use_energy_penalty=config['reward']['use_energy_penalty'],
+        use_usage_penalty=config['reward']['use_usage_penalty'],
+        use_responsibility=config['reward']['use_responsibility'],
+        c_safe=config['reward']['c_safe'],
+        beta_u=config['reward']['beta_u'],
+        beta_p=config['reward']['beta_p'],
+        lambda_E=config['reward']['lambda_E'],
+        lambda_W0=config['reward']['lambda_W0'],
+        rho=config['reward']['rho'],
+        p=config['reward']['p'],
+        c_fall=config['reward']['c_fall'],
+        b_goal=config['reward']['b_goal'],
+        resp_ema_alpha=config['reward']['resp_ema_alpha'],
+        kappa=np.array(config['reward']['kappa'], dtype=np.float32)
     )
 
     # Create training environment with coach
     env = make_train_env_with_coach(run_dir, SEED, coach, estimator, reward_config)
     print("[info] Training environment with coach created")
     
-    # Initialize student agent (SB3 SAC)
+    # Initialize student (SB3 SAC)
     model = SAC(
         "MlpPolicy",
         env,
+        learning_rate=config['student']['learning_rate'],
+        buffer_size=config['student']['buffer_size'],
+        learning_starts=config['student']['learning_starts'],
+        batch_size=config['student']['batch_size'],
+        tau=config['student']['tau'],
+        gamma=config['student']['gamma'],
         device="cpu",
         verbose=1,
         seed=SEED,
@@ -307,22 +287,23 @@ def main():
     
     coach_training_callback = CoachTrainingCallback(
         coach_wrapper=env,
-        update_freq=args.coach_update_freq,
-        gradient_steps=args.coach_gradient_steps,
-        learning_starts=args.coach_learning_starts,
+        update_freq=config['coach']['update_freq'],
+        gradient_steps=config['coach']['gradient_steps'],
+        learning_starts=config['coach']['learning_starts'],
         verbose=1
     )
     
     evaluation_callback = EvalCallBack(
-        make_env_fn=make_eval_env,  # Eval without coach
-        eval_interval_steps=EVAL_INTERVAL,
-        n_eval_episodes=EVAL_DURATION,
-        target_success_rate=TARGET_SUCCESS_RATE,
+        make_env_fn=make_eval_env,
+        eval_interval_steps=config['training']['eval_interval'],
+        n_eval_episodes=config['training']['eval_episodes'],
+        target_success_rate=config['training']['target_success_rate'],
         best_model_path=str(checkpoint_dir / "best_student_model"),
         deterministic=True,
         seed=None,
         verbose=1,
-        require_consecutive=REQUIRE_CONSECUTIVE,
+        require_consecutive=config['training']['require_consecutive'],
+        allow_early_stopping=config['training']['allow_early_stopping'],
     )
     
     callbacks = [
@@ -332,10 +313,9 @@ def main():
     ]
     
     # Train
-    TOTAL_TIMESTEPS = int(1e9)
-    print(f"[info] Training initiated (maximum timesteps: {TOTAL_TIMESTEPS:,})")
+    print(f"[info] Training initiated")
     model.learn(
-        total_timesteps=TOTAL_TIMESTEPS,
+        total_timesteps=config['training']['total_timesteps'],
         callback=callbacks,
         progress_bar=True
     )

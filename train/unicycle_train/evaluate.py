@@ -1,5 +1,7 @@
 # train/unicycle_train/evaluate.py
 
+import json
+from pathlib import Path
 from typing import Callable, Optional, Dict, Any
 import numpy as np
 import gymnasium as gym
@@ -66,7 +68,7 @@ class EvalCallBack(BaseCallback):
         self,
         make_env_fn: Optional[Callable[[], gym.Env]] = None,
         env_id: Optional[str] = None,
-        eval_interval_steps: int = 50_000,
+        eval_interval_steps: int = 10_000,
         n_eval_episodes: int = 100,
         target_success_rate: float = 0.95,
         best_model_path: Optional[str] = None,
@@ -74,6 +76,7 @@ class EvalCallBack(BaseCallback):
         seed: Optional[int] = None,
         verbose: int = 1,
         require_consecutive: int = 1,
+        allow_early_stopping: bool = True,
     ):
         super().__init__(verbose=verbose)
         self.make_env_fn = make_env_fn
@@ -85,8 +88,8 @@ class EvalCallBack(BaseCallback):
         self.deterministic = bool(deterministic)
         self.seed = seed
         self.require_consecutive = int(require_consecutive)
+        self.allow_early_stopping = bool(allow_early_stopping)
         self._success_streak = 0
-
         self._last_eval_step = 0
         self._best_success = -1.0
 
@@ -118,6 +121,21 @@ class EvalCallBack(BaseCallback):
         self.logger.record("eval/final_yaw_mean", m["final_yaw_mean"])
         self.logger.dump(self.num_timesteps)
 
+        # Optuna JSON
+        if self.best_model_path:
+            run_dir = Path(self.best_model_path).parent.parent
+            result_file = run_dir / "evaluation_results.json"
+            
+            results = {
+                'current_success_rate': float(m['success_mean']),
+                'best_success_rate': float(self._best_success),
+                'timesteps': int(self.num_timesteps),
+                'target_reached': bool(m['success_mean'] >= self.target_success_rate)
+            }
+            
+            with open(result_file, 'w') as f:
+                json.dump(results, f, indent=2)
+
         if self.best_model_path and m["success_mean"] > self._best_success:
             self.model.save(self.best_model_path)
             self._best_success = m["success_mean"]
@@ -133,14 +151,20 @@ class EvalCallBack(BaseCallback):
             self._success_streak = 0
 
         if self._success_streak >= self.require_consecutive:
-            if self.verbose:
-                print("\n" + "=" * 80)
-                print("[Training Complete] Target success rate reached "
-                    f"{self._success_streak} consecutive time(s)")
-                print(f"Final Success Rate: {m['success_mean']*100:.1f}% "
-                    f"(Target: {self.target_success_rate*100:.0f}%)")
-                print(f"Timesteps: {self.num_timesteps:,}")
-                print("=" * 80 + "\n")
-            return False
+            if self.allow_early_stopping:
+                if self.verbose:
+                    print("\n" + "=" * 80)
+                    print("[Training Complete] Target success rate reached "
+                        f"{self._success_streak} consecutive time(s)")
+                    print(f"Final Success Rate: {m['success_mean']*100:.1f}% "
+                        f"(Target: {self.target_success_rate*100:.0f}%)")
+                    print(f"Timesteps: {self.num_timesteps:,}")
+                    print("=" * 80 + "\n")
+                return False
+            else:
+                if self.verbose and self._success_streak == self.require_consecutive:
+                    print(f"\n[Info] Target reached at {self.num_timesteps:,} steps "
+                          f"(continuing to max timesteps)\n")
+            # ===== 수정 끝 =====
 
         return True
