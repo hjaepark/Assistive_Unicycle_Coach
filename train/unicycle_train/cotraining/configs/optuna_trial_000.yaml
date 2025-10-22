@@ -1,0 +1,51 @@
+coach:
+  action_dim: 2
+  auto_alpha: true
+  device: cpu
+  gamma: 0.9582532029434044
+  gradient_steps: 18
+  learning_rate: 0.0001519934830130982
+  learning_starts: 500
+  obs_dim: 22
+  tau: 0.0020148477884158666
+  update_freq: 5
+estimator:
+  manual_skill_level: 0.0
+  type: MARB
+experiment:
+  description: Default configuration
+  name: optuna_trial_000
+reward:
+  b_goal: 6.41003510568888
+  beta_p: 0.14907884894416698
+  beta_u: 4.7782143788446225
+  c_fall: 17.99264218662403
+  c_safe: 0.8116262258099887
+  kappa:
+  - 0.10823379771832098
+  - 0.10823379771832098
+  lambda_E: 0.787566024988986
+  lambda_W0: 0.007979118876474874
+  p: 0.5871254182522991
+  resp_ema_alpha: 0.22701814444901136
+  rho: 1.3119890406724053
+  use_energy_penalty: true
+  use_improvement: true
+  use_responsibility: true
+  use_safety: true
+  use_usage_penalty: true
+student:
+  batch_size: 256
+  buffer_size: 1000000
+  gamma: 0.99
+  learning_rate: 0.0003
+  learning_starts: 10000
+  tau: 0.005
+training:
+  allow_early_stopping: true
+  eval_episodes: 50
+  eval_interval: 10000
+  require_consecutive: 3
+  seed: null
+  target_success_rate: 0.95
+  total_timesteps: 200000

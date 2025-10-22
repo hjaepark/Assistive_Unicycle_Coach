@@ -114,7 +114,7 @@ def main():
     
     # Create study
     study = optuna.create_study(
-        study_name="coach_full_tuning",
+        study_name="coach_hyperparameter_sweep",
         direction="maximize",
         sampler=TPESampler(seed=42, n_startup_trials=10),
         pruner=MedianPruner(n_startup_trials=10, n_warmup_steps=5),
