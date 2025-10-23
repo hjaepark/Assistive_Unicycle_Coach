@@ -40,16 +40,27 @@ def build_arg_parser():
 
 
 def next_run_dir(base: Path) -> Path:
+    import time
+    import random
+    
     base.mkdir(parents=True, exist_ok=True)
-    nums = []
-    for d in base.iterdir():
-        if d.is_dir() and d.name.startswith("run"):
-            s = d.name[3:]
-            if s.isdigit():
-                nums.append(int(s))
-    n = (max(nums) + 1) if nums else 1
-    rd = base / f"run{n}"
-    rd.mkdir(parents=True, exist_ok=False)
+    
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    random_suffix = random.randint(1000, 9999)
+    rd = base / f"run_{timestamp}_{random_suffix}"
+    
+    max_retries = 10
+    for attempt in range(max_retries):
+        try:
+            rd.mkdir(parents=True, exist_ok=False)
+            return rd
+        except FileExistsError:
+            if attempt < max_retries - 1:
+                random_suffix = random.randint(1000, 9999)
+                rd = base / f"run_{timestamp}_{random_suffix}"
+            else:
+                raise
+    
     return rd
 
 

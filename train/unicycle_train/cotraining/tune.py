@@ -111,22 +111,43 @@ def objective(trial):
 
 
 def main():
+    # Create study with retry logic for SQLite race condition
+    import time
+    import random
     
-    # Create study
-    study = optuna.create_study(
-        study_name="coach_hyperparameter_sweep",
-        direction="maximize",
-        sampler=TPESampler(seed=42, n_startup_trials=10),
-        pruner=MedianPruner(n_startup_trials=10, n_warmup_steps=5),
-        storage="sqlite:///optuna_coach.db",
-        load_if_exists=True
-    )
+    max_retries = 10
+    study = None
+    
+    for attempt in range(max_retries):
+        try:
+            study = optuna.create_study(
+                study_name="coach_hyperparameter_sweep",
+                direction="maximize",
+                sampler=TPESampler(seed=None, n_startup_trials=20),
+                pruner=MedianPruner(n_startup_trials=10, n_warmup_steps=5),
+                storage="sqlite:///optuna_coach.db",
+                load_if_exists=True
+            )
+            break  # Success!
+        except Exception as e:
+            if attempt < max_retries - 1:
+                # Random backoff between 0.5 to 3 seconds
+                wait_time = random.uniform(0.5, 3.0)
+                print(f"[Warning] DB initialization failed (attempt {attempt+1}/{max_retries}). "
+                      f"Retrying in {wait_time:.2f}s... Error: {e}")
+                time.sleep(wait_time)
+            else:
+                print(f"[Error] Failed to initialize study after {max_retries} attempts!")
+                raise
+    
+    if study is None:
+        raise RuntimeError("Failed to create Optuna study")
     
     print("="*80)
     print("Optuna Hyperparameter Tuning")
     print("="*80)
     print(f"Database: optuna_coach.db")
-    print(f"Study name: coach_full_tuning")
+    print(f"Study name: coach hyperparameter sweep")
     print(f"Tuning parameters:")
     print("  - Coach Reward Function (11 params)")
     print("  - Coach Training Schedule (3 params)")
