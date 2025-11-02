@@ -28,16 +28,14 @@ class CoachWrapper(gym.Wrapper):
         # Rollout statistics
         self.rollout_weight_assists = []
         self.rollout_effective_intervention_norms = []
+        self.rollout_learning_progress = []  # Student's learning progress (LP_t)
+        self.rollout_assistance_discounts = []  # Assistance discount factors (ψ(w_t))
         
         # Responsibility tracking (EMA of weight_assist)
         self.resp_ema = 0.0
         
-        # Previous values for delta calculation
-        self.prev_upright = None
-        self.prev_progress = None
-        
         # Pending transition for correct MDP (s' includes a_{t+1})
-        self._pending_transition = None  # ← 추가!
+        self._pending_transition = None
 
     def reset(self, **kwargs):
         obs, info = self.env.reset(**kwargs)
@@ -46,10 +44,10 @@ class CoachWrapper(gym.Wrapper):
         self.episode_coach_rewards = []
         self.rollout_weight_assists = []
         self.rollout_effective_intervention_norms = []
+        self.rollout_learning_progress = []
+        self.rollout_assistance_discounts = []
         self.resp_ema = 0.0
-        self.prev_upright = None
-        self.prev_progress = None
-        self._pending_transition = None  # ← 추가!
+        self._pending_transition = None
         return obs, info
 
     def step(self, student_action):
@@ -61,16 +59,16 @@ class CoachWrapper(gym.Wrapper):
         if self.coach_buffer is not None and self._pending_transition is not None:
             # Complete previous transition with current student_action as a_{t+1}^S
             next_coach_obs = np.concatenate([
-                self._last_obs,           # o_{t+1} from previous step
-                [self.skill_level],       # skill_{t+1}
-                student_action            # a_{t+1}^S ← Correct next action!
+                self._last_obs,
+                [self.skill_level],
+                student_action
             ])
             
             self.coach_buffer.add(
                 self._pending_transition["coach_obs"],
                 self._pending_transition["coach_action"],
                 self._pending_transition["coach_reward"],
-                next_coach_obs,  # ← Now correct s_{t+1}!
+                next_coach_obs,
                 self._pending_transition["done"],
                 self._pending_transition["weight_assist"]
             )
@@ -88,8 +86,8 @@ class CoachWrapper(gym.Wrapper):
         weight_assist = np.clip(weight_assist, 0.0, 1.0)
         
         # 4) Update responsibility EMA
-        alpha = self.reward_cfg.resp_ema_alpha
-        self.resp_ema = alpha * weight_assist + (1 - alpha) * self.resp_ema
+        resp_ema_alpha = 0.1
+        self.resp_ema = resp_ema_alpha * weight_assist + (1 - resp_ema_alpha) * self.resp_ema
         
         # 5) Compute interventions
         intended_intervention = weight_assist * self.kappa * coach_action
@@ -99,18 +97,19 @@ class CoachWrapper(gym.Wrapper):
         # 6) Run environment step
         next_obs, reward, terminated, truncated, info = self.env.step(exec_action)
         
-        # 7) Compute coach reward
-        coach_reward = self._compute_coach_reward(
+        # 7) Compute coach reward using baseline design
+        coach_reward, coach_metrics = self._compute_coach_reward(
+            info=info,
             coach_action=coach_action,
-            weight_assist=weight_assist,
-            effective_intervention=effective_intervention,
-            info=info
+            weight_assist=weight_assist
         )
         self.episode_coach_rewards.append(coach_reward)
         
         # 8) Track statistics
         self.rollout_weight_assists.append(weight_assist)
         self.rollout_effective_intervention_norms.append(np.linalg.norm(effective_intervention))
+        self.rollout_learning_progress.append(coach_metrics["LP"])
+        self.rollout_assistance_discounts.append(coach_metrics["psi"])
         
         # 9) Store current transition as pending (waiting for a_{t+1}^S)
         if self.coach_buffer is not None:
@@ -128,7 +127,7 @@ class CoachWrapper(gym.Wrapper):
                 next_coach_obs_terminal = np.concatenate([
                     next_obs,
                     [self.skill_level],
-                    dummy_next_action  # Dummy since episode ended
+                    dummy_next_action
                 ])
                 
                 self.coach_buffer.add(
@@ -136,7 +135,7 @@ class CoachWrapper(gym.Wrapper):
                     coach_action,
                     coach_reward,
                     next_coach_obs_terminal,
-                    True,  # done=True
+                    True,
                     weight_assist
                 )
                 self._pending_transition = None
@@ -146,11 +145,13 @@ class CoachWrapper(gym.Wrapper):
             if "episode" in info and "r" in info["episode"]:
                 self.skill_level = self.estimator.update(info["episode"]["r"])
         
-        # 11) Extend info
+        # 11) Extend info with step-level metrics
         info["weight_assist"] = weight_assist
         info["effective_intervention_norm"] = float(np.linalg.norm(effective_intervention))
         info["skill_level"] = self.skill_level
         info["resp_ema"] = self.resp_ema
+        info["student_learning_progress"] = coach_metrics["LP"]
+        info["assistance_discount"] = coach_metrics["psi"]
         
         # Add episode-level rollout statistics
         if terminated or truncated:
@@ -160,80 +161,70 @@ class CoachWrapper(gym.Wrapper):
             info["rollout/weight_assist_std"] = float(np.std(self.rollout_weight_assists))
             info["rollout/effective_intervention_norm_mean"] = float(np.mean(self.rollout_effective_intervention_norms))
             info["rollout/skill_level"] = float(self.skill_level)
+            info["rollout/student_learning_progress_mean"] = float(np.mean(self.rollout_learning_progress))
+            info["rollout/student_learning_progress_std"] = float(np.std(self.rollout_learning_progress))
+            info["rollout/assistance_discount_mean"] = float(np.mean(self.rollout_assistance_discounts))
         
         self._last_obs = next_obs
         self.episode_return += reward
         
         return next_obs, reward, terminated, truncated, info
     
-    def _compute_coach_reward(self, coach_action, weight_assist, effective_intervention, info):
+    def _compute_assistance_discount(self, weight_assist: float) -> float:
         """
-        Modular coach reward: (s, a, s') form only (Markov)
-        Uses info from environment (which contains t+1 state info)
+        Compute ψ(w_t) = (1 - min{w_t/ρ, 1})^2
+        
+        This discounts the learning progress based on how much the coach assisted.
+        - w_t = 0 → ψ = 1.0 (full credit to student)
+        - w_t = ρ → ψ = 0.0 (no credit, coach did everything)
+        """
+        rho = self.reward_cfg.rho
+        ratio = min(weight_assist / rho, 1.0)
+        psi = (1.0 - ratio) ** 2
+        return float(psi)
+    
+    def _compute_coach_reward(self, info: dict, coach_action: np.ndarray, 
+                              weight_assist: float) -> tuple[float, dict]:
+        """
+        Baseline Coach Reward Design:
+        
+        LP_t = ψ(w_t) · r_t^shaped
+        r_coach = LP_t - β*w_t - λ_E*||a^C||^2
+        
+        where:
+        - r_t^shaped: shaped reward from environment (excludes terminal signals)
+        - ψ(w_t): assistance discount function
+        - β: usage penalty coefficient
+        - λ_E: energy penalty coefficient
         """
         cfg = self.reward_cfg
-        total_reward = 0.0
         
-        # Get current values from info (t+1 state)
-        upright = float(info.get("upright_gate", 1.0))
-        progress = float(info.get("reward_progress_gated", 0.0))
+        # 1. Get shaped reward from environment info
+        r_shaped = float(info.get("reward_shaped", 0.0))
         
-        # 1) Safety Reward: c_safe * U_{t+1}
-        if cfg.use_safety:
-            safety_reward = cfg.c_safe * upright
-            total_reward += safety_reward
+        # 2. Compute assistance discount
+        psi = self._compute_assistance_discount(weight_assist)
         
-        # 2) Improvement Reward: w_t * [beta_u * max(0, Delta_U) + beta_p * max(0, Delta_P)]
-        if cfg.use_improvement:
-            # Only compute if we have previous values (skip first step)
-            if self.prev_upright is not None:
-                # Delta upright
-                delta_U = max(0.0, upright - self.prev_upright)
-                
-                # Delta progress
-                if self.prev_progress is not None:
-                    delta_P = max(0.0, progress - self.prev_progress)
-                else:
-                    delta_P = 0.0
-                
-                improvement = (
-                    cfg.beta_u * delta_U +
-                    cfg.beta_p * delta_P
-                )
-                total_reward += weight_assist * improvement
-            
-            # Update previous values for next step
-            self.prev_upright = upright
-            self.prev_progress = progress
+        # 3. Student's Learning Progress (discounted by assistance)
+        LP = psi * r_shaped
         
-        # 3) Energy Penalty: -lambda_E * ||effective_intervention||^2
-        if cfg.use_energy_penalty:
-            energy_penalty = -cfg.lambda_E * np.linalg.norm(effective_intervention) ** 2
-            total_reward += energy_penalty
+        # 4. Penalties
+        usage_penalty = cfg.beta * weight_assist
+        action_norm_sq = float(np.sum(coach_action ** 2))
+        energy_penalty = cfg.lambda_E * action_norm_sq
         
-        # 4) Usage Penalty (skill-weighted): -lambda_W(s) * w_t^p
-        if cfg.use_usage_penalty:
-            s = self.skill_level
-            lambda_W_s = cfg.lambda_W0 * (1 + cfg.rho * s)
-            usage_penalty = -lambda_W_s * (weight_assist ** cfg.p)
-            total_reward += usage_penalty
+        # 5. Total coach reward
+        coach_reward = LP - usage_penalty - energy_penalty
         
-        # 5) Responsibility & Goal
-        if cfg.use_responsibility:
-            is_fallen = bool(info.get("is_fallen", False))
-            goal_reached = bool(info.get("goal_reached", False))
-            
-            # Responsibility-weighted fall penalty
-            if is_fallen:
-                fall_penalty = -cfg.c_fall * self.resp_ema
-                total_reward += fall_penalty
-            
-            # Goal bonus
-            if goal_reached:
-                goal_bonus = cfg.b_goal
-                total_reward += goal_bonus
+        metrics = {
+            "LP": LP,
+            "psi": psi,
+            "r_shaped": r_shaped,
+            "usage_penalty": usage_penalty,
+            "energy_penalty": energy_penalty,
+        }
         
-        return float(total_reward)
+        return float(coach_reward), metrics
     
     def update_coach(self, n_gradient_steps=10, learning_starts=1000):
         """Update coach agent and return comprehensive logs."""

@@ -165,6 +165,5 @@ class EvalCallBack(BaseCallback):
                 if self.verbose and self._success_streak == self.require_consecutive:
                     print(f"\n[Info] Target reached at {self.num_timesteps:,} steps "
                           f"(continuing to max timesteps)\n")
-            # ===== 수정 끝 =====
 
         return True

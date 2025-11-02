@@ -104,10 +104,12 @@ def make_eval_env() -> gym.Env:
 
 
 class StudentLoggingCallback(BaseCallback):
-    # Log student metrics
+    """Log student metrics and track coach rewards"""
     
-    def __init__(self, verbose=0):
+    def __init__(self, log_dir, verbose=0):
         super().__init__(verbose)
+        self.log_dir = log_dir
+        self.coach_rewards = []  # Track coach episode rewards
         
     def _on_step(self) -> bool:
         if len(self.locals.get("dones", [])) > 0:
@@ -122,6 +124,10 @@ class StudentLoggingCallback(BaseCallback):
                     
                     # Coach rollout metrics (from CoachWrapper)
                     if "rollout/coach_reward_mean" in info:
+                        # Store for final statistics
+                        self.coach_rewards.append(info["rollout/coach_reward_sum"])
+                        
+                        # Log to tensorboard
                         self.logger.record("coach/rollout/reward_mean", 
                                          info["rollout/coach_reward_mean"])
                         self.logger.record("coach/rollout/reward_sum", 
@@ -146,7 +152,29 @@ class StudentLoggingCallback(BaseCallback):
                     self.logger.dump(self.num_timesteps)
         
         return True
-
+    
+    def _on_training_end(self) -> None:
+        """Save coach reward statistics at training end"""
+        if self.coach_rewards:
+            stats = {
+                "mean_coach_reward": float(np.mean(self.coach_rewards)),
+                "std_coach_reward": float(np.std(self.coach_rewards)),
+                "total_episodes": len(self.coach_rewards),
+                "last_100_mean": float(np.mean(self.coach_rewards[-100:])) 
+                    if len(self.coach_rewards) >= 100 
+                    else float(np.mean(self.coach_rewards)),
+                "last_50_mean": float(np.mean(self.coach_rewards[-50:])) 
+                    if len(self.coach_rewards) >= 50 
+                    else float(np.mean(self.coach_rewards)),
+            }
+            
+            stats_path = Path(self.log_dir) / "coach_stats.json"
+            with open(stats_path, 'w') as f:
+                json.dump(stats, f, indent=2)
+            
+            print(f"[info] Coach statistics saved: {stats_path}")
+            print(f"[info] Mean coach reward: {stats['mean_coach_reward']:.4f}")
+            print(f"[info] Last 100 episodes mean: {stats['last_100_mean']:.4f}")
 
 class CoachTrainingCallback(BaseCallback):
     # Periodically train the coach
@@ -253,21 +281,9 @@ def main():
     
     # Initialize reward config from YAML
     reward_config = CoachRewardConfig(
-        use_safety=config['reward']['use_safety'],
-        use_improvement=config['reward']['use_improvement'],
-        use_energy_penalty=config['reward']['use_energy_penalty'],
-        use_usage_penalty=config['reward']['use_usage_penalty'],
-        use_responsibility=config['reward']['use_responsibility'],
-        c_safe=config['reward']['c_safe'],
-        beta_u=config['reward']['beta_u'],
-        beta_p=config['reward']['beta_p'],
-        lambda_E=config['reward']['lambda_E'],
-        lambda_W0=config['reward']['lambda_W0'],
         rho=config['reward']['rho'],
-        p=config['reward']['p'],
-        c_fall=config['reward']['c_fall'],
-        b_goal=config['reward']['b_goal'],
-        resp_ema_alpha=config['reward']['resp_ema_alpha'],
+        beta=config['reward']['beta'],
+        lambda_E=config['reward']['lambda_E'],
         kappa=np.array(config['reward']['kappa'], dtype=np.float32)
     )
 
@@ -294,7 +310,7 @@ def main():
     print("[info] Student agent (SB3 SAC) initialized")
     
     # Setup callbacks
-    student_logging_callback = StudentLoggingCallback(verbose=0)
+    student_logging_callback = StudentLoggingCallback(log_dir=run_dir, verbose=0)
     
     coach_training_callback = CoachTrainingCallback(
         coach_wrapper=env,
