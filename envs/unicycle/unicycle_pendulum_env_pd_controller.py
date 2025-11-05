@@ -280,6 +280,8 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
         alive_bonus = self.reward_weight_alive_bonus if not self.is_fallen else 0.0
         fall_penalty = self.reward_weight_fall_penalty if self.is_fallen else 0.0
 
+        shaped_reward = progress_reward + speed_reward + posture_reward + alive_bonus
+
         # Total
         reward = progress_reward + speed_reward + posture_reward + alive_bonus + goal_bonus + fall_penalty
 
@@ -291,6 +293,7 @@ class UnicyclePendulumPD(MujocoEnv, utils.EzPickle):
             "reward_alive_bonus": alive_bonus,
             "reward_goal_bonus": goal_bonus,
             "reward_fall_penalty": fall_penalty,
+            "reward_shaped": shaped_reward,
         }
         return float(reward), comps
 

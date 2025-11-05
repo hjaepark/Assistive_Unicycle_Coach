@@ -2,37 +2,32 @@
 
 from dataclasses import dataclass
 import numpy as np
+from typing import Optional
 
 @dataclass
 class CoachRewardConfig:
-    """Coach reward function configuration"""
-    
-    # Main component weights
-    use_safety: bool = True
-    c_safe: float = 0.5
-    
-    use_improvement: bool = True
-    beta_u: float = 0.5      # 2.0 → 0.5
-    beta_p: float = 0.01     # 0.05 → 0.01
+    """
+    Coach reward function configuration
 
-    use_energy_penalty: bool = True
-    lambda_E: float = 2.0    # 0.5 → 2.0
-
-    use_usage_penalty: bool = True
-    lambda_W0: float = 0.2   # 0.02 → 0.2
-    rho: float = 2.0
-    p: float = 2.0           # 1.0 → 2.0
-
-    use_responsibility: bool = True
-    c_fall: float = 10.0
-    b_goal: float = 5.0
+    LP_t = ψ(w_t) · r_t^shaped
+    where ψ(w_t) = (1 - min{w_t/ρ, 1})^2
     
-    # EMA for responsibility tracking
-    resp_ema_alpha: float = 0.1
+    r_coach = LP_t - β*w_t - λ_E*||a^C||^2
     
-    # Kappa (assistance scaling)
-    kappa: np.ndarray = None
+    Parameters:
+        rho: assisted weight threshold for ψ(w_t)
+        beta: usage penalty weight
+        lambda_E: energy penalty weight
+        kappa: intervention scaling factor [kappa_x, kappa_y]
+    """
+    
+    rho: float = 0.5
+    beta: float = 0.05
+    lambda_E: float = 0.1
+    kappa: Optional[np.ndarray] = None
     
     def __post_init__(self):
         if self.kappa is None:
             self.kappa = np.array([0.3, 0.3], dtype=np.float32)
+        elif not isinstance(self.kappa, np.ndarray):
+            self.kappa = np.array(self.kappa, dtype=np.float32)

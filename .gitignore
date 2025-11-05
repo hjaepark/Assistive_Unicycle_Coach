@@ -12,7 +12,6 @@ data/*
 logs/
 logs_student/
 logs_coach/
-logs_cotraining/
 logs.zip
 
 *.egg-info/
