@@ -301,7 +301,7 @@ def main():
         batch_size=config['student']['batch_size'],
         tau=config['student']['tau'],
         gamma=config['student']['gamma'],
-        device="cpu",
+        device="cuda" if torch.cuda.is_available() else "cpu",
         verbose=1,
         seed=SEED,
         tensorboard_log=str(tensorboard_dir),
