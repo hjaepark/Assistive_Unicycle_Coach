@@ -301,6 +301,8 @@ def main():
         batch_size=config['student']['batch_size'],
         tau=config['student']['tau'],
         gamma=config['student']['gamma'],
+        train_freq=config['student'].get('train_freq', 1),
+        gradient_steps=config['student'].get('gradient_steps', 1),
         device="cuda" if torch.cuda.is_available() else "cpu",
         verbose=1,
         seed=SEED,

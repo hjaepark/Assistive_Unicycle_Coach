@@ -14,6 +14,7 @@ def create_config_from_trial(trial, base_config_path="train/unicycle_train/cotra
     with open(base_config_path, 'r') as f:
         config = yaml.safe_load(f)
     
+    # Coach reward hyperparameters
     config['reward']['rho'] = trial.suggest_float('rho', 0.35, 0.75)
     config['reward']['beta'] = trial.suggest_float('beta', 0.01, 0.1, log=True)
     config['reward']['lambda_E'] = trial.suggest_float('lambda_E', 0.05, 0.2, log=True)
@@ -22,7 +23,21 @@ def create_config_from_trial(trial, base_config_path="train/unicycle_train/cotra
     config['reward']['kappa'] = [kappa, kappa]
     
     config['coach']['learning_rate'] = trial.suggest_float('coach_lr', 2e-4, 5e-4, log=True)
-    
+
+    # SAC hyperparameters (following rl-baselines3-zoo approach) (https://github.com/DLR-RM/rl-baselines3-zoo/blob/ab4aadb57c6c42abcf1016318c2bebe35c4c1270/rl_zoo3/hyperparams_opt.py#L257)
+    one_minus_gamma = trial.suggest_float('one_minus_gamma', 0.0001, 0.03, log=True)
+    config['student']['gamma'] = 1 - one_minus_gamma
+    trial.set_user_attr('gamma', config['student']['gamma'])
+
+    batch_size_pow = trial.suggest_int('batch_size_pow', 6, 10)
+    config['student']['batch_size'] = 2 ** batch_size_pow
+    trial.set_user_attr('batch_size', config['student']['batch_size'])
+
+    config['student']['learning_rate'] = trial.suggest_float('student_lr', 1e-5, 0.002, log=True)
+    config['student']['train_freq'] = trial.suggest_categorical('train_freq', [1, 4, 8, 16, 32, 64])
+    config['student']['gradient_steps'] = config['student']['train_freq']
+    config['student']['tau'] = trial.suggest_float('tau', 0.001, 0.08, log=True)
+
     # Fixed hyperparameters
     config['coach']['update_freq'] = 1
     config['coach']['gradient_steps'] = 10
@@ -50,11 +65,19 @@ def objective(trial):
     
     print(f"\n{'='*80}")
     print(f"Trial {trial.number} started")
+    print(f"Coach hyperparameters:")
     print(f"  rho: {config['reward']['rho']:.3f}")
     print(f"  beta: {config['reward']['beta']:.4f}")
     print(f"  lambda_E: {config['reward']['lambda_E']:.4f}")
     print(f"  kappa: {config['reward']['kappa'][0]:.2f}")
     print(f"  coach_lr: {config['coach']['learning_rate']:.5f}")
+    print(f"Student (SAC) hyperparameters:")
+    print(f"  gamma: {config['student']['gamma']:.4f}")
+    print(f"  batch_size: {config['student']['batch_size']}")
+    print(f"  student_lr: {config['student']['learning_rate']:.5f}")
+    print(f"  train_freq: {config['student']['train_freq']}")
+    print(f"  gradient_steps: {config['student']['gradient_steps']}")
+    print(f"  tau: {config['student']['tau']:.4f}")
     print(f"{'='*80}")
     
     # 3) Run training
@@ -141,16 +164,23 @@ def main():
         raise RuntimeError("Failed to create Optuna study")
     
     print("="*80)
-    print("Optuna Hyperparameter Tuning - Baseline Coach")
+    print("Optuna Hyperparameter Tuning - Coach + Student")
     print("="*80)
     print(f"Database: optuna_coach_baseline.db")
     print(f"Study name: coach_baseline_sweep")
-    print(f"Tuning parameters (5 critical):")
+    print(f"\nCoach hyperparameters:")
     print("  1. rho: 0.35 ~ 0.75 (assistance discount threshold)")
     print("  2. beta: 0.01 ~ 0.1 (usage penalty)")
     print("  3. lambda_E: 0.05 ~ 0.2 (energy penalty)")
     print("  4. kappa: 0.2 ~ 0.5 (intervention scaling)")
     print("  5. coach_lr: 2e-4 ~ 5e-4 (coach learning rate)")
+    print(f"\nStudent hyperparameters:")
+    print("  6. gamma: 0.97 ~ 0.9999 (discount factor)")
+    print("  7. batch_size: 64 ~ 1024 (powers of 2)")
+    print("  8. student_lr: 1e-5 ~ 0.002 (learning rate)")
+    print("  9. train_freq: [1, 4, 8, 16, 32, 64] (update frequency)")
+    print(" 10. gradient_steps: = train_freq (gradient updates)")
+    print(" 11. tau: 0.001 ~ 0.08 (Polyak coefficient)")
     print("="*80)
     
     # Optimize
