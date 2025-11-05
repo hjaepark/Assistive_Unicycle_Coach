@@ -5,11 +5,10 @@ from pathlib import Path
 import os
 import random
 import torch
-import numpy as np
 
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 from stable_baselines3.common.utils import set_random_seed as sb3_set_seed
 
 from train.unicycle_train.evaluate import EvalCallBack
@@ -31,11 +30,22 @@ def next_run_dir(base: Path) -> Path:
     rd.mkdir(parents=True, exist_ok=False)
     return rd
 
-def make_train_env(log_dir: Path, seed: int):
-    base_env = gym.make("UnicyclePendulumPD-v0")
+def make_single_env(seed: int):
+    env = gym.make("UnicyclePendulumPD-v0")
+    env.reset(seed=seed)
+    env.action_space.seed(seed)
+    env.observation_space.seed(seed)
+    return env
 
-    # Save data to CSV
-    obs_dim = int(np.prod(base_env.observation_space.shape))
+def make_train_env(log_dir: Path, seed: int, n_envs: int = 16):
+    def make_env(rank: int):
+        def _init():
+            return make_single_env(seed + rank)
+        return _init
+
+    vec_env = SubprocVecEnv([make_env(i) for i in range(n_envs)])
+
+    obs_dim = vec_env.observation_space.shape[0]
     obs_keys = tuple(f"obs_{i}" for i in range(obs_dim))
     extra_keys = (
         "timestamp",
@@ -51,17 +61,15 @@ def make_train_env(log_dir: Path, seed: int):
         "goal_reached",
         "is_fallen", 
     )
-    env = Monitor(
-        base_env,
+
+    # VecMonitor aggregates episode stats across envs
+    vec_env = VecMonitor(
+        vec_env,
         filename=str(log_dir / "monitor.csv"),
         info_keywords=obs_keys + extra_keys,
     )
 
-    env.reset(seed=seed)
-    env.action_space.seed(seed)
-    env.observation_space.seed(seed)
-
-    return env
+    return vec_env
 
 def make_eval_env() -> gym.Env:
     return gym.make("UnicyclePendulumPD-v0")
@@ -132,7 +140,7 @@ def main():
     model = SAC(
         "MlpPolicy",
         env,
-        device="cpu",
+        device="cuda" if torch.cuda.is_available() else "cpu",
         verbose=1,
         seed=SEED,
         tensorboard_log=str(tensorboard_dir),
