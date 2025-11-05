@@ -1,0 +1,6 @@
+{
+  "current_success_rate": 1.0,
+  "best_success_rate": 1.0,
+  "timesteps": 400000,
+  "target_reached": true
+}
