@@ -1,5 +1,6 @@
-import pygame
+# hse/gamepad.py
 
+import pygame
 
 class Gamepad:
     """
