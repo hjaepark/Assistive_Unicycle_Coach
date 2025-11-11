@@ -20,7 +20,7 @@ python -m hse.experiment \
     --participant_id P01 \
     --condition {with-coach|without-coach} \
     --phase {pre-test|training|post-test} \
-    [--coach_model_path PATH]  # Auto-selects latest if omitted
+    [--coach_model_path PATH]   # Auto-selects latest if omitted
     [--estimator_config PATH]   # Default: configs/optimized.yaml
     [--debug]                   # Print action details each step
 ```
