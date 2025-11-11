@@ -19,8 +19,8 @@ from train.unicycle_train.cotraining.config_loader import load_config
 from train.unicycle_train import path as P
 
 DEFAULT_CAMERA_CONFIG = {
-    "trackbodyid": -1,  # 고정
-    "lookat": np.array((2.5, 0.0, 0.0)),  # 더 앞쪽을 봄
+    "trackbodyid": -1,
+    "lookat": np.array((2.5, 0.0, 0.0)),
     "distance": 5,
     "azimuth": 45.0,
     "elevation": -15.0,
