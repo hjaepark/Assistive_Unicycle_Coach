@@ -1,6 +1,7 @@
 # hse/experiment.py
 
 import argparse
+from cmath import phase
 import gymnasium as gym
 import numpy as np
 import random
@@ -8,6 +9,8 @@ import time
 import csv
 from pathlib import Path
 import torch
+
+import mujoco
 
 from envs import unicycle
 from hse.gamepad import Gamepad
@@ -276,6 +279,33 @@ def run_phase(env, coach_model_path, participant_id, condition, phase, total_tim
                 
                 # Step environment
                 obs, reward, done, truncated, info = wrapped_env.step(human_action)
+
+                # UI for simulation
+                try:
+                    viewer = env.unwrapped.mujoco_renderer.viewer
+
+                    if viewer:
+                        viewer.add_overlay(mujoco.mjtGridPos.mjGRID_TOPLEFT, "Condition:", str(condition))
+                        viewer.add_overlay(mujoco.mjtGridPos.mjGRID_TOPLEFT, "Phase:", str(phase))
+
+                        viewer.add_overlay(mujoco.mjtGridPos.mjGRID_TOPRIGHT, "Success:", str(summary_data["success_count"]))
+                        viewer.add_overlay(mujoco.mjtGridPos.mjGRID_TOPRIGHT, "Falls:", str(summary_data["num_falls"]))
+
+                        elapsed_sec = time.time() - start_time
+                        mins = int(elapsed_sec // 60)
+                        secs = int(elapsed_sec % 60)
+                        viewer.add_overlay(mujoco.mjtGridPos.mjGRID_BOTTOMRIGHT, "Time:", f"{mins:02d}:{secs:02d}")
+                    
+                        current_x = info.get("x_position", 0.0)
+                        viewer.add_overlay(mujoco.mjtGridPos.mjGRID_BOTTOMRIGHT, "Distance:", f"{current_x:.2f} m")
+
+                        if use_coach:
+                            assist = info.get("weight_assist", 0.0)
+                            viewer.add_overlay(mujoco.mjtGridPos.mjGRID_BOTTOMRIGHT, "Coach Help:", f"{assist*100:.0f}%")
+
+                except AttributeError:
+                    pass
+
                 current_episode_steps += 1
                 total_steps += 1
                 
