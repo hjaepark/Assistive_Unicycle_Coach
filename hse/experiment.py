@@ -31,9 +31,9 @@ DEFAULT_CAMERA_CONFIG = {
 FRAME_SKIP = 1
 
 PHASE_TIMESTEPS = {
-    "pre-test": 13980,
-    "training": 55920,
-    "post-test": 13980,
+    "pre-test": 18000,
+    "training": 72000,
+    "post-test": 18000,
 }
 
 HSE_DATA_DIR = P.PROJECT_ROOT / "data"

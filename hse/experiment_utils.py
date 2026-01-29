@@ -211,8 +211,6 @@ def print_phase_complete(summary_data, trajectory_file, summary_file):
     print(f"{'='*70}\n")
 
 
-# === NEW: Action debugging functions ===
-
 def print_action_header(coach_enabled):
     """Print header for action details"""
     if coach_enabled:
