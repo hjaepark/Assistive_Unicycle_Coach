@@ -247,7 +247,8 @@ def run_phase(env, coach_model_path, participant_id, condition, phase, total_tim
     current_episode_steps = 0
     time_to_3_successes = None
     total_steps = 0
-    next_step_time = time.time()
+    TARGET_DT = 1.0 / 60.0 # 60 Hz
+    next_step_time = time.perf_counter()
     
     try:
         with open(trajectory_file, 'w', newline='') as f:
@@ -389,15 +390,20 @@ def run_phase(env, coach_model_path, participant_id, condition, phase, total_tim
                     )
                     print()  # Empty line for readability
                 
-                next_step_time += 0.005
-                sleep_time = next_step_time - time.time()
+                # Fix to 60 Hz
+                next_step_time += TARGET_DT
                 
-                if sleep_time > 0:
-                    time.sleep(sleep_time)
-                elif sleep_time < -0.01:
-                    if total_steps % 100 == 0:
-                        print(f"[warning] Step {total_steps} behind schedule by {-sleep_time*1000:.1f} ms")
-                    next_step_time = time.time()
+                while True:
+                    now = time.perf_counter()
+                    remaining = next_step_time - now
+                    
+                    if remaining <= 0:
+                        break
+                    
+                    if remaining > 0.002:
+                        time.sleep(remaining - 0.001)
+                    else:
+                        pass
 
         
         # Finalize summary using utils
