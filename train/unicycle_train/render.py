@@ -2,12 +2,21 @@
 
 import sys
 from pathlib import Path
+import numpy as np
 
 import gymnasium as gym
 from stable_baselines3 import SAC
 
 import envs.unicycle
 
+# Identical camera config to user study
+DEFAULT_CAMERA_CONFIG = {
+    "trackbodyid": -1,
+    "lookat": np.array((2.5, 0.0, 0.0)),
+    "distance": 5,
+    "azimuth": 45.0,
+    "elevation": -15.0,
+}
 
 def main() -> None:
     if len(sys.argv) < 2:
@@ -24,7 +33,7 @@ def main() -> None:
         sys.stderr.write(f"Model file not found: {raw_path}\n")
         sys.exit(1)
 
-    env = gym.make("UnicyclePendulumPD-v0", render_mode="human")
+    env = gym.make("UnicyclePendulumPD-v0", render_mode="human", default_camera_config=DEFAULT_CAMERA_CONFIG)
 
     model = SAC.load(model_path.as_posix(), env=env, device="auto")
 
