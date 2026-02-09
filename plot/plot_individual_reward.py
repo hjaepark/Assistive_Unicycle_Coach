@@ -88,8 +88,6 @@ for i, ax in enumerate(axes):
 
     ax.legend(title='ID', loc='upper left')
 
-plt.suptitle('Individual Reward Trajectories (Split View)', fontsize=16, y=1.02)
-
 plt.tight_layout()
 plt.savefig('plot_individual_reward_split.png', dpi=300, bbox_inches='tight')
 plt.show()
