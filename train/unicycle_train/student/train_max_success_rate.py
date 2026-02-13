@@ -12,6 +12,8 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed as sb3_set_seed
 
+from train.unicycle_train.logging.trajectory_logger import TrajectoryLoggerWrapper
+
 from train.unicycle_train.evaluate import EvalCallBack
 from train.unicycle_train.cotraining.config_loader import load_config, save_config
 
@@ -88,7 +90,16 @@ def make_train_env(log_dir: Path, seed: int):
     base_env = gym.make(
         "UnicyclePendulumPD-v0", 
         full_obs_in_info=True,
-        reward_weights=max_success_rate_weights
+        reward_weights=max_success_rate_weights,
+        frame_skip=1,
+    )
+
+    logged_env = TrajectoryLoggerWrapper(
+        base_env,
+        out_csv=log_dir / "trajectory.csv",
+        participant_id="RL_student",
+        condition="without-coach",
+        phase="training",
     )
 
     # Monitor wrapper for episode statistics
@@ -101,7 +112,7 @@ def make_train_env(log_dir: Path, seed: int):
     )
     
     monitored_env = Monitor(
-        base_env,
+        logged_env,
         filename=str(log_dir / "monitor.csv"),
         info_keywords=obs_keys + extra_keys,
     )
