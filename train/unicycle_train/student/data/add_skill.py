@@ -1,3 +1,5 @@
+#train/unicycle_train/student/data/add_skill.py
+
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -37,7 +39,7 @@ def main():
     e_hi = float(df["control_effort"].quantile(EFFORT_P_HI))
 
     dn = log_norm_distance(df["maximum_distance"].to_numpy(dtype=float), D_GOAL, ALPHA)
-    fn = np.clip(df["action_flip_rate"].to_numpy(dtype=float), 0, 1)  # 이미 0~1로 가정
+    fn = np.clip(df["action_flip_rate"].to_numpy(dtype=float), 0, 1)
     en = robust_minmax(df["control_effort"].to_numpy(dtype=float), e_lo, e_hi)
 
     df["distance_norm"] = dn

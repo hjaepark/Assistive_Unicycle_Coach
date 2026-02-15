@@ -1,0 +1,2 @@
+participant_id,condition,phase,success_count,cumulative_reward,num_falls,num_episodes,time_to_3_successes,avg_distance_traveled,episode_duration,balance_stability,pendulum_stability
+P01,without-coach,training,12,-3417.356627521105,284,296,355.3987693786621,1.22073394103594,241.83783783783784,0.46386084,0.2845102349699276

@@ -6,9 +6,6 @@ venv/
 ENV/
 env/
 
-data/*
-!data/experimental_data/
-
 logs/
 logs_student/
 logs_coach/

@@ -1,0 +1,2 @@
+participant_id,condition,phase,success_count,cumulative_reward,num_falls,num_episodes,time_to_3_successes,avg_distance_traveled,episode_duration,balance_stability,pendulum_stability
+P10,without-coach,pre-test,0,-1834.0862122541294,100,100,90.0,0.35512575556291265,178.42,0.57188165,0.211787244366362
