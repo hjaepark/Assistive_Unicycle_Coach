@@ -12,10 +12,10 @@ ALPHA = 3.0
 DELTA_SOFT_C = 0.2
 
 W_D, W_F, W_E = 0.5, 0.3, 0.2  # Sum to 1
-
-EFFORT_P_LO = 0.05
-EFFORT_P_HI = 0.95
 EPS = 1e-9
+
+# 2D action, each channel assumed in [-1,1] => a0^2 + a1^2 <= 2
+E_MAX = 2.0
 
 def log_norm_distance(d: np.ndarray, d_goal: float, alpha: float) -> np.ndarray:
     """D' = log(1+alpha*D) / log(1+alpha*D_goal), clipped to [0,1]."""
@@ -24,10 +24,6 @@ def log_norm_distance(d: np.ndarray, d_goal: float, alpha: float) -> np.ndarray:
         return np.clip(d / max(d_goal, EPS), 0, 1)
     return np.clip(np.log1p(alpha * d) / denom, 0, 1)
 
-def robust_minmax(x: np.ndarray, lo: float, hi: float) -> np.ndarray:
-    """x' = clip((x-lo)/(hi-lo), 0, 1)"""
-    return np.clip((x - lo) / (hi - lo + EPS), 0, 1)
-
 def soft_gate(dn: np.ndarray, c: float) -> np.ndarray:
     """g(D') = D'/(D'+c)"""
     return dn / (dn + c + EPS)
@@ -35,12 +31,16 @@ def soft_gate(dn: np.ndarray, c: float) -> np.ndarray:
 def main():
     df = pd.read_csv(IN_CSV)
 
-    e_lo = float(df["control_effort"].quantile(EFFORT_P_LO))
-    e_hi = float(df["control_effort"].quantile(EFFORT_P_HI))
-
     dn = log_norm_distance(df["maximum_distance"].to_numpy(dtype=float), D_GOAL, ALPHA)
     fn = np.clip(df["action_flip_rate"].to_numpy(dtype=float), 0, 1)
-    en = robust_minmax(df["control_effort"].to_numpy(dtype=float), e_lo, e_hi)
+
+    eff = df["control_effort"].to_numpy(dtype=float)
+    en = np.clip(eff / (E_MAX + EPS), 0.0, 1.0)
+
+    # Sanity check
+    if eff.max() > E_MAX + 1e-6:
+        print(f"[WARN] control_effort max={eff.max():.4f} exceeds E_MAX={E_MAX:.4f}. "
+              "Check action bounds; adjust E_MAX if needed.")
 
     df["distance_norm"] = dn
     df["effort_norm"] = en
@@ -68,7 +68,8 @@ def main():
     print("\nNormalization constants used:")
     print({
         "D_GOAL": D_GOAL, "ALPHA": ALPHA,
-        "effort_lo(q05)": e_lo, "effort_hi(q95)": e_hi,
+        "effort_norm": "fixed_max",
+        "E_MAX": E_MAX,
         "weights": (W_D, W_F, W_E),
         "soft_c": DELTA_SOFT_C
     })
