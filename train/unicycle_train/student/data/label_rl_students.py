@@ -17,7 +17,6 @@ OUT_DIR = DATA_STUDENT_DIR
 OUT_CSV = OUT_DIR / "rl_student_trajectory_metrics.csv"
 OUT_CONFIG = OUT_DIR / "label_config.yaml"
 
-# Filter run folders
 RUN_GLOB = "run_*20260213_*"
 
 
@@ -33,7 +32,6 @@ def read_seed(run_dir: Path) -> Optional[int]:
 
 
 def sgn_delta(u: np.ndarray, delta: float) -> np.ndarray:
-    """dead-zone function: +1, -1, 0"""
     out = np.zeros_like(u, dtype=np.int8)
     out[u > delta] = 1
     out[u < -delta] = -1
@@ -41,9 +39,7 @@ def sgn_delta(u: np.ndarray, delta: float) -> np.ndarray:
 
 
 def flip_rate_1d(a: np.ndarray, delta: float) -> float:
-
     b = sgn_delta(a.astype(np.float64), delta)
-    # remove zeros
     nz = b[b != 0]
     k = len(nz)
     if k <= 1:
@@ -53,7 +49,6 @@ def flip_rate_1d(a: np.ndarray, delta: float) -> float:
 
 
 def termination_label(last_row: pd.Series) -> str:
-    # success > fall > timeout > other_done
     if bool(last_row.get("success_indicator", False)):
         return "success"
     if bool(last_row.get("is_fallen", False)):
@@ -62,13 +57,12 @@ def termination_label(last_row: pd.Series) -> str:
         return "timeout"
     if bool(last_row.get("done", False)):
         return "other_done"
-    return "incomplete"  # Drop episode
+    return "incomplete"
 
 
 def write_label_config_yaml(path: Path) -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     content = f"""# Auto-generated label config
-version: 1
 delta: {DELTA}
 
 episode_group_key: episode
@@ -105,6 +99,7 @@ termination_label:
 """
     path.write_text(content)
 
+
 def process_run(run_dir: Path) -> pd.DataFrame:
     traj_path = run_dir / "trajectory.csv"
     if not traj_path.exists():
@@ -131,38 +126,31 @@ def process_run(run_dir: Path) -> pd.DataFrame:
 
     rows: List[Dict[str, Any]] = []
 
-
     group_keys = ["participant_id", "condition", "phase", "episode"]
     for (pid, cond, phase, ep), g in df.groupby(group_keys, sort=True):
         last = g.iloc[-1]
         done_last = bool(last.get("done", False))
         truncated_last = bool(last.get("truncated", False))
         if (not done_last) and (not truncated_last):
-            continue  # drop incomplete episode
+            continue
 
-        # termination label
         term = termination_label(last)
         if term == "incomplete":
             continue
 
-        # T: episode length (row count)
         T = int(len(g))
 
-        # maximum_distance: max(obs_0) - first(obs_0)
         x0 = float(g["obs_0"].iloc[0])
         max_x = float(g["obs_0"].max())
         maximum_distance = max_x - x0
 
-        # action arrays
         a0 = g["final_action_0"].to_numpy(dtype=np.float64)
         a1 = g["final_action_1"].to_numpy(dtype=np.float64)
 
-        # action_flip_rate
         f0 = flip_rate_1d(a0, DELTA)
         f1 = flip_rate_1d(a1, DELTA)
         action_flip_rate = 0.5 * (f0 + f1)
 
-        # control_effort = mean(a0^2 + a1^2)
         control_effort = float(np.mean(a0 * a0 + a1 * a1))
 
         rows.append({
@@ -195,7 +183,7 @@ def main() -> None:
             ep_df = process_run(rd)
             if len(ep_df) > 0:
                 all_dfs.append(ep_df)
-            print(f"[OK] {rd.name}: episodes={len(ep_df)}")
+            print(f"[OK] {rd.name} -> episodes={len(ep_df)}")
         except Exception as e:
             print(f"[SKIP/ERR] {rd.name}: {e}")
 
@@ -203,7 +191,6 @@ def main() -> None:
         raise RuntimeError("No episodes collected. Check filters / column names / completeness rule.")
 
     out_df = pd.concat(all_dfs, ignore_index=True)
-
     out_df = out_df.sort_values(["run_id", "episode"]).reset_index(drop=True)
 
     out_df.to_csv(OUT_CSV, index=False)

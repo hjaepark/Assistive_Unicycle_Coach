@@ -1,0 +1,21 @@
+{
+  "csv": "train/unicycle_train/student/data/rl_student_trajectory_metrics_with_performance_score.csv",
+  "H": 10,
+  "hidden_dim": 64,
+  "num_layers": 2,
+  "lr": 0.001,
+  "epochs": 50,
+  "val_ratio": 0.15,
+  "output_dir": "./gru_output",
+  "best_epoch": 48,
+  "train_metrics": {
+    "mae": "0.026365738",
+    "rmse": "0.058466677",
+    "corr": 0.965546166395362
+  },
+  "val_metrics": {
+    "mae": "0.02419083",
+    "rmse": "0.055870593",
+    "corr": 0.9708385579011354
+  }
+}

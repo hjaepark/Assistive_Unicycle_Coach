@@ -1,0 +1,80 @@
+{
+  "features": [
+    "performance_score",
+    "term_fall",
+    "term_timeout",
+    "term_success",
+    "T_norm",
+    "max_dist_norm",
+    "control_effort_norm",
+    "flip_rate_norm"
+  ],
+  "input_dim": 8,
+  "config": {
+    "rl_csv": "train/unicycle_train/student/data/rl_student_trajectory_metrics_with_performance_score.csv",
+    "human_csv": "data/human_training_trajectory_metrics_with_performance_score.csv",
+    "H": 10,
+    "hidden_dim": 64,
+    "num_layers": 2,
+    "lr": 0.001,
+    "ft_lr": 0.0001,
+    "epochs": 50,
+    "ft_epochs": 30,
+    "val_ratio": 0.15,
+    "output_dir": "./gru_extended_output"
+  },
+  "rl_train": {
+    "mae": 0.031212536618113518,
+    "rmse": 0.06055159494280815,
+    "corr": 0.9645779082632843
+  },
+  "rl_val": {
+    "mae": 0.028535297140479088,
+    "rmse": 0.05727560073137283,
+    "corr": 0.9707287484466351
+  },
+  "human_zero_shot_avg_corr": 0.44187193461500496,
+  "human_finetuned_avg_corr": 0.4936110551268021,
+  "per_participant": {
+    "P01": {
+      "zero_shot_corr": 0.729645750197123,
+      "finetuned_corr": 0.7844676872620123
+    },
+    "P02": {
+      "zero_shot_corr": 0.6306626990168167,
+      "finetuned_corr": 0.6570897520557711
+    },
+    "P03": {
+      "zero_shot_corr": 0.29771422211119386,
+      "finetuned_corr": 0.3423887847802086
+    },
+    "P04": {
+      "zero_shot_corr": 0.35768734653807616,
+      "finetuned_corr": 0.27597477599385106
+    },
+    "P05": {
+      "zero_shot_corr": 0.433486074057266,
+      "finetuned_corr": 0.5273246034321065
+    },
+    "P06": {
+      "zero_shot_corr": 0.3553139115400834,
+      "finetuned_corr": 0.42786172470737416
+    },
+    "P07": {
+      "zero_shot_corr": 0.4457910229315443,
+      "finetuned_corr": 0.540598357526397
+    },
+    "P08": {
+      "zero_shot_corr": 0.6518137385619543,
+      "finetuned_corr": 0.7476743833227519
+    },
+    "P09": {
+      "zero_shot_corr": 0.046909970440957335,
+      "finetuned_corr": 0.1320773728636748
+    },
+    "P10": {
+      "zero_shot_corr": 0.4696946107550338,
+      "finetuned_corr": 0.5006531093238737
+    }
+  }
+}
