@@ -17,7 +17,6 @@ LOW_SUCCESS = ['P04', 'P06', 'P10']
 ACTION_COLS = ['final_action_0', 'final_action_1']
 ACTION_LABELS = ['Wheel Torque', 'Pitch Torque']
 
-# ── Data Loading ──
 all_data = []
 
 for p_id in PARTICIPANTS:
@@ -39,7 +38,6 @@ for p_id in PARTICIPANTS:
                 for col, label in zip(ACTION_COLS, ACTION_LABELS):
                     actions = ep_df[col].values
 
-                    # Sign change count
                     signs = np.sign(actions)
                     sign_changes = np.sum(signs[1:] != signs[:-1])
                     sign_change_rate = sign_changes / max(len(actions) - 1, 1)
@@ -61,7 +59,6 @@ if not all_data:
 
 df_stats = pd.DataFrame(all_data)
 
-# ── Plot ──
 sns.set_theme(style="whitegrid", context="paper", font_scale=1.2)
 plt.figure(figsize=(8, 6))
 

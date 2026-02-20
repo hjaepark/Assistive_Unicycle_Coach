@@ -11,14 +11,12 @@ PARTICIPANTS = [f'P{i:02d}' for i in range(1, 11)]
 PHASE = 'training'
 FILE_SUFFIX = f'_{PHASE}_trajectory.csv'
 
-# Group definition based on success rate
 HIGH_SUCCESS = ['P02', 'P05', 'P07']
 LOW_SUCCESS = ['P04', 'P06', 'P10']
 
 ACTION_COLS = ['final_action_0', 'final_action_1']
 ACTION_LABELS = ['Wheel Torque', 'Pitch Torque']
 
-# ── Data Loading ──
 all_data = []
 
 for p_id in PARTICIPANTS:
@@ -30,7 +28,6 @@ for p_id in PARTICIPANTS:
             df = pd.read_csv(file_path)
             df['participant_id'] = p_id
 
-            # Assign group label
             if p_id in HIGH_SUCCESS:
                 df['group'] = 'High Success'
             elif p_id in LOW_SUCCESS:
@@ -48,7 +45,6 @@ if not all_data:
 
 df_all = pd.concat(all_data, ignore_index=True)
 
-# ── Figure 1: All Participants Combined Heatmap ──
 sns.set_theme(style="whitegrid", context="paper", font_scale=1.2)
 
 fig, axes = plt.subplots(1, 2, figsize=(16, 6))
@@ -56,13 +52,12 @@ fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 for idx, (col, label) in enumerate(zip(ACTION_COLS, ACTION_LABELS)):
     ax = axes[idx]
 
-    # Create 2D histogram
     h = ax.hist2d(
         df_all['num_steps'],
         df_all[col],
         bins=[50, 80],
         cmap='YlOrRd',
-        cmin=1  # Minimum count to display
+        cmin=1
     )
     fig.colorbar(h[3], ax=ax, label='Count')
 
@@ -71,7 +66,6 @@ for idx, (col, label) in enumerate(zip(ACTION_COLS, ACTION_LABELS)):
     ax.set_title(f'Action Distribution: {label}', fontsize=13, pad=10)
     ax.set_ylim(-1.1, 1.1)
 
-    # Reference lines at -1 and +1
     ax.axhline(y=-1.0, color='blue', linestyle='--', alpha=0.5, linewidth=1)
     ax.axhline(y=+1.0, color='blue', linestyle='--', alpha=0.5, linewidth=1)
 
@@ -82,7 +76,6 @@ plt.show()
 print("Saved plot_action_heatmap_all.png")
 
 
-# ── Figure 2: High vs Low Success Group Comparison ──
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
 groups = ['High Success', 'Low Success']
@@ -116,9 +109,6 @@ plt.savefig('plot_action_heatmap_groups.png', dpi=300, bbox_inches='tight')
 plt.show()
 print("Saved plot_action_heatmap_groups.png")
 
-
-# ── Figure 3: Marginal Distribution (KDE) ──
-# Simple 1D view to clearly show the bimodal pattern
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 for idx, (col, label) in enumerate(zip(ACTION_COLS, ACTION_LABELS)):
