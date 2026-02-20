@@ -29,7 +29,7 @@ from train.unicycle_train.coach.estimators.marb_estimator import (
 def build_arg_parser():
     p = argparse.ArgumentParser()
     p.add_argument("--config", type=str, 
-                   default="train/unicycle_train/cotraining/configs/optimized.yaml",
+                   default="train/unicycle_train/cotraining/configs/default.yaml",
                    help="Path to config YAML file (reuses cotraining config)")
     p.add_argument("--name", type=str, help="Override experiment name")
     p.add_argument("--seed", type=int, help="Override seed")
@@ -80,7 +80,7 @@ def make_train_env(log_dir: Path, seed: int):
         
         # 3. Focus on goal achievement
         "progress": 60.0,
-        "goal_bonus": 200.0, # Increase success reward
+        "goal_bonus": 50.0,
         
         # 4. Maintain physical failure conditions
         "fall_penalty": -20.0,
@@ -135,7 +135,7 @@ def make_eval_env() -> gym.Env:
         "alive_bonus": 0.0,
         "upright_gate_k": 0.0,   
         "progress": 60.0,
-        "goal_bonus": 200.0,     
+        "goal_bonus": 50.0,     
         "fall_penalty": -20.0,
     }
 
@@ -286,7 +286,7 @@ def main():
         batch_size=config['student']['batch_size'],
         tau=config['student']['tau'],
         gamma=config['student']['gamma'],
-        device="cpu",
+        device="cuda",
         verbose=1,
         seed=SEED,
         tensorboard_log=str(tensorboard_dir),
