@@ -9,7 +9,7 @@ from pathlib import Path
 # New reward parameters
 PROGRESS_WEIGHT = 60.0
 PROGRESS_EXP_K = 0.05
-GOAL_BONUS = 200.0
+GOAL_BONUS = 50 # Update from reward logic
 FALL_PENALTY = -20.0
 FINISH_LINE_X = 5.0
 
