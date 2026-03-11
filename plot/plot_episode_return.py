@@ -11,7 +11,8 @@ HUMAN_DATA_DIR = '../data'
 RL_DATA_DIR = '../train/unicycle_train/student/logs_student'
 RL_RUN_PREFIX = 'run_20260220_10'  # Filter for this batch of runs
 
-PARTICIPANTS = [f'P{i:02d}' for i in range(1, 11)]
+# PARTICIPANTS = [f'P{i:02d}' for i in range(1, 11)]
+PARTICIPANTS = ['P04', 'P10']
 HUMAN_FILE_SUFFIX = '_training_trajectory_updated.csv'
 
 BIN_SIZE = 10  # Number of episodes per bin

@@ -1,4 +1,4 @@
-# train/unicycle_train/student/train_max_success_rate.py
+# train/unicycle_train/student/train_v1.py
 
 from typing import Any, Dict, Callable
 from pathlib import Path
