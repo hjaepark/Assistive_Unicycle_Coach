@@ -1,4 +1,4 @@
-# train/unicycle_train/student/train_max_success_rate.py
+# train/unicycle_train/student/train_v1.py
 
 from typing import Any, Dict, Callable
 from pathlib import Path
@@ -21,15 +21,10 @@ import gymnasium as gym
 import envs.unicycle
 from train.unicycle_train import path as P
 
-# Estimator imports (added for skill tracking)
-from train.unicycle_train.coach.estimators.marb_estimator import (
-    MARBConfig, MovingAverageRewardBasedEstimator, precompute_params
-)
-
 def build_arg_parser():
     p = argparse.ArgumentParser()
     p.add_argument("--config", type=str, 
-                   default="train/unicycle_train/cotraining/configs/optimized.yaml",
+                   default="train/unicycle_train/cotraining/configs/default.yaml",
                    help="Path to config YAML file (reuses cotraining config)")
     p.add_argument("--name", type=str, help="Override experiment name")
     p.add_argument("--seed", type=int, help="Override seed")
@@ -80,7 +75,7 @@ def make_train_env(log_dir: Path, seed: int):
         
         # 3. Focus on goal achievement
         "progress": 60.0,
-        "goal_bonus": 200.0, # Increase success reward
+        "goal_bonus": 50.0,
         
         # 4. Maintain physical failure conditions
         "fall_penalty": -20.0,
@@ -135,7 +130,7 @@ def make_eval_env() -> gym.Env:
         "alive_bonus": 0.0,
         "upright_gate_k": 0.0,   
         "progress": 60.0,
-        "goal_bonus": 200.0,     
+        "goal_bonus": 50.0,     
         "fall_penalty": -20.0,
     }
 
@@ -188,32 +183,6 @@ class StudentLoggingCallback(BaseCallback):
         return True
 
 
-class SkillEstimationCallback(BaseCallback):
-    """Track skill level for baseline (matches frozen coach behavior)"""
-    
-    def __init__(self, estimator, verbose=0):
-        super().__init__(verbose)
-        self.estimator = estimator
-        self.skill_level = 0.0
-        
-    def _on_step(self) -> bool:
-        # Check if any episode ended
-        if len(self.locals.get("dones", [])) > 0:
-            for i, done in enumerate(self.locals["dones"]):
-                if done:
-                    info = self.locals["infos"][i]
-                    
-                    # Update skill level using episode return
-                    if "episode" in info and "r" in info["episode"]:
-                        self.skill_level = self.estimator.update(info["episode"]["r"])
-                        
-                        # Log skill level (matches frozen coach logging)
-                        self.logger.record("coach/rollout/skill_level", self.skill_level)
-                        self.logger.dump(self.num_timesteps)
-        
-        return True
-
-
 def main():
     args = build_arg_parser().parse_args()
 
@@ -255,23 +224,6 @@ def main():
     print(f"[info] Total timesteps: {config['training']['total_timesteps']:,}")
     print(f"[info] Early stopping: {config['training']['allow_early_stopping']}")
     
-    # Initialize estimator (uses config['estimator']) - for comparison with frozen coach
-    if config['estimator']['type'] == "MARB":
-        marb_cfg, info = precompute_params(P.DATA_STUDENT_DIR, k_candidates=range(5, 11))
-        print(f"[info] MARB: k={marb_cfg.k}, G_min={info['G_min']:.2f}, G_max={info['G_max']:.2f}")
-        estimator = MovingAverageRewardBasedEstimator(marb_cfg)
-        print("[info] Skill estimator initialized for logging (baseline has no coach)")
-    elif config['estimator']['type'] == "manual":
-        class ManualEstimator:
-            def __init__(self, skill):
-                self.skill = skill
-            def update(self, episode_return):
-                return self.skill
-        estimator = ManualEstimator(config['estimator'].get('manual_skill_level', 0.5))
-        print(f"[info] Manual estimator: skill={config['estimator'].get('manual_skill_level', 0.5)}")
-    else:
-        raise ValueError(f"Unknown estimator: {config['estimator']['type']}")
-    
     # Create environment (no coach)
     env = make_train_env(run_dir, SEED)
     print("[info] Training environment created (baseline: no coach)")
@@ -286,7 +238,7 @@ def main():
         batch_size=config['student']['batch_size'],
         tau=config['student']['tau'],
         gamma=config['student']['gamma'],
-        device="cpu",
+        device="cuda",
         verbose=1,
         seed=SEED,
         tensorboard_log=str(tensorboard_dir),
@@ -296,9 +248,7 @@ def main():
     
     # Setup callbacks
     student_logging_callback = StudentLoggingCallback(log_dir=run_dir, verbose=0)
-    
-    # Add skill estimation callback for comparison
-    skill_estimation_callback = SkillEstimationCallback(estimator=estimator, verbose=0)
+
     
     evaluation_callback = EvalCallBack(
         make_env_fn=make_eval_env,
@@ -315,7 +265,6 @@ def main():
     
     callbacks = [
         student_logging_callback,
-        skill_estimation_callback,  # Added for metric comparison
         evaluation_callback
     ]
     
