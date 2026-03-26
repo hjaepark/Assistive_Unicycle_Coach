@@ -137,7 +137,7 @@ def main() -> None:
     log_root = Path(args.log_root)
     all_df = pd.concat([load_experiment_df(log_root, meta) for meta in EXPERIMENTS], ignore_index=True)
     plot_single_figure(all_df, Path(args.out), dpi=args.dpi, normalized=args.normalized)
-    print(f"[saved] {args.out}")
+    print(f"[SAVED] {args.out}")
 
 
 if __name__ == "__main__":

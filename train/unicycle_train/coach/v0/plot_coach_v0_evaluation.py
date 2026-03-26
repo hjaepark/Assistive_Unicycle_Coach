@@ -1,7 +1,5 @@
 # train/unicycle_train/coach/v0/plot_coach_v0_evaluation.py
-#
-# Plot Phase 2 evaluation results: No Coach vs Coach A vs Coach C
-#
+
 # Usage:
 #   python -m train.unicycle_train.coach.v0.plot_coach_v0_evaluation
 #   python -m train.unicycle_train.coach.v0.plot_coach_v0_evaluation --eval-root train/unicycle_train/coach/v0/eval_logs
@@ -15,10 +13,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
-# ============================================================
-# Configuration: map experiment labels to eval_logs directories
-# ============================================================
 EXPERIMENTS = [
     {
         "label": "No Coach",
@@ -40,10 +34,6 @@ EXPERIMENTS = [
     },
 ]
 
-
-# ============================================================
-# Data loading
-# ============================================================
 def load_eval_results(eval_root: Path, exp: dict) -> dict:
     """Load all seed results for one experiment condition."""
     exp_dir = eval_root / exp["dir"]
@@ -70,10 +60,6 @@ def load_eval_results(eval_root: Path, exp: dict) -> dict:
 
 
 def build_episode_df(loaded: dict, phase: str = "evaluation") -> pd.DataFrame:
-    """
-    Build a DataFrame of episode-level logs across seeds.
-    Columns: seed, episode, reward, goal_reached, is_fallen, x_position, ...
-    """
     rows = []
     for result in loaded["results"]:
         seed = result["seed"]
@@ -85,14 +71,7 @@ def build_episode_df(loaded: dict, phase: str = "evaluation") -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# ============================================================
-# Plot 1: Mean reward over episodes (line graph with std shading)
-# ============================================================
 def plot_reward_curve(all_loaded: list, phase: str, ax: plt.Axes, max_episodes: int = None):
-    """
-    Line graph: mean episode reward vs episode index.
-    Each condition is a line with shaded std across seeds.
-    """
     for loaded in all_loaded:
         df = build_episode_df(loaded, phase)
         if df.empty:
@@ -130,15 +109,7 @@ def plot_reward_curve(all_loaded: list, phase: str, ax: plt.Axes, max_episodes: 
         spine.set_linewidth(0.8)
         spine.set_color("0.3")
 
-
-# ============================================================
-# Plot 2: Per-seed final x position (grouped bar chart)
-# ============================================================
 def plot_per_seed_x_position(all_loaded: list, phase: str, ax: plt.Axes):
-    """
-    Grouped bar chart: final x position per seed for each condition.
-    """
-    # Collect data
     conditions = []
     for loaded in all_loaded:
         for result in loaded["results"]:
@@ -184,10 +155,6 @@ def plot_per_seed_x_position(all_loaded: list, phase: str, ax: plt.Axes):
         spine.set_linewidth(0.8)
         spine.set_color("0.3")
 
-
-# ============================================================
-# Main
-# ============================================================
 def main():
     parser = argparse.ArgumentParser(description="Plot Phase 2 evaluation results.")
     parser.add_argument(
@@ -216,17 +183,12 @@ def main():
         print("[ERROR] No experiments loaded. Check --eval-root path.")
         return
 
-    # --------------------------------------------------------
-    # Figure: 2 rows
-    # --------------------------------------------------------
     sns.set_theme(style="whitegrid", context="paper", font_scale=1.1)
 
     fig, axes = plt.subplots(2, 1, figsize=(10, 8), gridspec_kw={"height_ratios": [1.2, 1]})
 
-    # Row 1: Evaluation reward curve
     plot_reward_curve(all_loaded, phase="evaluation", ax=axes[0])
 
-    # Row 2: Per-seed x position
     plot_per_seed_x_position(all_loaded, phase="evaluation", ax=axes[1])
 
     fig.tight_layout(h_pad=3.0)
@@ -240,7 +202,7 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=args.dpi, bbox_inches="tight")
     plt.close(fig)
-    print(f"[saved] {out_path}")
+    print(f"[SAVED] {out_path}")
 
 
 if __name__ == "__main__":

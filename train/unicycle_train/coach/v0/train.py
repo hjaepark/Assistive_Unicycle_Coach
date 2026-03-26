@@ -137,7 +137,7 @@ class StopOnConvergence(BaseCallback):
         self.converged = False
     
     def _on_step(self):
-        for done, info in zip(self.locals["dones"], self.locals["infos"]):
+        for done, INFO in zip(self.locals["dones"], self.locals["infos"]):
             if done:
                 if self.env.is_converged(self.n_consecutive):
                     self.converged = True
@@ -185,13 +185,13 @@ def main():
     writer = SummaryWriter(log_dir=str(run_dir / "tensorboard"))
 
     print("=" * 70)
-    print("[info] Coach V0 Training")
+    print("[INFO] Coach V0 Training")
     print("=" * 70)
-    print(f"[info] Run dir: {run_dir}")
-    print(f"[info] Seed: {SEED}")
-    print(f"[info] Sim time max: {config['training']['sim_time_max']}s")
-    print(f"[info] Convergence: {config['training']['n_consecutive']} consecutive successes")
-    print(f"[info] Coach gradient steps per update: {config['training']['coach_gradient_steps']}")
+    print(f"[INFO] Run dir: {run_dir}")
+    print(f"[INFO] Seed: {SEED}")
+    print(f"[INFO] Sim time max: {config['training']['sim_time_max']}s")
+    print(f"[INFO] Convergence: {config['training']['n_consecutive']} consecutive successes")
+    print(f"[INFO] Coach gradient steps per update: {config['training']['coach_gradient_steps']}")
     print("=" * 70)
 
     coach = CoachAgent(
@@ -208,7 +208,7 @@ def main():
         obs_dim=config["coach"]["obs_dim"],
         action_dim=config["coach"]["action_dim"],
     )
-    print("[init] Coach agent and buffer initialized")
+    print("[INIT] Coach agent and buffer initialized")
 
     training_log = []
 
@@ -218,7 +218,7 @@ def main():
         while True:  # Manual termination (Ctrl+C)
             student_idx += 1
             print(f"\n{'='*70}")
-            print(f"[info] Student #{student_idx}")
+            print(f"[INFO] Student #{student_idx}")
             print(f"{'='*70}")
 
             # Create new student environment with coach wrapper
@@ -288,11 +288,11 @@ def main():
             coach_buffer.update_last_reward(coach_reward)
 
             status = "CONVERGED" if converged else "TIMEOUT"
-            print(f"\n  [info] Result: {status}")
-            print(f"  [info] Sim time: {sim_time:.2f}s")
-            print(f"  [info] Episodes: {env.episode_count}")
-            print(f"  [info] Coach reward: {coach_reward:.2f}")
-            print(f"  [info] Wall time: {inner_elapsed:.1f}s")
+            print(f"\n  [INFO] Result: {status}")
+            print(f"  [INFO] Sim time: {sim_time:.2f}s")
+            print(f"  [INFO] Episodes: {env.episode_count}")
+            print(f"  [INFO] Coach reward: {coach_reward:.2f}")
+            print(f"  [INFO] Wall time: {inner_elapsed:.1f}s")
 
             # Coach Update
             if coach_buffer.size >= config["student"]["learning_starts"]:
@@ -301,10 +301,10 @@ def main():
                     n_gradient_steps=config["training"]["coach_gradient_steps"],
                     batch_size=config["training"]["coach_batch_size"],
                 )
-                print(f"  [info] Coach update: {coach_logs.get('train/critic_loss', 'N/A'):.4f} critic loss")
+                print(f"  [INFO] Coach update: {coach_logs.get('train/critic_loss', 'N/A'):.4f} critic loss")
             else:
                 coach_logs = {}
-                print(f"  [info] Coach update: skipped (buffer size {coach_buffer.size})")
+                print(f"  [INFO] Coach update: skipped (buffer size {coach_buffer.size})")
 
             log_entry = {
                 "student_idx": student_idx,
@@ -342,31 +342,31 @@ def main():
             env.close()
 
     except KeyboardInterrupt:
-        print("\n\n[info] Training stopped by user (Ctrl+C)")
+        print("\n\n[INFO] Training stopped by user (Ctrl+C)")
 
     finally:
         writer.close()
 
         # Save final coach model
         coach.save(models_dir / "coach_final.pth")
-        print(f"  [info] Final coach saved: {models_dir / 'coach_final.pth'}")
+        print(f"  [INFO] Final coach saved: {models_dir / 'coach_final.pth'}")
 
         # Save final log
         with open(run_dir / "training_log.json", 'w') as f:
             json.dump(training_log, f, indent=2)
-        print(f"[info] Training log saved: {run_dir / 'training_log.json'}")
+        print(f"[INFO] Training log saved: {run_dir / 'training_log.json'}")
 
         # Print summary
         if training_log:
             rewards = [e["coach_reward"] for e in training_log]
             converged_count = sum(1 for e in training_log if e["converged"])
             print(f"\n{'='*70}")
-            print(f"  [info] Training Summary")
+            print(f"  [INFO] Training Summary")
             print(f"{'='*70}")
-            print(f"  [info] Total students: {len(training_log)}")
-            print(f"  [info] Converged: {converged_count}/{len(training_log)}")
-            print(f"  [info] Avg coach reward: {np.mean(rewards):.2f}")
-            print(f"  [info] Last 10 avg: {np.mean(rewards[-10:]):.2f}")
+            print(f"  [INFO] Total students: {len(training_log)}")
+            print(f"  [INFO] Converged: {converged_count}/{len(training_log)}")
+            print(f"  [INFO] Avg coach reward: {np.mean(rewards):.2f}")
+            print(f"  [INFO] Last 10 avg: {np.mean(rewards[-10:]):.2f}")
             print(f"{'='*70}")
 
 

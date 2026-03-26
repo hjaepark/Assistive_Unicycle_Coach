@@ -163,9 +163,6 @@ def run_single_seed(mode, seed, coach_path, run_dir, device="cpu"):
     print(f"  Seed: {seed} | Mode: {mode}")
     print(f"{'='*60}")
 
-    # ----------------------------------------------------------
-    # Phase 2A: Training (72,000 steps)
-    # ----------------------------------------------------------
     print(f"\n  [Phase 2A] Training ({TRAIN_TIMESTEPS:,} steps)...")
     train_start = time.time()
 
@@ -216,9 +213,6 @@ def run_single_seed(mode, seed, coach_path, run_dir, device="cpu"):
     print(f"    Falls: {train_falls}/{n_train_eps} ({100*train_falls/max(1,n_train_eps):.1f}%)")
     print(f"    Wall time: {train_elapsed:.1f}s")
 
-    # ----------------------------------------------------------
-    # Phase 2B: Evaluation (18,000 steps, NO coach)
-    # ----------------------------------------------------------
     print(f"\n  [Phase 2B] Evaluation ({EVAL_TIMESTEPS:,} steps, no coach)...")
     eval_start = time.time()
 
@@ -255,9 +249,6 @@ def run_single_seed(mode, seed, coach_path, run_dir, device="cpu"):
     print(f"    Mean final x: {np.mean(eval_x_positions):.2f}m" if eval_x_positions else "")
     print(f"    Wall time: {eval_elapsed:.1f}s")
 
-    # ----------------------------------------------------------
-    # Save results
-    # ----------------------------------------------------------
     result = {
         "seed": seed,
         "mode": mode,
@@ -293,10 +284,6 @@ def run_single_seed(mode, seed, coach_path, run_dir, device="cpu"):
 
     return result
 
-
-# ============================================================
-# Aggregate Results
-# ============================================================
 def aggregate_results(results, run_dir):
     """Aggregate results across seeds and save summary."""
     mode = results[0]["mode"]
@@ -370,9 +357,17 @@ def main():
                         help="Single seed to run")
     parser.add_argument("--seeds", type=int, nargs="+", default=None,
                         help="Multiple seeds to run")
-    parser.add_argument("--device", type=str, default="cpu",
+    parser.add_argument("--device", type=str, default="cuda",
                         help="Device for training (cpu or cuda)")
+    parser.add_argument("--train-steps", type=int, default=72_000,
+                        help="Training timesteps (default: 72000)")
+    parser.add_argument("--eval-steps", type=int, default=18_000,
+                        help="Evaluation timesteps (default: 18000)")
     args = parser.parse_args()
+
+    global TRAIN_TIMESTEPS, EVAL_TIMESTEPS
+    TRAIN_TIMESTEPS = args.train_steps
+    EVAL_TIMESTEPS = args.eval_steps
 
     # Validate arguments
     if args.mode == "with_coach" and args.coach_path is None:
