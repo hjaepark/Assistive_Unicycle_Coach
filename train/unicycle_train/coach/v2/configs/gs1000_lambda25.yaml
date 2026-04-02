@@ -1,0 +1,5 @@
+training:
+  coach_gradient_steps: 1000
+
+reward:
+  lambda_action: 25
