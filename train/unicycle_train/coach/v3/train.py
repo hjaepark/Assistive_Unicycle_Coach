@@ -55,6 +55,8 @@ DEFAULT_CONFIG = {
         "pi_update_every": 10,      
         "pi_ppo_epochs": 4,         
         "student_update_in_eval": True,  # False for V3, True for V3.1
+        "epsilon_start": 0.0, # Testing eplison-greedy policy
+        "epsilon_decay_iters": 100, # Testing eplison-greedy policy
     },
 
     "intervention_policy": {
@@ -317,6 +319,15 @@ def main():
             iter_start = time.time()
 
             w_t, log_prob, value = intervention_policy.predict(pi_obs)
+
+            # Epsilon-greedy forced exploration (disabled when epsilon_start=0.0)
+            eps_start = config["training"]["epsilon_start"]
+            eps_decay = config["training"]["epsilon_decay_iters"]
+            if eps_start > 0 and iter_idx <= eps_decay:
+                epsilon = eps_start * (1 - iter_idx / eps_decay)
+                if np.random.random() < epsilon:
+                    w_t = np.random.randint(0, 2)
+
             env.set_intervention(w_t)
 
             env.set_mode("coaching")

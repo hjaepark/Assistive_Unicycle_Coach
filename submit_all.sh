@@ -25,7 +25,7 @@ export PYTHONPATH=
 export PYTHONHOME=
 
 cd ${PROJECT}
-${PYTHON} -m train.unicycle_train.coach.v3.train --seed ${SEED}
+${PYTHON} -m train.unicycle_train.coach.v3.train --seed ${SEED} --config train/unicycle_train/coach/v3/configs/entropy_05.yaml
 EOF
     echo "Submitted seed ${SEED}"
 done

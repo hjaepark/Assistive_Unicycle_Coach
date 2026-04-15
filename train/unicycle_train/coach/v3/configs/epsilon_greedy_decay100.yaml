@@ -1,0 +1,4 @@
+# configs/epsilon_greedy_decay100.yaml
+training:
+  epsilon_start: 0.3
+  epsilon_decay_iters: 100
