@@ -6,7 +6,6 @@ venv/
 ENV/
 env/
 
-logs/
 logs_student/
 logs_coach/
 logs.zip

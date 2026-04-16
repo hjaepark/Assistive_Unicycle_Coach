@@ -1,0 +1,26 @@
+{
+  "checkpoint": "/home/hpark459/Desktop/Assistive_Unicycle_Coach/train/unicycle_train/coach/v1/logs/bc_20260314_163738/checkpoints/best_bc_actor.pth",
+  "dataset": "/home/hpark459/Desktop/Assistive_Unicycle_Coach/train/unicycle_train/coach/v1/datasets/bc_dataset_20260314_153139.npz",
+  "dataset_metrics": {
+    "mse": 0.09295716881752014,
+    "mse_wheel": 0.09389249235391617,
+    "mse_pitch": 0.09202185273170471,
+    "mae": 0.21756799519062042,
+    "corr_wheel": 0.9013368069292179,
+    "corr_pitch": 0.8725859237107708
+  },
+  "env_no_coach": {
+    "reward_mean": -20.105358421595255,
+    "reward_std": 0.38861947226889476,
+    "max_x_mean": 0.05928407811637347,
+    "success_count": 0,
+    "n_episodes": 30
+  },
+  "env_bc_coach": {
+    "reward_mean": -7.921407660772017,
+    "reward_std": 1.21895883398082,
+    "max_x_mean": 3.666233936945597,
+    "success_count": 0,
+    "n_episodes": 30
+  }
+}

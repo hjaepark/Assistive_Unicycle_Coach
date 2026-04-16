@@ -1,0 +1,2 @@
+intervention_policy:
+  entropy_coef: 0.05
