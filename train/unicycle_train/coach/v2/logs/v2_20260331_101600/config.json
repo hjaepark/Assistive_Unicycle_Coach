@@ -1,0 +1,35 @@
+{
+  "experiment": {
+    "name": "coach_v2"
+  },
+  "training": {
+    "seed": 42,
+    "sim_time_max": 1200.0,
+    "n_consecutive": 3,
+    "coach_gradient_steps": 1000,
+    "coach_batch_size": 256
+  },
+  "coach": {
+    "obs_dim": 22,
+    "action_dim": 2,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "tau": 0.005,
+    "auto_alpha": true,
+    "buffer_capacity": 1000000,
+    "device": "cuda"
+  },
+  "student": {
+    "learning_rate": 0.0003,
+    "buffer_size": 1000000,
+    "learning_starts": 10000,
+    "batch_size": 256,
+    "tau": 0.005,
+    "gamma": 0.99
+  },
+  "reward": {
+    "success_scale": 100.0,
+    "failure_penalty": -100.0,
+    "lambda_action": 100
+  }
+}
