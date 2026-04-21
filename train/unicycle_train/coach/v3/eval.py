@@ -527,8 +527,12 @@ def main():
 
     # Create run directory
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    run_dir = script_dir / "eval_logs" / f"eval_{timestamp}"
-    run_dir.mkdir(parents=True, exist_ok=True)
+    if len(seeds) == 1:
+        seed_tag = f"seed{seeds[0]}"
+    else:
+        seed_tag = f"seeds{'_'.join(map(str, seeds))}"
+    run_dir = script_dir / "eval_logs" / f"eval_{timestamp}_{seed_tag}"
+    run_dir.mkdir(parents=True, exist_ok=False)
 
     # Save eval config
     eval_config = {

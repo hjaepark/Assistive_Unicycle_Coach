@@ -227,8 +227,8 @@ def main():
 
     script_dir = Path(__file__).resolve().parent
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    run_dir = script_dir / "logs" / f"v3_{timestamp}"
-    run_dir.mkdir(parents=True, exist_ok=True)
+    run_dir = script_dir / "logs" / f"v3_{timestamp}_seed{SEED}"
+    run_dir.mkdir(parents=True, exist_ok=False)
     models_dir = run_dir / "models"
     models_dir.mkdir(exist_ok=True)
 
