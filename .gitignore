@@ -17,3 +17,10 @@ build/
 .vscode/
 .idea/logs/
 *.npz
+
+# Exclude large training and evaluation artifacts (kept on PACE only)
+*.pth
+*.zip
+**/logs_slurm/
+**/logs/
+**/eval_logs/
