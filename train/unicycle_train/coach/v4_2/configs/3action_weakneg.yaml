@@ -1,0 +1,23 @@
+# V4.2 — 3-level weak-negative assistance {-0.5, 0, 1.0}
+
+training:
+  seed: 42
+  K: 10
+  M: 10
+  max_iterations: 500
+  pi_update_every: 10
+  pi_ppo_epochs: 4
+  student_update_in_eval: true
+  n_students: 100
+  student_seeds_start: 1000
+
+intervention_policy:
+  obs_dim: 2
+  n_actions: 3
+  w_values: [-0.5, 0.0, 1.0]
+  lr: 3.0e-4
+  gamma: 0.99
+  clip_eps: 0.2
+  entropy_coef: 0.02
+  vf_coef: 0.5
+  device: cpu

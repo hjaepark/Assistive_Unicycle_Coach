@@ -1,0 +1,5430 @@
+{
+  "seed": 800,
+  "mode": "no_coach",
+  "pi_path": "/storage/home/hcoda1/7/hpark459/scratch/Assistive_Unicycle_Coach/train/unicycle_train/coach/v4/logs/v4_20260421_195950_pool100/models/pi_I_iter_0100.pth",
+  "bc_checkpoint": "/storage/scratch1/7/hpark459/Assistive_Unicycle_Coach/train/unicycle_train/coach/v1/logs/bc_20260314_163738/checkpoints/best_bc_actor.pth",
+  "train_episodes": 500,
+  "eval_episodes": 100,
+  "training": {
+    "episodes": 500,
+    "successes": 0,
+    "success_rate": 0.0,
+    "falls": 500,
+    "fall_rate": 1.0,
+    "wall_time": 1951.6715767383575,
+    "episode_logs": [
+      {
+        "episode": 1,
+        "timestep": 119,
+        "reward": -20.714417,
+        "length": 119,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.24275743961334229
+      },
+      {
+        "episode": 2,
+        "timestep": 422,
+        "reward": -20.415332,
+        "length": 303,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.1290207952260971
+      },
+      {
+        "episode": 3,
+        "timestep": 550,
+        "reward": -20.555939,
+        "length": 128,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.18345768749713898
+      },
+      {
+        "episode": 4,
+        "timestep": 685,
+        "reward": -20.39916,
+        "length": 135,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.1357172280550003
+      },
+      {
+        "episode": 5,
+        "timestep": 1050,
+        "reward": -19.955037,
+        "length": 365,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.011100373230874538
+      },
+      {
+        "episode": 6,
+        "timestep": 1365,
+        "reward": -19.875881,
+        "length": 315,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.04889816790819168
+      },
+      {
+        "episode": 7,
+        "timestep": 1461,
+        "reward": -20.494493,
+        "length": 96,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.17384791374206543
+      },
+      {
+        "episode": 8,
+        "timestep": 1564,
+        "reward": -20.628455,
+        "length": 103,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2176297903060913
+      },
+      {
+        "episode": 9,
+        "timestep": 1749,
+        "reward": -19.83877,
+        "length": 185,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.04889793321490288
+      },
+      {
+        "episode": 10,
+        "timestep": 2069,
+        "reward": -21.000948,
+        "length": 320,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.33335262537002563
+      },
+      {
+        "episode": 11,
+        "timestep": 2282,
+        "reward": -20.638787,
+        "length": 213,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.21834033727645874
+      },
+      {
+        "episode": 12,
+        "timestep": 2578,
+        "reward": -21.740338,
+        "length": 296,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5975247025489807
+      },
+      {
+        "episode": 13,
+        "timestep": 2760,
+        "reward": -19.780998,
+        "length": 182,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.07580027729272842
+      },
+      {
+        "episode": 14,
+        "timestep": 2918,
+        "reward": -20.661527,
+        "length": 158,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.22150692343711853
+      },
+      {
+        "episode": 15,
+        "timestep": 3247,
+        "reward": -17.904987,
+        "length": 329,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.694428563117981
+      },
+      {
+        "episode": 16,
+        "timestep": 3551,
+        "reward": -18.030947,
+        "length": 304,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6487776041030884
+      },
+      {
+        "episode": 17,
+        "timestep": 3756,
+        "reward": -19.167508,
+        "length": 205,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.26841452717781067
+      },
+      {
+        "episode": 18,
+        "timestep": 3996,
+        "reward": -20.904611,
+        "length": 240,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2997950315475464
+      },
+      {
+        "episode": 19,
+        "timestep": 4262,
+        "reward": -22.258093,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.7693786025047302
+      },
+      {
+        "episode": 20,
+        "timestep": 4510,
+        "reward": -17.80989,
+        "length": 248,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7086490392684937
+      },
+      {
+        "episode": 21,
+        "timestep": 4872,
+        "reward": -22.989025,
+        "length": 362,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0241445302963257
+      },
+      {
+        "episode": 22,
+        "timestep": 5085,
+        "reward": -19.363454,
+        "length": 213,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.21715469658374786
+      },
+      {
+        "episode": 23,
+        "timestep": 5276,
+        "reward": -19.669691,
+        "length": 191,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.10394122451543808
+      },
+      {
+        "episode": 24,
+        "timestep": 5598,
+        "reward": -23.084021,
+        "length": 322,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0627530813217163
+      },
+      {
+        "episode": 25,
+        "timestep": 6044,
+        "reward": -17.927035,
+        "length": 446,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6867002844810486
+      },
+      {
+        "episode": 26,
+        "timestep": 6221,
+        "reward": -19.949718,
+        "length": 177,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.007373438216745853
+      },
+      {
+        "episode": 27,
+        "timestep": 6381,
+        "reward": -19.866158,
+        "length": 160,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.04335705190896988
+      },
+      {
+        "episode": 28,
+        "timestep": 6609,
+        "reward": -18.439116,
+        "length": 228,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5130705237388611
+      },
+      {
+        "episode": 29,
+        "timestep": 6756,
+        "reward": -20.009776,
+        "length": 147,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.012287904508411884
+      },
+      {
+        "episode": 30,
+        "timestep": 7077,
+        "reward": -25.243235,
+        "length": 321,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.8259824514389038
+      },
+      {
+        "episode": 31,
+        "timestep": 7339,
+        "reward": -24.023271,
+        "length": 262,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.3943758010864258
+      },
+      {
+        "episode": 32,
+        "timestep": 7648,
+        "reward": -23.255438,
+        "length": 309,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.106997013092041
+      },
+      {
+        "episode": 33,
+        "timestep": 7826,
+        "reward": -20.695533,
+        "length": 178,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.24300281703472137
+      },
+      {
+        "episode": 34,
+        "timestep": 8001,
+        "reward": -20.303741,
+        "length": 175,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.10534872859716415
+      },
+      {
+        "episode": 35,
+        "timestep": 8208,
+        "reward": -19.960664,
+        "length": 207,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.018973955884575844
+      },
+      {
+        "episode": 36,
+        "timestep": 8409,
+        "reward": -20.499158,
+        "length": 201,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.16871975362300873
+      },
+      {
+        "episode": 37,
+        "timestep": 8587,
+        "reward": -20.510985,
+        "length": 178,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.16441123187541962
+      },
+      {
+        "episode": 38,
+        "timestep": 8750,
+        "reward": -19.980707,
+        "length": 163,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.013971967622637749
+      },
+      {
+        "episode": 39,
+        "timestep": 8917,
+        "reward": -19.881004,
+        "length": 167,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.034223854541778564
+      },
+      {
+        "episode": 40,
+        "timestep": 9113,
+        "reward": -19.544614,
+        "length": 196,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.1433815360069275
+      },
+      {
+        "episode": 41,
+        "timestep": 9303,
+        "reward": -19.747833,
+        "length": 190,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.08141802996397018
+      },
+      {
+        "episode": 42,
+        "timestep": 9588,
+        "reward": -19.563336,
+        "length": 285,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.15280233323574066
+      },
+      {
+        "episode": 43,
+        "timestep": 9761,
+        "reward": -19.71971,
+        "length": 173,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.09934172034263611
+      },
+      {
+        "episode": 44,
+        "timestep": 10046,
+        "reward": -19.192056,
+        "length": 285,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2593064308166504
+      },
+      {
+        "episode": 45,
+        "timestep": 10379,
+        "reward": -19.310585,
+        "length": 333,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2300809919834137
+      },
+      {
+        "episode": 46,
+        "timestep": 10698,
+        "reward": -19.525291,
+        "length": 319,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.14961974322795868
+      },
+      {
+        "episode": 47,
+        "timestep": 11193,
+        "reward": -19.289496,
+        "length": 495,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.23636017739772797
+      },
+      {
+        "episode": 48,
+        "timestep": 11738,
+        "reward": -18.678291,
+        "length": 545,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4426155984401703
+      },
+      {
+        "episode": 49,
+        "timestep": 12235,
+        "reward": -19.271336,
+        "length": 497,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.239974245429039
+      },
+      {
+        "episode": 50,
+        "timestep": 12606,
+        "reward": -19.081734,
+        "length": 371,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.30795779824256897
+      },
+      {
+        "episode": 51,
+        "timestep": 12935,
+        "reward": -19.515042,
+        "length": 329,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.15136447548866272
+      },
+      {
+        "episode": 52,
+        "timestep": 13345,
+        "reward": -19.746924,
+        "length": 410,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.07702700793743134
+      },
+      {
+        "episode": 53,
+        "timestep": 13662,
+        "reward": -19.400045,
+        "length": 317,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.19184134900569916
+      },
+      {
+        "episode": 54,
+        "timestep": 14014,
+        "reward": -20.039528,
+        "length": 352,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.012143800966441631
+      },
+      {
+        "episode": 55,
+        "timestep": 14414,
+        "reward": -19.868809,
+        "length": 400,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.0467902347445488
+      },
+      {
+        "episode": 56,
+        "timestep": 14947,
+        "reward": -21.844515,
+        "length": 533,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6180534362792969
+      },
+      {
+        "episode": 57,
+        "timestep": 15380,
+        "reward": -19.697095,
+        "length": 433,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.09655266255140305
+      },
+      {
+        "episode": 58,
+        "timestep": 16054,
+        "reward": -22.882737,
+        "length": 674,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9826385974884033
+      },
+      {
+        "episode": 59,
+        "timestep": 16486,
+        "reward": -20.927472,
+        "length": 432,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3171994090080261
+      },
+      {
+        "episode": 60,
+        "timestep": 16739,
+        "reward": -18.787248,
+        "length": 253,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4082968831062317
+      },
+      {
+        "episode": 61,
+        "timestep": 16985,
+        "reward": -19.244352,
+        "length": 246,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2408948540687561
+      },
+      {
+        "episode": 62,
+        "timestep": 17411,
+        "reward": -21.738313,
+        "length": 426,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5814991593360901
+      },
+      {
+        "episode": 63,
+        "timestep": 17693,
+        "reward": -19.267698,
+        "length": 282,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.24701672792434692
+      },
+      {
+        "episode": 64,
+        "timestep": 17963,
+        "reward": -18.98427,
+        "length": 270,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.33613261580467224
+      },
+      {
+        "episode": 65,
+        "timestep": 18211,
+        "reward": -19.202906,
+        "length": 248,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2585584819316864
+      },
+      {
+        "episode": 66,
+        "timestep": 18489,
+        "reward": -20.436762,
+        "length": 278,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.14253219962120056
+      },
+      {
+        "episode": 67,
+        "timestep": 18716,
+        "reward": -18.637192,
+        "length": 227,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.43938788771629333
+      },
+      {
+        "episode": 68,
+        "timestep": 18979,
+        "reward": -18.996669,
+        "length": 263,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.32941606640815735
+      },
+      {
+        "episode": 69,
+        "timestep": 19219,
+        "reward": -18.890028,
+        "length": 240,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3639231324195862
+      },
+      {
+        "episode": 70,
+        "timestep": 19494,
+        "reward": -19.006719,
+        "length": 275,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3213849663734436
+      },
+      {
+        "episode": 71,
+        "timestep": 19729,
+        "reward": -19.078467,
+        "length": 235,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3080941140651703
+      },
+      {
+        "episode": 72,
+        "timestep": 19979,
+        "reward": -19.023684,
+        "length": 250,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.33163735270500183
+      },
+      {
+        "episode": 73,
+        "timestep": 20247,
+        "reward": -19.524761,
+        "length": 268,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.15588432550430298
+      },
+      {
+        "episode": 74,
+        "timestep": 20470,
+        "reward": -19.677269,
+        "length": 223,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.11638587713241577
+      },
+      {
+        "episode": 75,
+        "timestep": 20689,
+        "reward": -20.038377,
+        "length": 219,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.00958520919084549
+      },
+      {
+        "episode": 76,
+        "timestep": 20891,
+        "reward": -20.087427,
+        "length": 202,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.02071591280400753
+      },
+      {
+        "episode": 77,
+        "timestep": 21067,
+        "reward": -19.815284,
+        "length": 176,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.05208810046315193
+      },
+      {
+        "episode": 78,
+        "timestep": 21350,
+        "reward": -21.262322,
+        "length": 283,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.41980382800102234
+      },
+      {
+        "episode": 79,
+        "timestep": 21515,
+        "reward": -19.808573,
+        "length": 165,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.06273181736469269
+      },
+      {
+        "episode": 80,
+        "timestep": 21775,
+        "reward": -20.976217,
+        "length": 260,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.33530816435813904
+      },
+      {
+        "episode": 81,
+        "timestep": 21944,
+        "reward": -19.77646,
+        "length": 169,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.06669598072767258
+      },
+      {
+        "episode": 82,
+        "timestep": 22176,
+        "reward": -21.40806,
+        "length": 232,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.48141708970069885
+      },
+      {
+        "episode": 83,
+        "timestep": 22354,
+        "reward": -19.913942,
+        "length": 178,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.03063758835196495
+      },
+      {
+        "episode": 84,
+        "timestep": 22587,
+        "reward": -21.196147,
+        "length": 233,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.4119230806827545
+      },
+      {
+        "episode": 85,
+        "timestep": 22818,
+        "reward": -21.022485,
+        "length": 231,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.33730238676071167
+      },
+      {
+        "episode": 86,
+        "timestep": 23037,
+        "reward": -20.826516,
+        "length": 219,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2791787385940552
+      },
+      {
+        "episode": 87,
+        "timestep": 23301,
+        "reward": -21.651477,
+        "length": 264,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5494225025177002
+      },
+      {
+        "episode": 88,
+        "timestep": 23576,
+        "reward": -22.129167,
+        "length": 275,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.7312060594558716
+      },
+      {
+        "episode": 89,
+        "timestep": 23873,
+        "reward": -22.310276,
+        "length": 297,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.7913695573806763
+      },
+      {
+        "episode": 90,
+        "timestep": 24092,
+        "reward": -21.171143,
+        "length": 219,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.38836729526519775
+      },
+      {
+        "episode": 91,
+        "timestep": 24322,
+        "reward": -21.032705,
+        "length": 230,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3543892204761505
+      },
+      {
+        "episode": 92,
+        "timestep": 24564,
+        "reward": -24.250367,
+        "length": 242,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.4615665674209595
+      },
+      {
+        "episode": 93,
+        "timestep": 24811,
+        "reward": -24.048874,
+        "length": 247,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.4026505947113037
+      },
+      {
+        "episode": 94,
+        "timestep": 25111,
+        "reward": -24.844504,
+        "length": 300,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.6743651628494263
+      },
+      {
+        "episode": 95,
+        "timestep": 25313,
+        "reward": -22.799276,
+        "length": 202,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.946523129940033
+      },
+      {
+        "episode": 96,
+        "timestep": 25439,
+        "reward": -22.235177,
+        "length": 126,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.7681223750114441
+      },
+      {
+        "episode": 97,
+        "timestep": 25574,
+        "reward": -22.00322,
+        "length": 135,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6738802194595337
+      },
+      {
+        "episode": 98,
+        "timestep": 25716,
+        "reward": -21.912277,
+        "length": 142,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6470014452934265
+      },
+      {
+        "episode": 99,
+        "timestep": 25884,
+        "reward": -21.83945,
+        "length": 168,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6320914626121521
+      },
+      {
+        "episode": 100,
+        "timestep": 26090,
+        "reward": -22.74694,
+        "length": 206,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.933444619178772
+      },
+      {
+        "episode": 101,
+        "timestep": 26301,
+        "reward": -22.546864,
+        "length": 211,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.8606230020523071
+      },
+      {
+        "episode": 102,
+        "timestep": 26531,
+        "reward": -23.040275,
+        "length": 230,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0325146913528442
+      },
+      {
+        "episode": 103,
+        "timestep": 26734,
+        "reward": -22.504476,
+        "length": 203,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.8545319437980652
+      },
+      {
+        "episode": 104,
+        "timestep": 26943,
+        "reward": -22.327061,
+        "length": 209,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.7955771088600159
+      },
+      {
+        "episode": 105,
+        "timestep": 27193,
+        "reward": -23.01185,
+        "length": 250,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0372289419174194
+      },
+      {
+        "episode": 106,
+        "timestep": 27465,
+        "reward": -23.924192,
+        "length": 272,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.3589726686477661
+      },
+      {
+        "episode": 107,
+        "timestep": 27735,
+        "reward": -24.185187,
+        "length": 270,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.4501296281814575
+      },
+      {
+        "episode": 108,
+        "timestep": 27995,
+        "reward": -23.552926,
+        "length": 260,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.2272307872772217
+      },
+      {
+        "episode": 109,
+        "timestep": 28267,
+        "reward": -23.890326,
+        "length": 272,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.3418669700622559
+      },
+      {
+        "episode": 110,
+        "timestep": 28526,
+        "reward": -23.171091,
+        "length": 259,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0834561586380005
+      },
+      {
+        "episode": 111,
+        "timestep": 28785,
+        "reward": -23.537271,
+        "length": 259,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.2171287536621094
+      },
+      {
+        "episode": 112,
+        "timestep": 29042,
+        "reward": -23.133285,
+        "length": 257,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0681315660476685
+      },
+      {
+        "episode": 113,
+        "timestep": 29285,
+        "reward": -23.165365,
+        "length": 243,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.080509901046753
+      },
+      {
+        "episode": 114,
+        "timestep": 29499,
+        "reward": -22.336197,
+        "length": 214,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.7999783158302307
+      },
+      {
+        "episode": 115,
+        "timestep": 29728,
+        "reward": -22.797823,
+        "length": 229,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9566407203674316
+      },
+      {
+        "episode": 116,
+        "timestep": 29975,
+        "reward": -23.324009,
+        "length": 247,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.1493959426879883
+      },
+      {
+        "episode": 117,
+        "timestep": 30225,
+        "reward": -23.45399,
+        "length": 250,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.1797916889190674
+      },
+      {
+        "episode": 118,
+        "timestep": 30466,
+        "reward": -23.234043,
+        "length": 241,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.1110289096832275
+      },
+      {
+        "episode": 119,
+        "timestep": 30720,
+        "reward": -23.581193,
+        "length": 254,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.2234433889389038
+      },
+      {
+        "episode": 120,
+        "timestep": 31000,
+        "reward": -23.859577,
+        "length": 280,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.3256819248199463
+      },
+      {
+        "episode": 121,
+        "timestep": 31244,
+        "reward": -23.186867,
+        "length": 244,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0900710821151733
+      },
+      {
+        "episode": 122,
+        "timestep": 31474,
+        "reward": -23.138117,
+        "length": 230,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0713653564453125
+      },
+      {
+        "episode": 123,
+        "timestep": 31715,
+        "reward": -23.187211,
+        "length": 241,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.083426594734192
+      },
+      {
+        "episode": 124,
+        "timestep": 31970,
+        "reward": -23.818035,
+        "length": 255,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.3168766498565674
+      },
+      {
+        "episode": 125,
+        "timestep": 32206,
+        "reward": -23.120841,
+        "length": 236,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.06771719455719
+      },
+      {
+        "episode": 126,
+        "timestep": 32433,
+        "reward": -23.090421,
+        "length": 227,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0614593029022217
+      },
+      {
+        "episode": 127,
+        "timestep": 32729,
+        "reward": -25.268932,
+        "length": 296,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.846477746963501
+      },
+      {
+        "episode": 128,
+        "timestep": 32968,
+        "reward": -23.182977,
+        "length": 239,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0909476280212402
+      },
+      {
+        "episode": 129,
+        "timestep": 33205,
+        "reward": -23.468169,
+        "length": 237,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.2007417678833008
+      },
+      {
+        "episode": 130,
+        "timestep": 33449,
+        "reward": -23.530677,
+        "length": 244,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.2040849924087524
+      },
+      {
+        "episode": 131,
+        "timestep": 33675,
+        "reward": -22.949452,
+        "length": 226,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9994863867759705
+      },
+      {
+        "episode": 132,
+        "timestep": 33889,
+        "reward": -22.98396,
+        "length": 214,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0279815196990967
+      },
+      {
+        "episode": 133,
+        "timestep": 34107,
+        "reward": -23.173372,
+        "length": 218,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0877705812454224
+      },
+      {
+        "episode": 134,
+        "timestep": 34396,
+        "reward": -25.380312,
+        "length": 289,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.882203459739685
+      },
+      {
+        "episode": 135,
+        "timestep": 34616,
+        "reward": -23.075921,
+        "length": 220,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0620709657669067
+      },
+      {
+        "episode": 136,
+        "timestep": 34892,
+        "reward": -24.552276,
+        "length": 276,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.5732194185256958
+      },
+      {
+        "episode": 137,
+        "timestep": 35168,
+        "reward": -24.695879,
+        "length": 276,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.630480170249939
+      },
+      {
+        "episode": 138,
+        "timestep": 35445,
+        "reward": -24.558323,
+        "length": 277,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.5740492343902588
+      },
+      {
+        "episode": 139,
+        "timestep": 35726,
+        "reward": -25.19243,
+        "length": 281,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.8154960870742798
+      },
+      {
+        "episode": 140,
+        "timestep": 36004,
+        "reward": -25.16173,
+        "length": 278,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.8067864179611206
+      },
+      {
+        "episode": 141,
+        "timestep": 36316,
+        "reward": -26.140263,
+        "length": 312,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -2.1527905464172363
+      },
+      {
+        "episode": 142,
+        "timestep": 36584,
+        "reward": -24.94526,
+        "length": 268,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.7112491130828857
+      },
+      {
+        "episode": 143,
+        "timestep": 36861,
+        "reward": -25.118707,
+        "length": 277,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.7878910303115845
+      },
+      {
+        "episode": 144,
+        "timestep": 37146,
+        "reward": -25.151185,
+        "length": 285,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.8038736581802368
+      },
+      {
+        "episode": 145,
+        "timestep": 37432,
+        "reward": -25.165008,
+        "length": 286,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.7932438850402832
+      },
+      {
+        "episode": 146,
+        "timestep": 37714,
+        "reward": -25.122316,
+        "length": 282,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.7874441146850586
+      },
+      {
+        "episode": 147,
+        "timestep": 37991,
+        "reward": -24.73922,
+        "length": 277,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.6454695463180542
+      },
+      {
+        "episode": 148,
+        "timestep": 38280,
+        "reward": -24.958666,
+        "length": 289,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.728925108909607
+      },
+      {
+        "episode": 149,
+        "timestep": 38580,
+        "reward": -25.45803,
+        "length": 300,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.9150547981262207
+      },
+      {
+        "episode": 150,
+        "timestep": 38845,
+        "reward": -23.909299,
+        "length": 265,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.345515489578247
+      },
+      {
+        "episode": 151,
+        "timestep": 39139,
+        "reward": -24.76039,
+        "length": 294,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.6534826755523682
+      },
+      {
+        "episode": 152,
+        "timestep": 39393,
+        "reward": -23.435685,
+        "length": 254,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.1856917142868042
+      },
+      {
+        "episode": 153,
+        "timestep": 39654,
+        "reward": -23.754896,
+        "length": 261,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.301876425743103
+      },
+      {
+        "episode": 154,
+        "timestep": 39901,
+        "reward": -23.230326,
+        "length": 247,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.1010631322860718
+      },
+      {
+        "episode": 155,
+        "timestep": 40166,
+        "reward": -23.534745,
+        "length": 265,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.2107694149017334
+      },
+      {
+        "episode": 156,
+        "timestep": 40437,
+        "reward": -23.22133,
+        "length": 271,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.101432204246521
+      },
+      {
+        "episode": 157,
+        "timestep": 40678,
+        "reward": -22.776,
+        "length": 241,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9450637102127075
+      },
+      {
+        "episode": 158,
+        "timestep": 40920,
+        "reward": -22.437508,
+        "length": 242,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.834425687789917
+      },
+      {
+        "episode": 159,
+        "timestep": 41161,
+        "reward": -22.172523,
+        "length": 241,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.728498101234436
+      },
+      {
+        "episode": 160,
+        "timestep": 41415,
+        "reward": -22.769988,
+        "length": 254,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9449483752250671
+      },
+      {
+        "episode": 161,
+        "timestep": 41649,
+        "reward": -21.789789,
+        "length": 234,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5991584062576294
+      },
+      {
+        "episode": 162,
+        "timestep": 41862,
+        "reward": -21.257776,
+        "length": 213,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.42590898275375366
+      },
+      {
+        "episode": 163,
+        "timestep": 42101,
+        "reward": -22.120146,
+        "length": 239,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.7262454628944397
+      },
+      {
+        "episode": 164,
+        "timestep": 42329,
+        "reward": -21.606549,
+        "length": 228,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5412269234657288
+      },
+      {
+        "episode": 165,
+        "timestep": 42556,
+        "reward": -21.917176,
+        "length": 227,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6551586389541626
+      },
+      {
+        "episode": 166,
+        "timestep": 42785,
+        "reward": -21.612011,
+        "length": 229,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5446341037750244
+      },
+      {
+        "episode": 167,
+        "timestep": 42992,
+        "reward": -20.990389,
+        "length": 207,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.33627840876579285
+      },
+      {
+        "episode": 168,
+        "timestep": 43200,
+        "reward": -20.937245,
+        "length": 208,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3102477788925171
+      },
+      {
+        "episode": 169,
+        "timestep": 43415,
+        "reward": -20.927767,
+        "length": 215,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3157064616680145
+      },
+      {
+        "episode": 170,
+        "timestep": 43642,
+        "reward": -21.365331,
+        "length": 227,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.4594506025314331
+      },
+      {
+        "episode": 171,
+        "timestep": 43869,
+        "reward": -20.886544,
+        "length": 227,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2965518832206726
+      },
+      {
+        "episode": 172,
+        "timestep": 44084,
+        "reward": -20.862052,
+        "length": 215,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2822490334510803
+      },
+      {
+        "episode": 173,
+        "timestep": 44310,
+        "reward": -21.239934,
+        "length": 226,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.42381560802459717
+      },
+      {
+        "episode": 174,
+        "timestep": 44512,
+        "reward": -20.708607,
+        "length": 202,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2372637838125229
+      },
+      {
+        "episode": 175,
+        "timestep": 44765,
+        "reward": -22.007212,
+        "length": 253,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6734628081321716
+      },
+      {
+        "episode": 176,
+        "timestep": 44975,
+        "reward": -20.835745,
+        "length": 210,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2847677171230316
+      },
+      {
+        "episode": 177,
+        "timestep": 45183,
+        "reward": -20.717372,
+        "length": 208,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2450917810201645
+      },
+      {
+        "episode": 178,
+        "timestep": 45408,
+        "reward": -21.445766,
+        "length": 225,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.4818001091480255
+      },
+      {
+        "episode": 179,
+        "timestep": 45633,
+        "reward": -21.128868,
+        "length": 225,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3818986713886261
+      },
+      {
+        "episode": 180,
+        "timestep": 45853,
+        "reward": -21.109661,
+        "length": 220,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.37894320487976074
+      },
+      {
+        "episode": 181,
+        "timestep": 46105,
+        "reward": -22.048246,
+        "length": 252,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.694251537322998
+      },
+      {
+        "episode": 182,
+        "timestep": 46319,
+        "reward": -20.762903,
+        "length": 214,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.24630998075008392
+      },
+      {
+        "episode": 183,
+        "timestep": 46533,
+        "reward": -21.317074,
+        "length": 214,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.43778613209724426
+      },
+      {
+        "episode": 184,
+        "timestep": 46737,
+        "reward": -20.917047,
+        "length": 204,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3155393600463867
+      },
+      {
+        "episode": 185,
+        "timestep": 46957,
+        "reward": -21.148829,
+        "length": 220,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3813927173614502
+      },
+      {
+        "episode": 186,
+        "timestep": 47177,
+        "reward": -21.195891,
+        "length": 220,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3976677656173706
+      },
+      {
+        "episode": 187,
+        "timestep": 47380,
+        "reward": -20.764279,
+        "length": 203,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.24778278172016144
+      },
+      {
+        "episode": 188,
+        "timestep": 47593,
+        "reward": -20.69259,
+        "length": 213,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.22221626341342926
+      },
+      {
+        "episode": 189,
+        "timestep": 47807,
+        "reward": -20.876408,
+        "length": 214,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.29227352142333984
+      },
+      {
+        "episode": 190,
+        "timestep": 48021,
+        "reward": -21.102596,
+        "length": 214,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.380831241607666
+      },
+      {
+        "episode": 191,
+        "timestep": 48225,
+        "reward": -20.793397,
+        "length": 204,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2697431147098541
+      },
+      {
+        "episode": 192,
+        "timestep": 48460,
+        "reward": -21.256787,
+        "length": 235,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.4139430522918701
+      },
+      {
+        "episode": 193,
+        "timestep": 48717,
+        "reward": -21.439216,
+        "length": 257,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.4808022677898407
+      },
+      {
+        "episode": 194,
+        "timestep": 48972,
+        "reward": -21.934966,
+        "length": 255,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6543009877204895
+      },
+      {
+        "episode": 195,
+        "timestep": 49231,
+        "reward": -22.086698,
+        "length": 259,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.7006605863571167
+      },
+      {
+        "episode": 196,
+        "timestep": 49628,
+        "reward": -18.34057,
+        "length": 397,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5447636842727661
+      },
+      {
+        "episode": 197,
+        "timestep": 49856,
+        "reward": -22.295878,
+        "length": 228,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.7788681387901306
+      },
+      {
+        "episode": 198,
+        "timestep": 50310,
+        "reward": -26.530205,
+        "length": 454,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -2.3140954971313477
+      },
+      {
+        "episode": 199,
+        "timestep": 50526,
+        "reward": -17.042048,
+        "length": 216,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9589785933494568
+      },
+      {
+        "episode": 200,
+        "timestep": 50785,
+        "reward": -21.903693,
+        "length": 259,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6422078609466553
+      },
+      {
+        "episode": 201,
+        "timestep": 51044,
+        "reward": -22.373071,
+        "length": 259,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.808901309967041
+      },
+      {
+        "episode": 202,
+        "timestep": 51366,
+        "reward": -16.790074,
+        "length": 322,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.0433075428009033
+      },
+      {
+        "episode": 203,
+        "timestep": 51681,
+        "reward": -14.716203,
+        "length": 315,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.6785950660705566
+      },
+      {
+        "episode": 204,
+        "timestep": 51974,
+        "reward": -15.508666,
+        "length": 293,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.4464014768600464
+      },
+      {
+        "episode": 205,
+        "timestep": 52272,
+        "reward": -13.665521,
+        "length": 298,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 2.0155248641967773
+      },
+      {
+        "episode": 206,
+        "timestep": 52571,
+        "reward": -13.386234,
+        "length": 299,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 2.09989333152771
+      },
+      {
+        "episode": 207,
+        "timestep": 52777,
+        "reward": -18.075671,
+        "length": 206,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6306006908416748
+      },
+      {
+        "episode": 208,
+        "timestep": 53002,
+        "reward": -18.055878,
+        "length": 225,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6451930999755859
+      },
+      {
+        "episode": 209,
+        "timestep": 53195,
+        "reward": -17.95161,
+        "length": 193,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.678135097026825
+      },
+      {
+        "episode": 210,
+        "timestep": 53396,
+        "reward": -17.477327,
+        "length": 201,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8298068642616272
+      },
+      {
+        "episode": 211,
+        "timestep": 53622,
+        "reward": -17.104502,
+        "length": 226,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9361253380775452
+      },
+      {
+        "episode": 212,
+        "timestep": 53826,
+        "reward": -18.095794,
+        "length": 204,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6169853210449219
+      },
+      {
+        "episode": 213,
+        "timestep": 54025,
+        "reward": -21.546498,
+        "length": 199,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5168513655662537
+      },
+      {
+        "episode": 214,
+        "timestep": 54400,
+        "reward": -16.131835,
+        "length": 375,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.2427703142166138
+      },
+      {
+        "episode": 215,
+        "timestep": 54639,
+        "reward": -21.381053,
+        "length": 239,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.46656718850135803
+      },
+      {
+        "episode": 216,
+        "timestep": 55050,
+        "reward": -15.123055,
+        "length": 411,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.5535091161727905
+      },
+      {
+        "episode": 217,
+        "timestep": 55463,
+        "reward": -14.159247,
+        "length": 413,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.8557769060134888
+      },
+      {
+        "episode": 218,
+        "timestep": 55874,
+        "reward": -15.832934,
+        "length": 411,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.3503847122192383
+      },
+      {
+        "episode": 219,
+        "timestep": 56250,
+        "reward": -16.033131,
+        "length": 376,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.2708457708358765
+      },
+      {
+        "episode": 220,
+        "timestep": 56651,
+        "reward": -17.347927,
+        "length": 401,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8629471063613892
+      },
+      {
+        "episode": 221,
+        "timestep": 57020,
+        "reward": -16.697369,
+        "length": 369,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.0748389959335327
+      },
+      {
+        "episode": 222,
+        "timestep": 57286,
+        "reward": -17.724819,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7473607063293457
+      },
+      {
+        "episode": 223,
+        "timestep": 57613,
+        "reward": -15.746889,
+        "length": 327,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.3653961420059204
+      },
+      {
+        "episode": 224,
+        "timestep": 57839,
+        "reward": -17.751054,
+        "length": 226,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7434085607528687
+      },
+      {
+        "episode": 225,
+        "timestep": 58073,
+        "reward": -17.721363,
+        "length": 234,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7368260622024536
+      },
+      {
+        "episode": 226,
+        "timestep": 58330,
+        "reward": -17.62185,
+        "length": 257,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7780279517173767
+      },
+      {
+        "episode": 227,
+        "timestep": 58543,
+        "reward": -17.881225,
+        "length": 213,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6857648491859436
+      },
+      {
+        "episode": 228,
+        "timestep": 58769,
+        "reward": -17.692527,
+        "length": 226,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7499775290489197
+      },
+      {
+        "episode": 229,
+        "timestep": 58975,
+        "reward": -18.201549,
+        "length": 206,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5940661430358887
+      },
+      {
+        "episode": 230,
+        "timestep": 59188,
+        "reward": -18.139009,
+        "length": 213,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.615623414516449
+      },
+      {
+        "episode": 231,
+        "timestep": 59344,
+        "reward": -18.396496,
+        "length": 156,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5187349319458008
+      },
+      {
+        "episode": 232,
+        "timestep": 59510,
+        "reward": -18.444767,
+        "length": 166,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5042897462844849
+      },
+      {
+        "episode": 233,
+        "timestep": 59685,
+        "reward": -17.956181,
+        "length": 175,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6616219878196716
+      },
+      {
+        "episode": 234,
+        "timestep": 59873,
+        "reward": -18.039699,
+        "length": 188,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.648051917552948
+      },
+      {
+        "episode": 235,
+        "timestep": 60045,
+        "reward": -18.498857,
+        "length": 172,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4990749657154083
+      },
+      {
+        "episode": 236,
+        "timestep": 60197,
+        "reward": -18.194134,
+        "length": 152,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5832957029342651
+      },
+      {
+        "episode": 237,
+        "timestep": 60383,
+        "reward": -18.231166,
+        "length": 186,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5865172147750854
+      },
+      {
+        "episode": 238,
+        "timestep": 60569,
+        "reward": -18.550789,
+        "length": 186,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4871348738670349
+      },
+      {
+        "episode": 239,
+        "timestep": 60743,
+        "reward": -18.55835,
+        "length": 174,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4695555567741394
+      },
+      {
+        "episode": 240,
+        "timestep": 60926,
+        "reward": -17.820118,
+        "length": 183,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7126713395118713
+      },
+      {
+        "episode": 241,
+        "timestep": 61112,
+        "reward": -18.691918,
+        "length": 186,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.43608027696609497
+      },
+      {
+        "episode": 242,
+        "timestep": 61283,
+        "reward": -18.177718,
+        "length": 171,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5967811346054077
+      },
+      {
+        "episode": 243,
+        "timestep": 61448,
+        "reward": -18.205391,
+        "length": 165,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5844874382019043
+      },
+      {
+        "episode": 244,
+        "timestep": 61660,
+        "reward": -18.687834,
+        "length": 212,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.43245837092399597
+      },
+      {
+        "episode": 245,
+        "timestep": 61833,
+        "reward": -18.878115,
+        "length": 173,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3631439805030823
+      },
+      {
+        "episode": 246,
+        "timestep": 62043,
+        "reward": -18.618409,
+        "length": 210,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4479193687438965
+      },
+      {
+        "episode": 247,
+        "timestep": 62225,
+        "reward": -18.677814,
+        "length": 182,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.44218602776527405
+      },
+      {
+        "episode": 248,
+        "timestep": 62390,
+        "reward": -18.119766,
+        "length": 165,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6098387241363525
+      },
+      {
+        "episode": 249,
+        "timestep": 62551,
+        "reward": -19.331482,
+        "length": 161,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.22371305525302887
+      },
+      {
+        "episode": 250,
+        "timestep": 62708,
+        "reward": -19.145406,
+        "length": 157,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2829441726207733
+      },
+      {
+        "episode": 251,
+        "timestep": 62887,
+        "reward": -19.35869,
+        "length": 179,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.20974871516227722
+      },
+      {
+        "episode": 252,
+        "timestep": 63041,
+        "reward": -18.228839,
+        "length": 154,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5770801901817322
+      },
+      {
+        "episode": 253,
+        "timestep": 63205,
+        "reward": -19.304825,
+        "length": 164,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.23758725821971893
+      },
+      {
+        "episode": 254,
+        "timestep": 63353,
+        "reward": -19.209085,
+        "length": 148,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2656111717224121
+      },
+      {
+        "episode": 255,
+        "timestep": 63517,
+        "reward": -19.456485,
+        "length": 164,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.1883266717195511
+      },
+      {
+        "episode": 256,
+        "timestep": 63685,
+        "reward": -19.34204,
+        "length": 168,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2152484506368637
+      },
+      {
+        "episode": 257,
+        "timestep": 63873,
+        "reward": -19.79882,
+        "length": 188,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.0679299533367157
+      },
+      {
+        "episode": 258,
+        "timestep": 64042,
+        "reward": -19.490887,
+        "length": 169,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.16013172268867493
+      },
+      {
+        "episode": 259,
+        "timestep": 64209,
+        "reward": -19.350141,
+        "length": 167,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.21475118398666382
+      },
+      {
+        "episode": 260,
+        "timestep": 64403,
+        "reward": -18.758008,
+        "length": 194,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.41145047545433044
+      },
+      {
+        "episode": 261,
+        "timestep": 64568,
+        "reward": -19.20936,
+        "length": 165,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.25731733441352844
+      },
+      {
+        "episode": 262,
+        "timestep": 64764,
+        "reward": -18.949669,
+        "length": 196,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.34801003336906433
+      },
+      {
+        "episode": 263,
+        "timestep": 64948,
+        "reward": -18.493532,
+        "length": 184,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.48670223355293274
+      },
+      {
+        "episode": 264,
+        "timestep": 65150,
+        "reward": -18.291976,
+        "length": 202,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5519200563430786
+      },
+      {
+        "episode": 265,
+        "timestep": 65388,
+        "reward": -17.689987,
+        "length": 238,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7541446089744568
+      },
+      {
+        "episode": 266,
+        "timestep": 65537,
+        "reward": -18.696657,
+        "length": 149,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4372374713420868
+      },
+      {
+        "episode": 267,
+        "timestep": 65720,
+        "reward": -19.002676,
+        "length": 183,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3282927870750427
+      },
+      {
+        "episode": 268,
+        "timestep": 65870,
+        "reward": -18.782061,
+        "length": 150,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.39647847414016724
+      },
+      {
+        "episode": 269,
+        "timestep": 66097,
+        "reward": -17.957691,
+        "length": 227,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6665710806846619
+      },
+      {
+        "episode": 270,
+        "timestep": 66302,
+        "reward": -18.954547,
+        "length": 205,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3434974253177643
+      },
+      {
+        "episode": 271,
+        "timestep": 66493,
+        "reward": -18.87585,
+        "length": 191,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.36603090167045593
+      },
+      {
+        "episode": 272,
+        "timestep": 66638,
+        "reward": -18.642899,
+        "length": 145,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.44326984882354736
+      },
+      {
+        "episode": 273,
+        "timestep": 66788,
+        "reward": -18.99339,
+        "length": 150,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.33278948068618774
+      },
+      {
+        "episode": 274,
+        "timestep": 66925,
+        "reward": -18.913512,
+        "length": 137,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3528899848461151
+      },
+      {
+        "episode": 275,
+        "timestep": 67085,
+        "reward": -18.135195,
+        "length": 160,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.618064820766449
+      },
+      {
+        "episode": 276,
+        "timestep": 67225,
+        "reward": -18.839941,
+        "length": 140,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.37617290019989014
+      },
+      {
+        "episode": 277,
+        "timestep": 67419,
+        "reward": -17.941583,
+        "length": 194,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6734105348587036
+      },
+      {
+        "episode": 278,
+        "timestep": 67587,
+        "reward": -18.173292,
+        "length": 168,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5984610915184021
+      },
+      {
+        "episode": 279,
+        "timestep": 67748,
+        "reward": -18.15696,
+        "length": 161,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6105183959007263
+      },
+      {
+        "episode": 280,
+        "timestep": 68008,
+        "reward": -15.223647,
+        "length": 260,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.5380148887634277
+      },
+      {
+        "episode": 281,
+        "timestep": 68276,
+        "reward": -16.161522,
+        "length": 268,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.2344672679901123
+      },
+      {
+        "episode": 282,
+        "timestep": 68559,
+        "reward": -15.502956,
+        "length": 283,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.4517641067504883
+      },
+      {
+        "episode": 283,
+        "timestep": 68840,
+        "reward": -15.888441,
+        "length": 281,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.3353103399276733
+      },
+      {
+        "episode": 284,
+        "timestep": 69078,
+        "reward": -16.984082,
+        "length": 238,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9830576181411743
+      },
+      {
+        "episode": 285,
+        "timestep": 69260,
+        "reward": -18.123438,
+        "length": 182,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6149412393569946
+      },
+      {
+        "episode": 286,
+        "timestep": 69410,
+        "reward": -18.746465,
+        "length": 150,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4059593975543976
+      },
+      {
+        "episode": 287,
+        "timestep": 69605,
+        "reward": -17.665817,
+        "length": 195,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7536430954933167
+      },
+      {
+        "episode": 288,
+        "timestep": 69806,
+        "reward": -17.806109,
+        "length": 201,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7226628065109253
+      },
+      {
+        "episode": 289,
+        "timestep": 70034,
+        "reward": -17.417133,
+        "length": 228,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8370268940925598
+      },
+      {
+        "episode": 290,
+        "timestep": 70300,
+        "reward": -16.096276,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.269614577293396
+      },
+      {
+        "episode": 291,
+        "timestep": 70581,
+        "reward": -16.035303,
+        "length": 281,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.2814791202545166
+      },
+      {
+        "episode": 292,
+        "timestep": 70852,
+        "reward": -15.889213,
+        "length": 271,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.3286153078079224
+      },
+      {
+        "episode": 293,
+        "timestep": 71100,
+        "reward": -16.227151,
+        "length": 248,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.2273461818695068
+      },
+      {
+        "episode": 294,
+        "timestep": 71369,
+        "reward": -16.277565,
+        "length": 269,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.2027111053466797
+      },
+      {
+        "episode": 295,
+        "timestep": 71535,
+        "reward": -19.012416,
+        "length": 166,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.32677146792411804
+      },
+      {
+        "episode": 296,
+        "timestep": 71801,
+        "reward": -16.458731,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.140234351158142
+      },
+      {
+        "episode": 297,
+        "timestep": 72053,
+        "reward": -16.293394,
+        "length": 252,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.197391152381897
+      },
+      {
+        "episode": 298,
+        "timestep": 72300,
+        "reward": -16.531193,
+        "length": 247,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.1221798658370972
+      },
+      {
+        "episode": 299,
+        "timestep": 72561,
+        "reward": -16.206295,
+        "length": 261,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.2330236434936523
+      },
+      {
+        "episode": 300,
+        "timestep": 72811,
+        "reward": -17.140908,
+        "length": 250,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9378287196159363
+      },
+      {
+        "episode": 301,
+        "timestep": 73073,
+        "reward": -16.990939,
+        "length": 262,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9707416892051697
+      },
+      {
+        "episode": 302,
+        "timestep": 73321,
+        "reward": -17.044224,
+        "length": 248,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9680003523826599
+      },
+      {
+        "episode": 303,
+        "timestep": 73475,
+        "reward": -19.309433,
+        "length": 154,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.23508958518505096
+      },
+      {
+        "episode": 304,
+        "timestep": 73729,
+        "reward": -17.332387,
+        "length": 254,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8737761378288269
+      },
+      {
+        "episode": 305,
+        "timestep": 73989,
+        "reward": -17.162642,
+        "length": 260,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9170216917991638
+      },
+      {
+        "episode": 306,
+        "timestep": 74243,
+        "reward": -17.528704,
+        "length": 254,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8128145337104797
+      },
+      {
+        "episode": 307,
+        "timestep": 74498,
+        "reward": -17.404567,
+        "length": 255,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8431283831596375
+      },
+      {
+        "episode": 308,
+        "timestep": 74748,
+        "reward": -17.150653,
+        "length": 250,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9233434796333313
+      },
+      {
+        "episode": 309,
+        "timestep": 74981,
+        "reward": -17.674183,
+        "length": 233,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7567155361175537
+      },
+      {
+        "episode": 310,
+        "timestep": 75226,
+        "reward": -17.584483,
+        "length": 245,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7912785410881042
+      },
+      {
+        "episode": 311,
+        "timestep": 75458,
+        "reward": -17.921054,
+        "length": 232,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6829336881637573
+      },
+      {
+        "episode": 312,
+        "timestep": 75630,
+        "reward": -19.231028,
+        "length": 172,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2495996057987213
+      },
+      {
+        "episode": 313,
+        "timestep": 75808,
+        "reward": -19.207925,
+        "length": 178,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2597659230232239
+      },
+      {
+        "episode": 314,
+        "timestep": 76033,
+        "reward": -18.02178,
+        "length": 225,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6422730088233948
+      },
+      {
+        "episode": 315,
+        "timestep": 76210,
+        "reward": -19.184423,
+        "length": 177,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2660944163799286
+      },
+      {
+        "episode": 316,
+        "timestep": 76394,
+        "reward": -19.001962,
+        "length": 184,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3386489450931549
+      },
+      {
+        "episode": 317,
+        "timestep": 76638,
+        "reward": -17.372216,
+        "length": 244,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8583963513374329
+      },
+      {
+        "episode": 318,
+        "timestep": 76883,
+        "reward": -17.814226,
+        "length": 245,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7248995304107666
+      },
+      {
+        "episode": 319,
+        "timestep": 77128,
+        "reward": -17.87739,
+        "length": 245,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6961888074874878
+      },
+      {
+        "episode": 320,
+        "timestep": 77374,
+        "reward": -17.55968,
+        "length": 246,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7911866903305054
+      },
+      {
+        "episode": 321,
+        "timestep": 77628,
+        "reward": -17.316357,
+        "length": 254,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8780326843261719
+      },
+      {
+        "episode": 322,
+        "timestep": 77890,
+        "reward": -17.694703,
+        "length": 262,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.747114896774292
+      },
+      {
+        "episode": 323,
+        "timestep": 78134,
+        "reward": -17.42196,
+        "length": 244,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8451032042503357
+      },
+      {
+        "episode": 324,
+        "timestep": 78397,
+        "reward": -17.610038,
+        "length": 263,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7804275155067444
+      },
+      {
+        "episode": 325,
+        "timestep": 78652,
+        "reward": -17.756507,
+        "length": 255,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7434213161468506
+      },
+      {
+        "episode": 326,
+        "timestep": 78907,
+        "reward": -17.630995,
+        "length": 255,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7717090845108032
+      },
+      {
+        "episode": 327,
+        "timestep": 79161,
+        "reward": -17.505527,
+        "length": 254,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8084444999694824
+      },
+      {
+        "episode": 328,
+        "timestep": 79431,
+        "reward": -17.608249,
+        "length": 270,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7847353219985962
+      },
+      {
+        "episode": 329,
+        "timestep": 79706,
+        "reward": -17.704749,
+        "length": 275,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.751364529132843
+      },
+      {
+        "episode": 330,
+        "timestep": 79978,
+        "reward": -18.0612,
+        "length": 272,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6441439986228943
+      },
+      {
+        "episode": 331,
+        "timestep": 80260,
+        "reward": -17.947531,
+        "length": 282,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6800642609596252
+      },
+      {
+        "episode": 332,
+        "timestep": 80528,
+        "reward": -18.041854,
+        "length": 268,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.633847713470459
+      },
+      {
+        "episode": 333,
+        "timestep": 80789,
+        "reward": -18.415977,
+        "length": 261,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5126174688339233
+      },
+      {
+        "episode": 334,
+        "timestep": 81059,
+        "reward": -17.716633,
+        "length": 270,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7505964040756226
+      },
+      {
+        "episode": 335,
+        "timestep": 81324,
+        "reward": -18.037768,
+        "length": 265,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.635333776473999
+      },
+      {
+        "episode": 336,
+        "timestep": 81591,
+        "reward": -18.061098,
+        "length": 267,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6456816792488098
+      },
+      {
+        "episode": 337,
+        "timestep": 81866,
+        "reward": -17.636847,
+        "length": 275,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7798364162445068
+      },
+      {
+        "episode": 338,
+        "timestep": 82135,
+        "reward": -17.661255,
+        "length": 269,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7626214027404785
+      },
+      {
+        "episode": 339,
+        "timestep": 82401,
+        "reward": -17.897367,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.685194730758667
+      },
+      {
+        "episode": 340,
+        "timestep": 82667,
+        "reward": -17.579888,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.781091570854187
+      },
+      {
+        "episode": 341,
+        "timestep": 82933,
+        "reward": -18.037647,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6513213515281677
+      },
+      {
+        "episode": 342,
+        "timestep": 83193,
+        "reward": -18.255938,
+        "length": 260,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5737225413322449
+      },
+      {
+        "episode": 343,
+        "timestep": 83465,
+        "reward": -17.673223,
+        "length": 272,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7627512216567993
+      },
+      {
+        "episode": 344,
+        "timestep": 83736,
+        "reward": -17.327328,
+        "length": 271,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8642113208770752
+      },
+      {
+        "episode": 345,
+        "timestep": 83998,
+        "reward": -17.84465,
+        "length": 262,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6995543837547302
+      },
+      {
+        "episode": 346,
+        "timestep": 84265,
+        "reward": -17.715155,
+        "length": 267,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.745951235294342
+      },
+      {
+        "episode": 347,
+        "timestep": 84541,
+        "reward": -17.639305,
+        "length": 276,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7705740332603455
+      },
+      {
+        "episode": 348,
+        "timestep": 84796,
+        "reward": -18.176604,
+        "length": 255,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5973327159881592
+      },
+      {
+        "episode": 349,
+        "timestep": 85048,
+        "reward": -17.880806,
+        "length": 252,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6990205645561218
+      },
+      {
+        "episode": 350,
+        "timestep": 85308,
+        "reward": -17.817718,
+        "length": 260,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.708917498588562
+      },
+      {
+        "episode": 351,
+        "timestep": 85561,
+        "reward": -18.106877,
+        "length": 253,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6280127763748169
+      },
+      {
+        "episode": 352,
+        "timestep": 85802,
+        "reward": -18.125865,
+        "length": 241,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.607524573802948
+      },
+      {
+        "episode": 353,
+        "timestep": 86064,
+        "reward": -17.653604,
+        "length": 262,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7746391296386719
+      },
+      {
+        "episode": 354,
+        "timestep": 86330,
+        "reward": -17.663923,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7702075839042664
+      },
+      {
+        "episode": 355,
+        "timestep": 86577,
+        "reward": -17.910763,
+        "length": 247,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6809631586074829
+      },
+      {
+        "episode": 356,
+        "timestep": 86833,
+        "reward": -18.067598,
+        "length": 256,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6406052708625793
+      },
+      {
+        "episode": 357,
+        "timestep": 87095,
+        "reward": -17.577772,
+        "length": 262,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.790953516960144
+      },
+      {
+        "episode": 358,
+        "timestep": 87350,
+        "reward": -17.403533,
+        "length": 255,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8422617316246033
+      },
+      {
+        "episode": 359,
+        "timestep": 87613,
+        "reward": -17.215367,
+        "length": 263,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9008904695510864
+      },
+      {
+        "episode": 360,
+        "timestep": 87893,
+        "reward": -16.831844,
+        "length": 280,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.0302234888076782
+      },
+      {
+        "episode": 361,
+        "timestep": 88159,
+        "reward": -17.220571,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.9125806093215942
+      },
+      {
+        "episode": 362,
+        "timestep": 88409,
+        "reward": -18.12136,
+        "length": 250,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6161453127861023
+      },
+      {
+        "episode": 363,
+        "timestep": 88668,
+        "reward": -17.699981,
+        "length": 259,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7583252787590027
+      },
+      {
+        "episode": 364,
+        "timestep": 88909,
+        "reward": -18.225224,
+        "length": 241,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5740427374839783
+      },
+      {
+        "episode": 365,
+        "timestep": 89168,
+        "reward": -17.981967,
+        "length": 259,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6519041061401367
+      },
+      {
+        "episode": 366,
+        "timestep": 89431,
+        "reward": -17.892208,
+        "length": 263,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.689224362373352
+      },
+      {
+        "episode": 367,
+        "timestep": 89694,
+        "reward": -17.847749,
+        "length": 263,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7077764868736267
+      },
+      {
+        "episode": 368,
+        "timestep": 89967,
+        "reward": -18.13794,
+        "length": 273,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6097220778465271
+      },
+      {
+        "episode": 369,
+        "timestep": 90235,
+        "reward": -18.374371,
+        "length": 268,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5391097664833069
+      },
+      {
+        "episode": 370,
+        "timestep": 90501,
+        "reward": -18.36065,
+        "length": 266,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5433909893035889
+      },
+      {
+        "episode": 371,
+        "timestep": 90790,
+        "reward": -18.07742,
+        "length": 289,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.631008505821228
+      },
+      {
+        "episode": 372,
+        "timestep": 91075,
+        "reward": -18.206089,
+        "length": 285,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5990647077560425
+      },
+      {
+        "episode": 373,
+        "timestep": 91352,
+        "reward": -18.280558,
+        "length": 277,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5748319029808044
+      },
+      {
+        "episode": 374,
+        "timestep": 91681,
+        "reward": -21.042251,
+        "length": 329,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.35965055227279663
+      },
+      {
+        "episode": 375,
+        "timestep": 92246,
+        "reward": -28.878219,
+        "length": 565,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -3.196021795272827
+      },
+      {
+        "episode": 376,
+        "timestep": 92439,
+        "reward": -18.503112,
+        "length": 193,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.49773678183555603
+      },
+      {
+        "episode": 377,
+        "timestep": 92838,
+        "reward": -22.670371,
+        "length": 399,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9072274565696716
+      },
+      {
+        "episode": 378,
+        "timestep": 93113,
+        "reward": -18.624543,
+        "length": 275,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.45115265250205994
+      },
+      {
+        "episode": 379,
+        "timestep": 93395,
+        "reward": -18.567872,
+        "length": 282,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.46179884672164917
+      },
+      {
+        "episode": 380,
+        "timestep": 93766,
+        "reward": -20.655328,
+        "length": 371,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.22437912225723267
+      },
+      {
+        "episode": 381,
+        "timestep": 94066,
+        "reward": -20.052695,
+        "length": 300,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.025528153404593468
+      },
+      {
+        "episode": 382,
+        "timestep": 94348,
+        "reward": -18.632289,
+        "length": 282,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4483472406864166
+      },
+      {
+        "episode": 383,
+        "timestep": 94626,
+        "reward": -18.626468,
+        "length": 278,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4544614255428314
+      },
+      {
+        "episode": 384,
+        "timestep": 94904,
+        "reward": -18.944874,
+        "length": 278,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3446151316165924
+      },
+      {
+        "episode": 385,
+        "timestep": 95169,
+        "reward": -18.90092,
+        "length": 265,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3727504312992096
+      },
+      {
+        "episode": 386,
+        "timestep": 95449,
+        "reward": -18.825865,
+        "length": 280,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.38978397846221924
+      },
+      {
+        "episode": 387,
+        "timestep": 95729,
+        "reward": -18.882405,
+        "length": 280,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.37488076090812683
+      },
+      {
+        "episode": 388,
+        "timestep": 96004,
+        "reward": -18.818133,
+        "length": 275,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.38925597071647644
+      },
+      {
+        "episode": 389,
+        "timestep": 96266,
+        "reward": -18.957135,
+        "length": 262,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3442194163799286
+      },
+      {
+        "episode": 390,
+        "timestep": 96537,
+        "reward": -18.847836,
+        "length": 271,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.38283616304397583
+      },
+      {
+        "episode": 391,
+        "timestep": 96804,
+        "reward": -18.890689,
+        "length": 267,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3686160445213318
+      },
+      {
+        "episode": 392,
+        "timestep": 97092,
+        "reward": -18.807881,
+        "length": 288,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3969433605670929
+      },
+      {
+        "episode": 393,
+        "timestep": 97384,
+        "reward": -18.829778,
+        "length": 292,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.39471691846847534
+      },
+      {
+        "episode": 394,
+        "timestep": 97662,
+        "reward": -18.740936,
+        "length": 278,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4203411340713501
+      },
+      {
+        "episode": 395,
+        "timestep": 97959,
+        "reward": -18.685684,
+        "length": 297,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4393530488014221
+      },
+      {
+        "episode": 396,
+        "timestep": 98247,
+        "reward": -18.598158,
+        "length": 288,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4594757854938507
+      },
+      {
+        "episode": 397,
+        "timestep": 98542,
+        "reward": -18.671048,
+        "length": 295,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.43686091899871826
+      },
+      {
+        "episode": 398,
+        "timestep": 98803,
+        "reward": -18.992295,
+        "length": 261,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.33029505610466003
+      },
+      {
+        "episode": 399,
+        "timestep": 99134,
+        "reward": -18.586037,
+        "length": 331,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4646344482898712
+      },
+      {
+        "episode": 400,
+        "timestep": 99463,
+        "reward": -18.917332,
+        "length": 329,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3576600253582001
+      },
+      {
+        "episode": 401,
+        "timestep": 99769,
+        "reward": -18.645952,
+        "length": 306,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.44201144576072693
+      },
+      {
+        "episode": 402,
+        "timestep": 100082,
+        "reward": -18.541247,
+        "length": 313,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.48763319849967957
+      },
+      {
+        "episode": 403,
+        "timestep": 100384,
+        "reward": -18.541526,
+        "length": 302,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.48311254382133484
+      },
+      {
+        "episode": 404,
+        "timestep": 100707,
+        "reward": -18.372323,
+        "length": 323,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5358980894088745
+      },
+      {
+        "episode": 405,
+        "timestep": 101029,
+        "reward": -18.439516,
+        "length": 322,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5221996903419495
+      },
+      {
+        "episode": 406,
+        "timestep": 101362,
+        "reward": -18.604825,
+        "length": 333,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4674052596092224
+      },
+      {
+        "episode": 407,
+        "timestep": 101686,
+        "reward": -18.669796,
+        "length": 324,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.435568630695343
+      },
+      {
+        "episode": 408,
+        "timestep": 101993,
+        "reward": -18.834331,
+        "length": 307,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.39079174399375916
+      },
+      {
+        "episode": 409,
+        "timestep": 102289,
+        "reward": -18.613014,
+        "length": 296,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4517834484577179
+      },
+      {
+        "episode": 410,
+        "timestep": 102604,
+        "reward": -18.595856,
+        "length": 315,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.46640080213546753
+      },
+      {
+        "episode": 411,
+        "timestep": 102897,
+        "reward": -18.921507,
+        "length": 293,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3634590208530426
+      },
+      {
+        "episode": 412,
+        "timestep": 103214,
+        "reward": -19.256301,
+        "length": 317,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2536686360836029
+      },
+      {
+        "episode": 413,
+        "timestep": 103521,
+        "reward": -19.343472,
+        "length": 307,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2127077877521515
+      },
+      {
+        "episode": 414,
+        "timestep": 103810,
+        "reward": -19.06556,
+        "length": 289,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.317478746175766
+      },
+      {
+        "episode": 415,
+        "timestep": 104114,
+        "reward": -18.431505,
+        "length": 304,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5129369497299194
+      },
+      {
+        "episode": 416,
+        "timestep": 104411,
+        "reward": -19.051472,
+        "length": 297,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3202931880950928
+      },
+      {
+        "episode": 417,
+        "timestep": 104711,
+        "reward": -18.062883,
+        "length": 300,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6361979842185974
+      },
+      {
+        "episode": 418,
+        "timestep": 105002,
+        "reward": -19.270809,
+        "length": 291,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2401987761259079
+      },
+      {
+        "episode": 419,
+        "timestep": 105351,
+        "reward": -19.812808,
+        "length": 349,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.058865297585725784
+      },
+      {
+        "episode": 420,
+        "timestep": 105645,
+        "reward": -19.099133,
+        "length": 294,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.30009225010871887
+      },
+      {
+        "episode": 421,
+        "timestep": 105945,
+        "reward": -19.274218,
+        "length": 300,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.23621182143688202
+      },
+      {
+        "episode": 422,
+        "timestep": 106256,
+        "reward": -19.621341,
+        "length": 311,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.13217662274837494
+      },
+      {
+        "episode": 423,
+        "timestep": 106560,
+        "reward": -19.434468,
+        "length": 304,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.17921288311481476
+      },
+      {
+        "episode": 424,
+        "timestep": 106862,
+        "reward": -19.370794,
+        "length": 302,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.20880086719989777
+      },
+      {
+        "episode": 425,
+        "timestep": 107176,
+        "reward": -19.249265,
+        "length": 314,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.24107804894447327
+      },
+      {
+        "episode": 426,
+        "timestep": 107520,
+        "reward": -18.991175,
+        "length": 344,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3301892578601837
+      },
+      {
+        "episode": 427,
+        "timestep": 107914,
+        "reward": -21.880674,
+        "length": 394,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6420332193374634
+      },
+      {
+        "episode": 428,
+        "timestep": 108251,
+        "reward": -19.577486,
+        "length": 337,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.144099161028862
+      },
+      {
+        "episode": 429,
+        "timestep": 108585,
+        "reward": -19.529651,
+        "length": 334,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.15387728810310364
+      },
+      {
+        "episode": 430,
+        "timestep": 109006,
+        "reward": -19.000086,
+        "length": 421,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.32370415329933167
+      },
+      {
+        "episode": 431,
+        "timestep": 109446,
+        "reward": -20.69525,
+        "length": 440,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.22453871369361877
+      },
+      {
+        "episode": 432,
+        "timestep": 110268,
+        "reward": -18.552751,
+        "length": 822,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.48221293091773987
+      },
+      {
+        "episode": 433,
+        "timestep": 110896,
+        "reward": -21.472727,
+        "length": 628,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.503195583820343
+      },
+      {
+        "episode": 434,
+        "timestep": 111623,
+        "reward": -17.769986,
+        "length": 727,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7291858792304993
+      },
+      {
+        "episode": 435,
+        "timestep": 112219,
+        "reward": -21.721526,
+        "length": 596,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5872049927711487
+      },
+      {
+        "episode": 436,
+        "timestep": 112776,
+        "reward": -21.373396,
+        "length": 557,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.45454758405685425
+      },
+      {
+        "episode": 437,
+        "timestep": 113262,
+        "reward": -21.125273,
+        "length": 486,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3726532459259033
+      },
+      {
+        "episode": 438,
+        "timestep": 113680,
+        "reward": -19.127408,
+        "length": 418,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2846582233905792
+      },
+      {
+        "episode": 439,
+        "timestep": 114053,
+        "reward": -19.32428,
+        "length": 373,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2169458419084549
+      },
+      {
+        "episode": 440,
+        "timestep": 114449,
+        "reward": -19.479064,
+        "length": 396,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.18210241198539734
+      },
+      {
+        "episode": 441,
+        "timestep": 115004,
+        "reward": -22.742254,
+        "length": 555,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9294566512107849
+      },
+      {
+        "episode": 442,
+        "timestep": 115699,
+        "reward": -22.971286,
+        "length": 695,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.0063241720199585
+      },
+      {
+        "episode": 443,
+        "timestep": 116342,
+        "reward": -25.747685,
+        "length": 643,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -2.0071699619293213
+      },
+      {
+        "episode": 444,
+        "timestep": 116920,
+        "reward": -21.069652,
+        "length": 578,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3659785985946655
+      },
+      {
+        "episode": 445,
+        "timestep": 117649,
+        "reward": -25.105322,
+        "length": 729,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.7736502885818481
+      },
+      {
+        "episode": 446,
+        "timestep": 118332,
+        "reward": -21.788467,
+        "length": 683,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6085585951805115
+      },
+      {
+        "episode": 447,
+        "timestep": 118928,
+        "reward": -20.661874,
+        "length": 596,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2122407853603363
+      },
+      {
+        "episode": 448,
+        "timestep": 119371,
+        "reward": -18.952763,
+        "length": 443,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.344865083694458
+      },
+      {
+        "episode": 449,
+        "timestep": 119873,
+        "reward": -11.002358,
+        "length": 502,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 2.7933144569396973
+      },
+      {
+        "episode": 450,
+        "timestep": 120237,
+        "reward": -18.523514,
+        "length": 364,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4935353994369507
+      },
+      {
+        "episode": 451,
+        "timestep": 120884,
+        "reward": -22.892348,
+        "length": 647,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9935199022293091
+      },
+      {
+        "episode": 452,
+        "timestep": 121271,
+        "reward": -18.827045,
+        "length": 387,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3872528672218323
+      },
+      {
+        "episode": 453,
+        "timestep": 121646,
+        "reward": -18.790494,
+        "length": 375,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3947897255420685
+      },
+      {
+        "episode": 454,
+        "timestep": 122107,
+        "reward": -18.78629,
+        "length": 461,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4036029577255249
+      },
+      {
+        "episode": 455,
+        "timestep": 122675,
+        "reward": -16.138517,
+        "length": 568,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.239000678062439
+      },
+      {
+        "episode": 456,
+        "timestep": 123176,
+        "reward": -18.018231,
+        "length": 501,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6471213698387146
+      },
+      {
+        "episode": 457,
+        "timestep": 123690,
+        "reward": -16.732453,
+        "length": 514,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.0563809871673584
+      },
+      {
+        "episode": 458,
+        "timestep": 124181,
+        "reward": -17.624482,
+        "length": 491,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7832950949668884
+      },
+      {
+        "episode": 459,
+        "timestep": 124721,
+        "reward": -16.350384,
+        "length": 540,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.1752866506576538
+      },
+      {
+        "episode": 460,
+        "timestep": 125345,
+        "reward": -16.497769,
+        "length": 624,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.1304129362106323
+      },
+      {
+        "episode": 461,
+        "timestep": 125878,
+        "reward": -19.507921,
+        "length": 533,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.16241323947906494
+      },
+      {
+        "episode": 462,
+        "timestep": 126547,
+        "reward": -17.264745,
+        "length": 669,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.8889513611793518
+      },
+      {
+        "episode": 463,
+        "timestep": 127158,
+        "reward": -16.937128,
+        "length": 611,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.0041334629058838
+      },
+      {
+        "episode": 464,
+        "timestep": 127805,
+        "reward": -16.654456,
+        "length": 647,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.0878788232803345
+      },
+      {
+        "episode": 465,
+        "timestep": 129135,
+        "reward": -18.832052,
+        "length": 1330,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3871460258960724
+      },
+      {
+        "episode": 466,
+        "timestep": 130000,
+        "reward": -19.715906,
+        "length": 865,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.09549083560705185
+      },
+      {
+        "episode": 467,
+        "timestep": 130868,
+        "reward": -18.62804,
+        "length": 868,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.44348275661468506
+      },
+      {
+        "episode": 468,
+        "timestep": 131692,
+        "reward": -18.620021,
+        "length": 824,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4556843340396881
+      },
+      {
+        "episode": 469,
+        "timestep": 132586,
+        "reward": -18.610925,
+        "length": 894,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.46289414167404175
+      },
+      {
+        "episode": 470,
+        "timestep": 133481,
+        "reward": -18.422558,
+        "length": 895,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5099310874938965
+      },
+      {
+        "episode": 471,
+        "timestep": 134057,
+        "reward": -18.825606,
+        "length": 576,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.39707642793655396
+      },
+      {
+        "episode": 472,
+        "timestep": 134591,
+        "reward": -18.742775,
+        "length": 534,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.41663047671318054
+      },
+      {
+        "episode": 473,
+        "timestep": 135204,
+        "reward": -18.560098,
+        "length": 613,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.48220163583755493
+      },
+      {
+        "episode": 474,
+        "timestep": 135771,
+        "reward": -19.258057,
+        "length": 567,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.24392594397068024
+      },
+      {
+        "episode": 475,
+        "timestep": 136459,
+        "reward": -19.989665,
+        "length": 688,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.011640414595603943
+      },
+      {
+        "episode": 476,
+        "timestep": 137063,
+        "reward": -18.802645,
+        "length": 604,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.38945943117141724
+      },
+      {
+        "episode": 477,
+        "timestep": 137737,
+        "reward": -19.036818,
+        "length": 674,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3131045699119568
+      },
+      {
+        "episode": 478,
+        "timestep": 138321,
+        "reward": -19.130159,
+        "length": 584,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.29601114988327026
+      },
+      {
+        "episode": 479,
+        "timestep": 138754,
+        "reward": -18.791087,
+        "length": 433,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.40208131074905396
+      },
+      {
+        "episode": 480,
+        "timestep": 139177,
+        "reward": -18.293854,
+        "length": 423,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5539970397949219
+      },
+      {
+        "episode": 481,
+        "timestep": 139654,
+        "reward": -20.069008,
+        "length": 477,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.029764259234070778
+      },
+      {
+        "episode": 482,
+        "timestep": 140105,
+        "reward": -19.25492,
+        "length": 451,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.24375510215759277
+      },
+      {
+        "episode": 483,
+        "timestep": 140570,
+        "reward": -19.615322,
+        "length": 465,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.12010286003351212
+      },
+      {
+        "episode": 484,
+        "timestep": 140995,
+        "reward": -19.81033,
+        "length": 425,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.05664614215493202
+      },
+      {
+        "episode": 485,
+        "timestep": 141497,
+        "reward": -18.877407,
+        "length": 502,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.36160513758659363
+      },
+      {
+        "episode": 486,
+        "timestep": 142071,
+        "reward": -18.778595,
+        "length": 574,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4014299213886261
+      },
+      {
+        "episode": 487,
+        "timestep": 142869,
+        "reward": -19.344284,
+        "length": 798,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.21407146751880646
+      },
+      {
+        "episode": 488,
+        "timestep": 143356,
+        "reward": -20.254033,
+        "length": 487,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.08086104691028595
+      },
+      {
+        "episode": 489,
+        "timestep": 143917,
+        "reward": -20.488934,
+        "length": 561,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.1722322255373001
+      },
+      {
+        "episode": 490,
+        "timestep": 144315,
+        "reward": -19.786998,
+        "length": 398,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.06255290657281876
+      },
+      {
+        "episode": 491,
+        "timestep": 144752,
+        "reward": -19.694815,
+        "length": 437,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.10170547664165497
+      },
+      {
+        "episode": 492,
+        "timestep": 145149,
+        "reward": -19.454906,
+        "length": 397,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.17335796356201172
+      },
+      {
+        "episode": 493,
+        "timestep": 145558,
+        "reward": -19.74598,
+        "length": 409,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.08689162880182266
+      },
+      {
+        "episode": 494,
+        "timestep": 146001,
+        "reward": -19.667604,
+        "length": 443,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.1159391775727272
+      },
+      {
+        "episode": 495,
+        "timestep": 146433,
+        "reward": -19.812271,
+        "length": 432,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.05674166604876518
+      },
+      {
+        "episode": 496,
+        "timestep": 146886,
+        "reward": -19.994036,
+        "length": 453,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.004205275326967239
+      },
+      {
+        "episode": 497,
+        "timestep": 147377,
+        "reward": -18.763277,
+        "length": 491,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4016362130641937
+      },
+      {
+        "episode": 498,
+        "timestep": 147867,
+        "reward": -18.91647,
+        "length": 490,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.34959930181503296
+      },
+      {
+        "episode": 499,
+        "timestep": 148379,
+        "reward": -18.818551,
+        "length": 512,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.39817366003990173
+      },
+      {
+        "episode": 500,
+        "timestep": 148910,
+        "reward": -18.617116,
+        "length": 531,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.46453723311424255
+      }
+    ]
+  },
+  "evaluation": {
+    "episodes": 100,
+    "successes": 0,
+    "success_rate": 0.0,
+    "falls": 79,
+    "fall_rate": 0.79,
+    "mean_reward": -15.293792139999999,
+    "mean_x_position": 0.15668870514258743,
+    "wall_time": 1014.051762342453,
+    "episode_logs": [
+      {
+        "episode": 1,
+        "timestep": 149388,
+        "reward": -19.46732,
+        "length": 478,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.18494433164596558
+      },
+      {
+        "episode": 2,
+        "timestep": 149871,
+        "reward": -19.682202,
+        "length": 483,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.1152198389172554
+      },
+      {
+        "episode": 3,
+        "timestep": 150364,
+        "reward": -19.577455,
+        "length": 493,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.13210952281951904
+      },
+      {
+        "episode": 4,
+        "timestep": 150858,
+        "reward": -18.671963,
+        "length": 494,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.43674543499946594
+      },
+      {
+        "episode": 5,
+        "timestep": 151257,
+        "reward": -18.88505,
+        "length": 399,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.368567556142807
+      },
+      {
+        "episode": 6,
+        "timestep": 151734,
+        "reward": -18.8218,
+        "length": 477,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.39474859833717346
+      },
+      {
+        "episode": 7,
+        "timestep": 152164,
+        "reward": -18.605066,
+        "length": 430,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.46031704545021057
+      },
+      {
+        "episode": 8,
+        "timestep": 152992,
+        "reward": -20.102477,
+        "length": 828,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.02511560171842575
+      },
+      {
+        "episode": 9,
+        "timestep": 153561,
+        "reward": -20.55458,
+        "length": 569,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.1782611608505249
+      },
+      {
+        "episode": 10,
+        "timestep": 154131,
+        "reward": -20.358454,
+        "length": 570,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.1234232485294342
+      },
+      {
+        "episode": 11,
+        "timestep": 154595,
+        "reward": -21.412893,
+        "length": 464,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.48065733909606934
+      },
+      {
+        "episode": 12,
+        "timestep": 155174,
+        "reward": -21.579211,
+        "length": 579,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5358113050460815
+      },
+      {
+        "episode": 13,
+        "timestep": 155754,
+        "reward": -22.672132,
+        "length": 580,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.90337073802948
+      },
+      {
+        "episode": 14,
+        "timestep": 156344,
+        "reward": -21.556693,
+        "length": 590,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.5263367295265198
+      },
+      {
+        "episode": 15,
+        "timestep": 156856,
+        "reward": -20.748377,
+        "length": 512,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2528696060180664
+      },
+      {
+        "episode": 16,
+        "timestep": 157555,
+        "reward": -18.577663,
+        "length": 699,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4689389765262604
+      },
+      {
+        "episode": 17,
+        "timestep": 158231,
+        "reward": -16.879975,
+        "length": 676,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.0134525299072266
+      },
+      {
+        "episode": 18,
+        "timestep": 158843,
+        "reward": -21.236911,
+        "length": 612,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.40671488642692566
+      },
+      {
+        "episode": 19,
+        "timestep": 159602,
+        "reward": -19.633853,
+        "length": 759,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.1315310299396515
+      },
+      {
+        "episode": 20,
+        "timestep": 160637,
+        "reward": -20.730722,
+        "length": 1035,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.23602114617824554
+      },
+      {
+        "episode": 21,
+        "timestep": 161233,
+        "reward": -18.487012,
+        "length": 596,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5050732493400574
+      },
+      {
+        "episode": 22,
+        "timestep": 162436,
+        "reward": -21.009534,
+        "length": 1203,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3392392098903656
+      },
+      {
+        "episode": 23,
+        "timestep": 163009,
+        "reward": -19.094268,
+        "length": 573,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2949753403663635
+      },
+      {
+        "episode": 24,
+        "timestep": 163815,
+        "reward": -20.721535,
+        "length": 806,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.2406846582889557
+      },
+      {
+        "episode": 25,
+        "timestep": 164711,
+        "reward": -21.038615,
+        "length": 896,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.34725695848464966
+      },
+      {
+        "episode": 26,
+        "timestep": 165562,
+        "reward": -19.338641,
+        "length": 851,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2223621904850006
+      },
+      {
+        "episode": 27,
+        "timestep": 166730,
+        "reward": -19.724956,
+        "length": 1168,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.0962190255522728
+      },
+      {
+        "episode": 28,
+        "timestep": 167455,
+        "reward": -20.325777,
+        "length": 725,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.11389117687940598
+      },
+      {
+        "episode": 29,
+        "timestep": 168143,
+        "reward": -16.742704,
+        "length": 688,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.061142921447754
+      },
+      {
+        "episode": 30,
+        "timestep": 169010,
+        "reward": -14.530592,
+        "length": 867,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.752120852470398
+      },
+      {
+        "episode": 31,
+        "timestep": 170161,
+        "reward": -19.427237,
+        "length": 1151,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.18921634554862976
+      },
+      {
+        "episode": 32,
+        "timestep": 171661,
+        "reward": -2.859564,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": -0.9713782072067261
+      },
+      {
+        "episode": 33,
+        "timestep": 172443,
+        "reward": -20.021579,
+        "length": 782,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.016237787902355194
+      },
+      {
+        "episode": 34,
+        "timestep": 173051,
+        "reward": -15.60803,
+        "length": 608,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.409708023071289
+      },
+      {
+        "episode": 35,
+        "timestep": 173574,
+        "reward": -15.170009,
+        "length": 523,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.541236162185669
+      },
+      {
+        "episode": 36,
+        "timestep": 174394,
+        "reward": -18.435468,
+        "length": 820,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5227391123771667
+      },
+      {
+        "episode": 37,
+        "timestep": 175022,
+        "reward": -18.874483,
+        "length": 628,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.37030085921287537
+      },
+      {
+        "episode": 38,
+        "timestep": 175544,
+        "reward": -19.728643,
+        "length": 522,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.08636637032032013
+      },
+      {
+        "episode": 39,
+        "timestep": 176973,
+        "reward": -27.370919,
+        "length": 1429,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -2.6154091358184814
+      },
+      {
+        "episode": 40,
+        "timestep": 177414,
+        "reward": -20.335547,
+        "length": 441,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.10243824124336243
+      },
+      {
+        "episode": 41,
+        "timestep": 177809,
+        "reward": -19.124562,
+        "length": 395,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2929103374481201
+      },
+      {
+        "episode": 42,
+        "timestep": 178190,
+        "reward": -19.237975,
+        "length": 381,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2575148344039917
+      },
+      {
+        "episode": 43,
+        "timestep": 178600,
+        "reward": -19.278618,
+        "length": 410,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.2336082011461258
+      },
+      {
+        "episode": 44,
+        "timestep": 180100,
+        "reward": -1.055447,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": -0.35526514053344727
+      },
+      {
+        "episode": 45,
+        "timestep": 180738,
+        "reward": -21.902602,
+        "length": 638,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6384066343307495
+      },
+      {
+        "episode": 46,
+        "timestep": 181359,
+        "reward": -14.216195,
+        "length": 621,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.832863450050354
+      },
+      {
+        "episode": 47,
+        "timestep": 182382,
+        "reward": -22.628301,
+        "length": 1023,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9053086042404175
+      },
+      {
+        "episode": 48,
+        "timestep": 183037,
+        "reward": -22.670956,
+        "length": 655,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9189069271087646
+      },
+      {
+        "episode": 49,
+        "timestep": 183536,
+        "reward": -22.713009,
+        "length": 499,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.9165960550308228
+      },
+      {
+        "episode": 50,
+        "timestep": 184635,
+        "reward": -17.801835,
+        "length": 1099,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7185457348823547
+      },
+      {
+        "episode": 51,
+        "timestep": 185114,
+        "reward": -21.136592,
+        "length": 479,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.38014739751815796
+      },
+      {
+        "episode": 52,
+        "timestep": 186250,
+        "reward": -15.017566,
+        "length": 1136,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.6034433841705322
+      },
+      {
+        "episode": 53,
+        "timestep": 186826,
+        "reward": -17.993212,
+        "length": 576,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.655575692653656
+      },
+      {
+        "episode": 54,
+        "timestep": 187335,
+        "reward": -18.112253,
+        "length": 509,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.626291036605835
+      },
+      {
+        "episode": 55,
+        "timestep": 188138,
+        "reward": -18.508917,
+        "length": 803,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.4828735589981079
+      },
+      {
+        "episode": 56,
+        "timestep": 188683,
+        "reward": -18.468882,
+        "length": 545,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.49851492047309875
+      },
+      {
+        "episode": 57,
+        "timestep": 189545,
+        "reward": -18.305685,
+        "length": 862,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.5491040945053101
+      },
+      {
+        "episode": 58,
+        "timestep": 190157,
+        "reward": -17.998973,
+        "length": 612,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6511772871017456
+      },
+      {
+        "episode": 59,
+        "timestep": 190709,
+        "reward": -17.757595,
+        "length": 552,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7268460392951965
+      },
+      {
+        "episode": 60,
+        "timestep": 191698,
+        "reward": -20.646368,
+        "length": 989,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.21520568430423737
+      },
+      {
+        "episode": 61,
+        "timestep": 192363,
+        "reward": -15.301637,
+        "length": 665,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.5017613172531128
+      },
+      {
+        "episode": 62,
+        "timestep": 192774,
+        "reward": -17.909231,
+        "length": 411,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6907836198806763
+      },
+      {
+        "episode": 63,
+        "timestep": 193491,
+        "reward": -17.778514,
+        "length": 717,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7364187240600586
+      },
+      {
+        "episode": 64,
+        "timestep": 193959,
+        "reward": -21.203141,
+        "length": 468,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.40044859051704407
+      },
+      {
+        "episode": 65,
+        "timestep": 194565,
+        "reward": -17.853838,
+        "length": 606,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7039943933486938
+      },
+      {
+        "episode": 66,
+        "timestep": 195057,
+        "reward": -17.886994,
+        "length": 492,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6962353587150574
+      },
+      {
+        "episode": 67,
+        "timestep": 196146,
+        "reward": -18.831593,
+        "length": 1089,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.3816714882850647
+      },
+      {
+        "episode": 68,
+        "timestep": 197057,
+        "reward": -17.796428,
+        "length": 911,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.7177679538726807
+      },
+      {
+        "episode": 69,
+        "timestep": 198557,
+        "reward": 1.14938,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.3787077069282532
+      },
+      {
+        "episode": 70,
+        "timestep": 199239,
+        "reward": -22.494416,
+        "length": 682,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.8569448590278625
+      },
+      {
+        "episode": 71,
+        "timestep": 199811,
+        "reward": -21.023293,
+        "length": 572,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.3523947298526764
+      },
+      {
+        "episode": 72,
+        "timestep": 200400,
+        "reward": -22.048579,
+        "length": 589,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.6909722685813904
+      },
+      {
+        "episode": 73,
+        "timestep": 201040,
+        "reward": -24.131956,
+        "length": 640,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.426487684249878
+      },
+      {
+        "episode": 74,
+        "timestep": 202540,
+        "reward": 1.22807,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.4058891832828522
+      },
+      {
+        "episode": 75,
+        "timestep": 203149,
+        "reward": -19.325698,
+        "length": 609,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.21685795485973358
+      },
+      {
+        "episode": 76,
+        "timestep": 203807,
+        "reward": -18.923649,
+        "length": 658,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.352847695350647
+      },
+      {
+        "episode": 77,
+        "timestep": 204412,
+        "reward": -20.612567,
+        "length": 605,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.20851875841617584
+      },
+      {
+        "episode": 78,
+        "timestep": 205912,
+        "reward": 0.469062,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.15340052545070648
+      },
+      {
+        "episode": 79,
+        "timestep": 207412,
+        "reward": 1.476171,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.48659446835517883
+      },
+      {
+        "episode": 80,
+        "timestep": 208073,
+        "reward": -21.293851,
+        "length": 661,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.42790839076042175
+      },
+      {
+        "episode": 81,
+        "timestep": 209573,
+        "reward": 1.198053,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.3912143111228943
+      },
+      {
+        "episode": 82,
+        "timestep": 211073,
+        "reward": 0.802447,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.27560779452323914
+      },
+      {
+        "episode": 83,
+        "timestep": 211739,
+        "reward": -20.964241,
+        "length": 666,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -0.32032108306884766
+      },
+      {
+        "episode": 84,
+        "timestep": 213239,
+        "reward": 1.181003,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.39472731947898865
+      },
+      {
+        "episode": 85,
+        "timestep": 214283,
+        "reward": -23.417613,
+        "length": 1044,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.1632885932922363
+      },
+      {
+        "episode": 86,
+        "timestep": 215772,
+        "reward": -17.941026,
+        "length": 1489,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 0.6778141856193542
+      },
+      {
+        "episode": 87,
+        "timestep": 216694,
+        "reward": -15.382139,
+        "length": 922,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": 1.4878565073013306
+      },
+      {
+        "episode": 88,
+        "timestep": 218194,
+        "reward": 3.568114,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 1.1519204378128052
+      },
+      {
+        "episode": 89,
+        "timestep": 219694,
+        "reward": 0.842108,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.2786656618118286
+      },
+      {
+        "episode": 90,
+        "timestep": 221194,
+        "reward": 0.713218,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.23996327817440033
+      },
+      {
+        "episode": 91,
+        "timestep": 222694,
+        "reward": 0.644609,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.21955864131450653
+      },
+      {
+        "episode": 92,
+        "timestep": 224194,
+        "reward": 0.555917,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.18651454150676727
+      },
+      {
+        "episode": 93,
+        "timestep": 225694,
+        "reward": 0.656939,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.21389156579971313
+      },
+      {
+        "episode": 94,
+        "timestep": 227194,
+        "reward": 0.062318,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.026099061593413353
+      },
+      {
+        "episode": 95,
+        "timestep": 228694,
+        "reward": 0.845664,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.27069586515426636
+      },
+      {
+        "episode": 96,
+        "timestep": 230194,
+        "reward": 0.148917,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.0536428764462471
+      },
+      {
+        "episode": 97,
+        "timestep": 231694,
+        "reward": 1.063919,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.34280338883399963
+      },
+      {
+        "episode": 98,
+        "timestep": 233194,
+        "reward": 1.238894,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.40267425775527954
+      },
+      {
+        "episode": 99,
+        "timestep": 234694,
+        "reward": 0.993488,
+        "length": 1500,
+        "goal_reached": false,
+        "is_fallen": false,
+        "x_position": 0.33814191818237305
+      },
+      {
+        "episode": 100,
+        "timestep": 236191,
+        "reward": -22.921648,
+        "length": 1497,
+        "goal_reached": false,
+        "is_fallen": true,
+        "x_position": -1.000916838645935
+      }
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "mode": "no_coach",
+  "seeds": [
+    500
+  ],
+  "n_seeds": 1,
+  "train_episodes": 500,
+  "eval_episodes": 100,
+  "training_aggregate": {
+    "success_rate_mean": 0.0,
+    "success_rate_std": 0.0,
+    "fall_rate_mean": 0.95,
+    "fall_rate_std": 0.0
+  },
+  "evaluation_aggregate": {
+    "success_rate_mean": 0.11,
+    "success_rate_std": 0.0,
+    "success_rate_per_seed": {
+      "500": 0.11
+    },
+    "fall_rate_mean": 0.79,
+    "fall_rate_std": 0.0,
+    "mean_reward_mean": -4.961206189999999,
+    "mean_reward_std": 0.0,
+    "mean_x_position_mean": 1.5763237764313818,
+    "mean_x_position_std": 1.5763237764313818
+  }
+}
