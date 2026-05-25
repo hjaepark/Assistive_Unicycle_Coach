@@ -1,0 +1,15 @@
+{
+  "data_dir": "train/unicycle_train/coach/v5/dataset_processed",
+  "output_dir": "train/unicycle_train/coach/v5/runs/ae_v5_baseline",
+  "batch_size": 64,
+  "epochs": 30,
+  "lr": 0.001,
+  "weight_decay": 1e-05,
+  "warmup_steps": 500,
+  "num_workers": 4,
+  "seed": 42,
+  "hidden_dim": 128,
+  "latent_dim": 32,
+  "num_layers": 2,
+  "dropout": 0.1
+}
