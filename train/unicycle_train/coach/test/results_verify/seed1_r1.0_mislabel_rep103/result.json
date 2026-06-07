@@ -1,0 +1,10 @@
+{
+  "seed": 1,
+  "rep_seed": 103,
+  "intervene_rate": 1.0,
+  "buffer_mode": "mislabel",
+  "train_episodes": 500,
+  "train_time_s": 3009.8474888801575,
+  "eval_episodes": 100,
+  "post_removal_success": 0.0
+}

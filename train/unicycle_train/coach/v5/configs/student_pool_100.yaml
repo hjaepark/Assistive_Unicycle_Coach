@@ -1,0 +1,23 @@
+# train/unicycle_train/coach/v5/configs/student_pool_100.yaml
+#
+# V5 full experiment: 100-student parallel training (Pool B: 1000-1099)
+
+training:
+  seed: 42
+  K: 10
+  M: 10
+  max_iterations: 300
+  pi_update_every: 10
+  pi_ppo_epochs: 4
+  student_update_in_eval: true
+
+  n_students: 100
+  student_seeds_start: 1000
+
+intervention_policy:
+  obs_dim: 34
+
+autoencoder:
+  checkpoint: train/unicycle_train/coach/v5/runs/ae_v5_baseline/best_model.pt
+  dataset_stats: train/unicycle_train/coach/v5/dataset_processed/train.npz
+  device: cpu
