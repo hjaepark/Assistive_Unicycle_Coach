@@ -58,9 +58,10 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--episodes", type=int, required=True)
     ap.add_argument("--device", type=str, default="cuda")
+    ap.add_argument("--data_dir", type=str, default=None)
     args = ap.parse_args()
 
-    run_dir = DATA_DIR / f"seed{args.seed:02d}_{datetime.now():%Y%m%d_%H%M%S}"
+    run_dir = (Path(args.data_dir) if args.data_dir else DATA_DIR) / f"seed{args.seed:02d}_{datetime.now():%Y%m%d_%H%M%S}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
     model = SAC(
