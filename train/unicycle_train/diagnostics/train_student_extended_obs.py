@@ -1,4 +1,4 @@
-# train/unicycle_train/diagnostics/train_student_ref_execution.py
+# train/unicycle_train/diagnostics/train_student_extended_obs.py
 
 import argparse
 from pathlib import Path
@@ -14,7 +14,7 @@ from stable_baselines3.common.monitor import Monitor
 from train.unicycle_train.diagnostics.train_student import REWARD, SAC_PARAMS
 
 
-DATA_DIR = Path(__file__).resolve().parent / "data" / "student_extended_obs"
+DATA_DIR = Path(__file__).resolve().parent / "data" / "student_extended_obs_weight_decay"
 
 REF_MODEL_PATH = Path(__file__).resolve().parents[3] / (
     "train/unicycle_train/diagnostics/data/student/"
@@ -34,9 +34,11 @@ class EpisodeBudget(BaseCallback):
 
 
 class ReferenceExecutionWrapper(gym.Wrapper):
-    def __init__(self, env, ref_model):
+    def __init__(self, env, ref_model, decay_episodes=250):
         super().__init__(env)
         self.ref_model = ref_model
+        self.decay_episodes = decay_episodes
+        self.episode_idx = 0
         self.raw_obs = None
         self.prev_u_coach = np.zeros(self.action_space.shape, dtype=np.float32)
 
@@ -62,6 +64,9 @@ class ReferenceExecutionWrapper(gym.Wrapper):
         self.u_coach_norm_sum = 0.0
         self.exec_ref_error_sum = 0.0
         self.action_count = 0
+
+    def _intervention_weight(self):
+        return max(0.0, 1.0 - self.episode_idx / self.decay_episodes)
 
     def _make_aug_obs(self):
         return np.concatenate(
@@ -89,16 +94,19 @@ class ReferenceExecutionWrapper(gym.Wrapper):
         student_action = np.asarray(student_action, dtype=np.float32)
         ref_action = np.asarray(ref_action, dtype=np.float32)
 
+        intervention_weight = self._intervention_weight()
+
         u_coach = ref_action - student_action
+        applied_u_coach = intervention_weight * u_coach
 
         exec_action = np.clip(
-            student_action + u_coach,
+            student_action + applied_u_coach,
             self.action_space.low,
             self.action_space.high,
         ).astype(np.float32)
 
         action_error = float(np.linalg.norm(student_action - ref_action))
-        u_coach_norm = float(np.linalg.norm(u_coach))
+        u_coach_norm = float(np.linalg.norm(applied_u_coach))
         exec_ref_error = float(np.linalg.norm(exec_action - ref_action))
 
         self.action_error_sum += action_error
@@ -113,16 +121,18 @@ class ReferenceExecutionWrapper(gym.Wrapper):
             info["mean_action_error"] = self.action_error_sum / n
             info["mean_u_coach_norm"] = self.u_coach_norm_sum / n
             info["mean_exec_ref_error"] = self.exec_ref_error_sum / n
+            info["intervention_weight"] = intervention_weight
+            self.episode_idx += 1
 
-        self.prev_u_coach = u_coach.astype(np.float32)
+        self.prev_u_coach = applied_u_coach.astype(np.float32)
         self.raw_obs = np.asarray(obs, dtype=np.float32)
 
         return self._make_aug_obs(), reward, terminated, truncated, info
 
 
-def make_env(seed, run_dir, ref_model):
+def make_env(seed, run_dir, ref_model, decay_episodes):
     env = gym.make("UnicyclePendulumPD-v0", reward_weights=REWARD, frame_skip=1)
-    env = ReferenceExecutionWrapper(env, ref_model)
+    env = ReferenceExecutionWrapper(env, ref_model, decay_episodes)
     env.reset(seed=seed)
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
@@ -135,6 +145,7 @@ def make_env(seed, run_dir, ref_model):
             "mean_action_error",
             "mean_u_coach_norm",
             "mean_exec_ref_error",
+            "intervention_weight",
         ),
     )
 
@@ -145,6 +156,7 @@ def main():
     ap.add_argument("--episodes", type=int, required=True)
     ap.add_argument("--device", type=str, default="cuda")
     ap.add_argument("--data_dir", type=str, default=None)
+    ap.add_argument("--decay_episodes", type=int, default=250)
     args = ap.parse_args()
 
     run_dir = (
@@ -162,7 +174,7 @@ def main():
 
     model = SAC(
         "MlpPolicy",
-        make_env(args.seed, run_dir, ref_model),
+        make_env(args.seed, run_dir, ref_model, args.decay_episodes),
         device=args.device,
         seed=args.seed,
         verbose=1,
