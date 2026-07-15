@@ -1,4 +1,0 @@
-# configs/epsilon_greedy_decay50.yaml
-training:
-  epsilon_start: 0.3
-  epsilon_decay_iters: 50

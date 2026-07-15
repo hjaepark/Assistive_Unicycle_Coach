@@ -1,3 +1,0 @@
-training:
-  seed: 4156219561
-  coach_gradient_steps: 1000

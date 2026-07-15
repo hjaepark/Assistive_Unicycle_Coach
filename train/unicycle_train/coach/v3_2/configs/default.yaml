@@ -1,3 +1,0 @@
-training:
-  seed: 42
-  n_observation_iters: 20
