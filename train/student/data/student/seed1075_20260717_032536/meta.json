@@ -1,0 +1,53 @@
+{
+  "created": "2026-07-17T03:25:36.205867",
+  "seed": 1075,
+  "episodes": 500,
+  "checkpoint_every": 50,
+  "device": "cuda",
+  "reward": {
+    "posture": 0.0,
+    "pendulum": 0.0,
+    "speed_reward_weight": 0.0,
+    "alive_bonus": 0.0,
+    "upright_gate_k": 0.0,
+    "progress": 60.0,
+    "goal_bonus": 50.0,
+    "fall_penalty": -20.0
+  },
+  "sac_params": {
+    "learning_rate": 0.0003,
+    "buffer_size": 1000000,
+    "learning_starts": 100,
+    "batch_size": 256,
+    "tau": 0.005,
+    "gamma": 0.99
+  },
+  "env_id": "UnicyclePendulumPD-v0",
+  "frame_skip": 1,
+  "obs_schema": [
+    "pos_x",
+    "pos_y",
+    "pos_z",
+    "quat_w",
+    "quat_x",
+    "quat_y",
+    "quat_z",
+    "pendulum_angle",
+    "wheel_angle",
+    "vel_x",
+    "vel_y",
+    "vel_z",
+    "angvel_x",
+    "angvel_y",
+    "angvel_z",
+    "pendulum_angvel",
+    "wheel_angvel",
+    "pd_roll_torque",
+    "pd_yaw_torque"
+  ],
+  "action_schema": [
+    "wheel_torque",
+    "pitch_control_torque"
+  ],
+  "git_commit": "fa9a6df3ac46f62c2e16206e9ca560e05e90ce85"
+}
