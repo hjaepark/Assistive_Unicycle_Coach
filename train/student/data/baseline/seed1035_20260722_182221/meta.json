@@ -1,0 +1,9 @@
+{
+  "created": "2026-07-22T18:22:21.130334",
+  "kind": "baseline",
+  "seed": 1035,
+  "resumed_from_ep": 400,
+  "baseline_episodes": 300,
+  "device": "cuda",
+  "git_commit": "14186112ed9917cfedde2aa7125f879826243eb0"
+}

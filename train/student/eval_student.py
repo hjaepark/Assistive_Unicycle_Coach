@@ -1,4 +1,7 @@
 # train/student/eval_student.py
+
+# To evaluate baseline data, use: python -m train.student.eval_student train/student/data/baseline/seed*
+
 import re
 import argparse
 from pathlib import Path
