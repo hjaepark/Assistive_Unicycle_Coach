@@ -1,0 +1,16 @@
+{
+  "created": "2026-07-25T20:40:59.566518",
+  "kind": "heuristic_2",
+  "seed": 1065,
+  "resumed_from_ep": 400,
+  "coach_episodes": 300,
+  "observe_episodes": 50,
+  "probe_every": 10,
+  "probe_episodes": 5,
+  "coach_on_threshold": 0.2,
+  "coach_off_threshold": 0.6,
+  "probe_seed_offset": 20000,
+  "expert": "train/coach/expert_reference_policy/expert_seed1004_ep500.zip",
+  "device": "cuda",
+  "git_commit": "64dec3b613c53c14ccedbbe5012220db16d5e45e"
+}

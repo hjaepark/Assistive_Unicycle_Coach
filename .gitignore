@@ -13,3 +13,4 @@ build/
 *.zip
 *.pkl
 **/tensorboard/
+!train/coach/expert_reference_policy/*.zip

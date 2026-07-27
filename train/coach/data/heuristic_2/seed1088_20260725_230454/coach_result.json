@@ -1,0 +1,134 @@
+{
+  "ever_intervened": true,
+  "first_intervened_at_ep": 180,
+  "intervened_episode_count": 50,
+  "observe_success_rate": 0.86,
+  "n_probes": 25,
+  "probe_log": [
+    {
+      "ep": 50,
+      "probe_rate": 0.8,
+      "coach_on": false
+    },
+    {
+      "ep": 60,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 70,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 80,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 90,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 100,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 110,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 120,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 130,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 140,
+      "probe_rate": 0.8,
+      "coach_on": false
+    },
+    {
+      "ep": 150,
+      "probe_rate": 0.6,
+      "coach_on": false
+    },
+    {
+      "ep": 160,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 170,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 180,
+      "probe_rate": 0.0,
+      "coach_on": true
+    },
+    {
+      "ep": 190,
+      "probe_rate": 0.0,
+      "coach_on": true
+    },
+    {
+      "ep": 200,
+      "probe_rate": 0.0,
+      "coach_on": true
+    },
+    {
+      "ep": 210,
+      "probe_rate": 0.4,
+      "coach_on": true
+    },
+    {
+      "ep": 220,
+      "probe_rate": 0.4,
+      "coach_on": true
+    },
+    {
+      "ep": 230,
+      "probe_rate": 0.8,
+      "coach_on": false
+    },
+    {
+      "ep": 240,
+      "probe_rate": 0.8,
+      "coach_on": false
+    },
+    {
+      "ep": 250,
+      "probe_rate": 0.8,
+      "coach_on": false
+    },
+    {
+      "ep": 260,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 270,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 280,
+      "probe_rate": 1.0,
+      "coach_on": false
+    },
+    {
+      "ep": 290,
+      "probe_rate": 0.4,
+      "coach_on": false
+    }
+  ]
+}

@@ -50,6 +50,8 @@ class HeuristicCoach(gym.Wrapper):
         obs, reward, terminated, truncated, info = self.env.step(action)
         self._obs = obs
         info["coach_on"] = self.coach_on
+        if self.coach_on:
+            info["a_exec"] = np.asarray(action, dtype=np.float32)
         if terminated or truncated:
             self.ep += 1
             self.successes += bool(info.get("goal_reached", False))
@@ -59,6 +61,14 @@ class HeuristicCoach(gym.Wrapper):
                     self.coach_on = True
                     self.intervened_at = self.ep
         return obs, reward, terminated, truncated, info
+
+
+class SharedControlSAC(SAC):
+    def _store_transition(self, replay_buffer, buffer_action, new_obs, reward, dones, infos):
+        a_exec = infos[0].get("a_exec")
+        if a_exec is not None:
+            buffer_action = self.policy.scale_action(a_exec.reshape(1, -1))
+        super()._store_transition(replay_buffer, buffer_action, new_obs, reward, dones, infos)
 
 
 def make_env(seed, run_dir, expert):
@@ -109,7 +119,7 @@ def run_heuristic(seed, device, expert_path):
     expert = SAC.load(Path(expert_path).as_posix(), device=device)
     env, coach = make_env(seed, run_dir, expert)
 
-    model = SAC.load(ckpt.as_posix(), env=env, device=device)
+    model = SharedControlSAC.load(ckpt.as_posix(), env=env, device=device)
     model.tensorboard_log = str(run_dir / "tensorboard")
     model.load_replay_buffer(buf.with_suffix("").as_posix())
 
